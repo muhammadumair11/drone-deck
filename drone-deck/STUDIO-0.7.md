@@ -1,3 +1,5 @@
+> In 0.8 these controls moved; see [UI-0.8.md](UI-0.8.md) for the new locations.
+
 # Drone Deck 0.7 — setup, AI and physical monitoring
 
 This release adds working local capabilities to the Windows app. It does not install any new tools merely by opening the app, scanning, creating a project or loading a library. Installation recipes are available for explicit review and execution; their fresh-machine validation remains outstanding.

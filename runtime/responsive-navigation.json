@@ -1,9 +1,9 @@
 {"events":[
  {"t":0.1,"type":"tap","key":"open-menu"},
- {"t":0.3,"type":"tap","key":"nav-1"},
- {"t":0.5,"type":"scroll","key":"main-scroll","dy":-420},
- {"t":1.0,"type":"tap","key":"tool-search"},
- {"t":1.2,"type":"type","text":"Gazebo"},
+ {"t":0.3,"type":"tap","key":"rail-tools"},
+ {"t":0.5,"type":"tap","key":"tools-scope"},
+ {"t":0.8,"type":"tap","key":"tool-search"},
+ {"t":1.0,"type":"type","text":"Gazebo"},
  {"t":1.4,"type":"scroll","key":"main-scroll","dy":-350},
  {"t":2.0,"type":"tap","key":"configure-gazebo"}
 ]}

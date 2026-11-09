@@ -98,13 +98,13 @@ fn setup_ui_navigation_and_review_do_not_install_anything_in_preview() {
         },
     );
     rt.frame(0.);
-    let (x, y) = rt.find("nav-8").unwrap();
+    let (x, y) = rt.find("open-settings").unwrap();
     rt.pointer_down(x, y);
     rt.pointer_up(x, y);
     rt.frame(0.2);
-    assert_eq!(rt.state.page, 8);
+    assert_eq!(rt.state.page, crate::ui::Page::Settings);
     rt.update(|s, _| {
-        choose(s, 2);
+        choose(s, 0);
         review(s);
     });
     rt.frame(0.2);
@@ -162,7 +162,11 @@ fn missing_wsl_opens_setup_without_starting_an_installation() {
         "build":26100,"windows":"Windows fixture","architecture":"64-bit","eligible":true,
         "virtualization":"Available","ram_gib":16.,"gpu":"Fixture","distros":[],"wsl_ready":false}}),
     );
-    assert_eq!(s.page, 8);
+    assert_eq!(
+        s.page,
+        crate::ui::Page::Setup,
+        "first use opens guided setup"
+    );
     assert!(s.setup.jobs.is_empty());
     assert!(!s.setup.pending);
     assert!(!s.wsl_ready());
@@ -201,6 +205,8 @@ fn wizard_shows_real_results_without_promoting_process_state_to_connection() {
     s.setup
         .checks
         .insert("px4".into(), candidate("px4", "/px4", "/px4/bin/px4"));
+    crate::guided::open(&mut s);
+    s.guided.chapter = 2;
     let mut rt = Runtime::new(
         s,
         view,
@@ -242,4 +248,17 @@ fn manual_windows_arguments_preserve_spaces_without_json_escaping() {
         vec!["C:\\My Project\\infer.py", "--device", "cpu"]
     );
     assert_eq!(added.category, "AI & data");
+}
+
+#[test]
+fn check_progress_never_underflows_when_the_queue_outgrows_the_preset() {
+    let mut s = State::new();
+    s.setup.workflow = 1;
+    s.setup.queue = workflow::ids(&s)
+        .iter()
+        .filter_map(|id| s.setup.recipe_index(id))
+        .collect();
+    s.setup.workflow = 3;
+    assert!(s.setup.queue.len() > workflow::ids(&s).len());
+    assert_eq!(workflow::progress(&s), Some((0, workflow::ids(&s).len())));
 }

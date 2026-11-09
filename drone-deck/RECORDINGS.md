@@ -1,3 +1,5 @@
+> In 0.8 these controls moved; see [UI-0.8.md](UI-0.8.md) for the new locations.
+
 # rosbag2 + MCAP recordings — v0.4
 
 Open **Recordings** in the sidebar, or **AI & data → Record & replay sensor data**.

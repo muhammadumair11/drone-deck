@@ -2,20 +2,14 @@
 
 Open **Drone Deck.exe** in this directory, or the **Drone Deck** shortcut in Desktop → Simulator Launchers.
 
-Open **Settings** from the toolbar or sidebar, or press **Ctrl+,**. Use the bottom-right **− / percentage / +** controls to resize the interface. **Ctrl+−** zooms out, **Ctrl++** (or **Ctrl+=**) zooms in, and **Ctrl+0** resets to 100%. The compact default is 85%; your choice is saved. See [Settings and zoom](drone-deck/SETTINGS-AND-ZOOM.md).
+Version 0.8 reorganises the app around one **active system** (Local simulation, ROS & sensor capture, Offline AI workspace, Physical vehicle). The rail has **System**, **Tools & config**, **Data & models**, **Activity** and **Guided setup**; **Settings** is at the bottom of the rail or **Ctrl+,**. See [the 0.8 layout guide](drone-deck/UI-0.8.md) for where every 0.7 page moved.
 
-**Recordings** provides rosbag2 + MCAP sensor capture and local replay. Click **Check dependencies**, select ROS topics, then **Start MCAP recording** and **Stop & finalize**. ROS sensor publishers/PX4-to-ROS middleware are separate prerequisites. See the [recording guide](drone-deck/RECORDINGS.md).
+1. First time: open **Guided setup**, choose what you want to try, name the system, then let **Preparation** check this computer. Review the plan, tick the acknowledgement and apply it. Nothing installs from a check alone, and installation jobs continue if the app closes.
+2. Close any session started by the old VBS launcher before starting a new managed session.
+3. On **System**, **Start workspace** starts PX4 SIH, then the relay once SIH is ready, then jMAVSim once state is forwarding. Use the QGroundControl and MAVSDK branches for flight controls and read-only telemetry.
+4. In **Tools & config**, expand a tool with **Configure** to edit its command, paths and working directory, detect it, review its installation or download its package (always confirmed, never run). **Add a tool** creates profiles for ROS nodes, inference, training, recording or other simulators.
+5. **Data & models** holds rosbag2/MCAP recordings and replay, Hugging Face models, datasets & evaluation and editable projects. **Activity** keeps a history of requested actions, process output and installation jobs.
 
-**Setup** checks Windows and WSL prerequisites, lists installed/available Linux distributions, detects existing tools, and offers reviewed installation recipes with persistent progress/logs. See the [setup guide](drone-deck/SETUP.md). No installation starts from detection alone. Active installation jobs continue if the app closes; use their separate cancellation controls.
+**Stop session** stops owned processes. Normal app close also stops them. It is not a vehicle landing command. Zoom with the bottom-right **− / percentage / +** controls or **Ctrl+− / Ctrl++ / Ctrl+0** (default 100%); see [Settings and zoom](drone-deck/SETTINGS-AND-ZOOM.md).
 
-1. Close any session started by the old VBS launcher before starting a new managed session.
-2. Click **Detect tools**, then **Start SIH workspace**. PX4, the relay and jMAVSim run as one managed workspace; jMAVSim opens its own visualizer window.
-3. Run **MAVSDK telemetry** for read-only vehicle data, and **QGroundControl** for missions and flight controls.
-4. Choose a tool's **Details**, then **Configure manually**, to edit paths and commands through the settings form. **Integrations → Edit profiles** exposes the complete registry for adding more tools.
-5. Add command profiles for ROS nodes, AI inference, training, dataset recording, or other simulators. Tools that are not installed need setup; official guidance and optional confirmed package downloads are available in the inspector.
-
-**Stop session** stops owned processes. Normal app close also stops them. It is not a vehicle landing command.
-
-See [application documentation](drone-deck/README.md), [planned capabilities](drone-deck/ROADMAP.md), and [verification results](verification/VERIFICATION.md).
-
-Version 0.7 adds **AI & data → Models / Datasets & evaluation / Projects**, **Settings → Hugging Face**, reviewed complete workflow setup, and **Flight operations → Physical vehicle** monitoring. See [the 0.7 guide](drone-deck/STUDIO-0.7.md) for use and remaining limits. Optional runtimes are installed only after an explicit Install action. QGroundControl remains the flight-control interface.
+Further guides: [recordings](drone-deck/RECORDINGS.md), [setup recipes](drone-deck/SETUP.md), [0.7 AI & physical monitoring](drone-deck/STUDIO-0.7.md), [application documentation](drone-deck/README.md), [planned capabilities](drone-deck/ROADMAP.md). QGroundControl remains the flight-control interface.

@@ -2,6 +2,8 @@ use crate::*;
 use serde_json::{Value, json};
 #[cfg(test)]
 mod tests;
+mod view;
+pub(crate) use view::{monitor, toggle};
 pub(crate) struct Hardware {
     pub mode: usize,
     pub endpoint: TextEdit,
@@ -20,7 +22,7 @@ impl Default for Hardware {
             vehicles: HashMap::new(),
             seen: HashMap::new(),
             selected: None,
-            message: "Choose Physical vehicle to monitor a native Windows connection.".into(),
+            message: "Enter a dedicated endpoint, then start read-only monitoring.".into(),
             path: String::new(),
             last_refresh: Instant::now(),
         }
@@ -72,8 +74,7 @@ pub(crate) fn start(s: &mut State) {
         return;
     }
     if s.hardware.mode != 1 || s.setup.batch.is_some() || s.setup.jobs.iter().any(|j| j.alive) {
-        s.hardware.message =
-            "Select Physical vehicle and finish active installations first.".into();
+        s.hardware.message = "Finish active installations before monitoring starts.".into();
         return;
     }
     let endpoint = s.hardware.endpoint.text.trim().to_string();
@@ -136,91 +137,4 @@ pub(crate) fn parameters(s: &mut State) {
         json!({"action":"parameters","system":vehicle["system"],"component":vehicle["component"]})
             .to_string(),
     ));
-}
-pub(crate) fn page(s: &State) -> El {
-    use crate::ui::*;
-    let h = &s.hardware;
-    let running = s
-        .status
-        .get("hardware")
-        .is_some_and(|v| v == "Running" || v == "Starting");
-    let mut modes = row().gap(8.).flex_wrap();
-    for (index, name) in ["Simulation", "Physical vehicle", "Replay"]
-        .iter()
-        .enumerate()
-    {
-        modes = modes.child(
-            button(
-                format!("vehicle-mode-{index}"),
-                *name,
-                h.mode == index,
-                move |s| s.hardware.mode = index,
-            )
-            .disabled(running),
-        );
-    }
-    let mut card = card()
-        .key("hardware-workspace")
-        .child(heading("Vehicle source", "WINDOWS SERIAL / UDP / TCP"))
-        .child(modes);
-    if h.mode != 1 {
-        return card.child(label(if h.mode==0{"Simulation tools and MAVSDK telemetry are listed below. Physical monitoring uses a separately selected native endpoint."}else{"Replay is available in Recordings on its isolated ROS domain. It does not connect to physical vehicle control."},13.,muted()).wrap());
-    }
-    card=card.child(label("Listen without sending flight commands. Use a dedicated telemetry endpoint; another app may already own the serial port. A signed packet's signature is not authenticated by this monitor.",13.,muted()).wrap())
- .child(field(&h.endpoint,"hardware-endpoint").on_edit(|s:&mut State|&mut s.hardware.endpoint))
- .child(label("serial:COM4:115200 · udp:127.0.0.1:14555 · tcp:localhost:5760",12.,muted()).wrap())
- .child(row().gap(8.).flex_wrap().child(button("scan-serial","Find Windows serial devices",false,|s|crate::studio::request(s,"ports"))).child(button("monitor-start",if running{"Stop monitor"}else{"Start monitoring"},true,move|s|{if running{s.send(Request::Stop("hardware".into()));}else{start(s);}})))
- .child(label(&h.message,13.,ink()).wrap());
-    if let Some(ports) = s.studio.library["ports"].as_array() {
-        for port in ports {
-            let id = port["DeviceID"].as_str().unwrap_or("").to_string();
-            card = card.child(
-                button(
-                    format!("port-{id}"),
-                    &format!("{} · {}", id, port["Name"].as_str().unwrap_or("")),
-                    false,
-                    move |s| s.hardware.endpoint = TextEdit::new(format!("serial:{id}:115200")),
-                )
-                .disabled(running),
-            );
-        }
-    }
-    for (key, vehicle) in &h.vehicles {
-        let selected = key.clone();
-        let age = h
-            .seen
-            .get(key)
-            .map(|t| t.elapsed().as_secs())
-            .unwrap_or(999);
-        card = card
-            .child(button(
-                format!("vehicle-{key}"),
-                &format!(
-                    "System {key} · {} · heartbeat {age}s ago",
-                    match vehicle["fields"]["autopilot"].as_u64() {
-                        Some(12) => "PX4",
-                        Some(3) => "ArduPilot",
-                        _ => "Other autopilot",
-                    }
-                ),
-                h.selected.as_ref() == Some(key),
-                move |s| s.hardware.selected = Some(selected.clone()),
-            ))
-            .child(
-                mono(
-                    serde_json::to_string_pretty(&vehicle["fields"]).unwrap_or_default(),
-                    12.,
-                    ink(),
-                )
-                .wrap_anywhere(),
-            );
-    }
-    let fresh = h.selected.as_ref().is_some_and(|key| {
-        h.seen
-            .get(key)
-            .is_some_and(|t| t.elapsed() < Duration::from_secs(10))
-    });
-    card.child(button("read-parameters","Read selected vehicle parameters",true,parameters).disabled(!running||!fresh))
- .child(button("open-hardware-capture","Open local capture / parameter backups",false,|s|s.open(s.hardware.path.clone())).disabled(h.path.is_empty()))
- .child(label("Captures use native MAVLink .tlog files. Parameter backups preserve raw wire values/types; use QGroundControl or Mission Planner for parameter edits and onboard flight-log retrieval.",12.,muted()).wrap())
 }

@@ -1,3 +1,5 @@
+> Version 0.8 reorganises the interface around an active system: see [UI-0.8.md](UI-0.8.md).
+
 > Version 0.7 adds guided workflow setup, Hugging Face/model downloads, datasets/evaluation, editable AI/ROS/MAVSDK projects and native physical monitoring. See [0.7 guide](STUDIO-0.7.md).
 
 # Drone Deck

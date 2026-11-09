@@ -1,3 +1,5 @@
+> In 0.8 these controls moved; see [UI-0.8.md](UI-0.8.md) for the new locations.
+
 > Version 0.7 adds reviewed complete-workflow installation queues and simulator/ROS/CPU-AI recipes. See [0.7 setup guide](STUDIO-0.7.md#setup-a-whole-workflow).
 
 > Version 0.6 adds workflow checklists, repaired discovery/retry handling, reviewed post-install configuration and plain command forms. See [Setup changes](SETUP-0.6.md) and [repair verification](../verification/repairs-0.6/RESOLUTION.md).

@@ -68,7 +68,8 @@ pub(crate) fn adopt(s: &mut State) {
         });
     }
     let Some(profile) = config.profiles.iter_mut().find(|p| p.id == id) else {
-        s.setup.message = "Add a matching tool profile in Integrations first.".into();
+        s.setup.message =
+            "Add a matching tool profile in Tools & config (Add a tool) first.".into();
         return;
     };
     let exe = quote(&candidate.executable);

@@ -6,9 +6,8 @@ mod view;
 use crate::*;
 use serde_json::{Value, json};
 use std::sync::mpsc::{self, Receiver, Sender};
-pub(crate) use view::{page, projects, settings};
+pub(crate) use view::{page, settings};
 pub(crate) struct Studio {
-    pub tab: usize,
     pub token: TextEdit,
     pub stored: bool,
     pub repo: TextEdit,
@@ -31,6 +30,8 @@ pub(crate) struct Studio {
     pub message: String,
     pub pending: bool,
     pub selected_job: Option<String>,
+    /// Lazy Data & models loads already requested (`models`, `credential_status`, `data_library`).
+    pub loaded: Vec<&'static str>,
     tx: Sender<Value>,
     rx: Receiver<Value>,
     last_refresh: Instant,
@@ -39,7 +40,6 @@ impl Default for Studio {
     fn default() -> Self {
         let (tx, rx) = mpsc::channel();
         Self {
-            tab: 0,
             token: TextEdit::new("").secure(),
             stored: false,
             repo: TextEdit::new(""),
@@ -62,6 +62,7 @@ impl Default for Studio {
             message: "Choose a model, recording dataset, or project workflow.".into(),
             pending: false,
             selected_job: None,
+            loaded: Vec::new(),
             tx,
             rx,
             last_refresh: Instant::now(),
@@ -85,8 +86,8 @@ pub(crate) fn request(s: &mut State, action: &str) {
     ]
     .contains(&action);
     if linux && !s.wsl_ready() {
-        s.notice = "Select a working WSL environment in Setup first.".into();
-        s.navigate(8);
+        s.notice = "Select a working WSL 2 environment in Settings → Environment first.".into();
+        s.navigate(crate::ui::Page::Settings);
         return;
     }
     let r = &mut s.studio;
@@ -269,5 +270,5 @@ pub(crate) fn poll(s: &mut State) -> bool {
             changed = true;
         }
     }
-    changed
+    changed | view::lazy_load(s)
 }
