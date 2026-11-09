@@ -1,0 +1,274 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drone Deck - Data</title><style>
+    
+     :root {--bg:#000000;--surface:#000000;--surface-warm:var(--surface);--fg:#f0f0fa;--fg-2:var(--fg);--muted:rgba(240,240,250,.7);--meta:var(--muted);--border:rgba(240,240,250,.35);--border-soft:rgba(240,240,250,.1);--accent:#f0f0fa;--accent-on:#000000;--accent-hover:#ffffff;--accent-active:#d8d8e6;--success:#16a34a;--warn:#eab308;--danger:#dc2626;--font-display:"D-DIN-Bold","D-DIN","DIN Alternate","Helvetica Neue",Arial,Verdana,sans-serif;--font-body:"D-DIN","DIN Alternate","Helvetica Neue",Arial,Verdana,sans-serif;--font-mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Monaco,Consolas,monospace;--text-xs:10px;--text-sm:12px;--text-base:16px;--text-lg:20px;--text-xl:24px;--text-2xl:32px;--text-3xl:40px;--text-4xl:48px;--leading-body:1.5;--leading-tight:1.0;--tracking-display:.02em;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-12:48px;--section-y-desktop:120px;--section-y-tablet:80px;--section-y-phone:56px;--radius-sm:4px;--radius-md:4px;--radius-lg:4px;--radius-pill:32px;--elev-flat:none;--elev-ring:0 0 0 1px var(--border);--elev-raised:none;--focus-ring:0 0 0 2px var(--accent);--motion-fast:150ms;--motion-base:200ms;--ease-standard:cubic-bezier(.2,0,0,1);--container-max:1440px;--container-gutter-desktop:24px;--container-gutter-tablet:20px;--container-gutter-phone:18px;}
+
+    
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+    p { text-wrap: pretty; }
+    h1, h2, h3, h4 { text-wrap: balance; }
+
+    
+    .container {
+      max-width: var(--container);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+    .section {
+      padding-block: clamp(48px, 8vw, var(--gap-2xl));
+    }
+    .section + .section { border-top: 1px solid var(--border); }
+    .stack { display: flex; flex-direction: column; }
+    .stack > * + * { margin-top: var(--gap-md); }
+    .row { display: flex; align-items: center; gap: var(--gap-md); }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--gap-md); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap-lg); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap-lg); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap-md); }
+    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap-xl); align-items: start; }
+    .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap-xl); align-items: start; }
+    @media (max-width: 920px) {
+      .grid-2, .grid-3, .grid-4, .grid-2-1, .grid-1-2 { grid-template-columns: 1fr; }
+    }
+
+    
+    .h1, h1 { font-family: var(--font-display); font-size: var(--fs-h1); line-height: 1.04; letter-spacing: -0.02em; margin: 0; }
+    .h2, h2 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.1; letter-spacing: -0.015em; margin: 0; }
+    .h3, h3 { font-size: var(--fs-h3); font-weight: 600; line-height: 1.3; letter-spacing: -0.005em; margin: 0; }
+    .lead   { font-size: var(--fs-lead); line-height: 1.55; color: var(--muted); max-width: 60ch; margin: 0; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 var(--gap-md);
+    }
+    .meta { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--muted); }
+    .num  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    
+    .topnav {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in oklch, var(--bg) 92%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-inner { display: flex; align-items: center; justify-content: space-between; padding-block: 14px; }
+    .topnav .logo { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+    .topnav nav { display: flex; gap: var(--gap-lg); }
+    .topnav nav a { font-size: 14px; color: var(--muted); }
+    .topnav nav a:hover { color: var(--fg); }
+    .pagefoot { padding-block: var(--gap-xl); color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+    .pagefoot .row-between { flex-wrap: wrap; gap: var(--gap-md); }
+
+    
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 20px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .btn-primary:hover { background: color-mix(in oklch, var(--accent) 88%, black); }
+    .btn-secondary { background: transparent; color: var(--fg); border-color: var(--border); }
+    .btn-secondary:hover { border-color: var(--fg); }
+    .btn-ghost { background: transparent; color: var(--fg); border-color: transparent; padding-inline: 8px; }
+    .btn-ghost:hover { color: var(--accent); }
+    .btn-arrow::after { content: '→'; transition: transform 0.15s ease; }
+    .btn-arrow:hover::after { transform: translateX(2px); }
+
+    
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+    }
+    .card-flat { background: transparent; border: 0; padding: 0; }
+    .card-rule { background: transparent; border: 0; border-top: 1px solid var(--fg); padding: 24px 0 0; border-radius: 0; }
+
+    
+    .feature .feature-mark {
+      width: 36px; height: 36px;
+      display: grid; place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--accent);
+      margin-bottom: var(--gap-md);
+    }
+    .feature .feature-mark svg { width: 18px; height: 18px; }
+    .feature h3 { margin-bottom: 6px; }
+    .feature p  { margin: 0; color: var(--muted); font-size: 15px; }
+
+    
+    .stat .stat-num {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 96px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .stat .stat-label { color: var(--muted); font-size: 14px; margin-top: 8px; max-width: 24ch; }
+    .stat .stat-unit  { font-size: 0.5em; opacity: 0.7; margin-left: 2px; }
+
+    
+    .quote {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 2.6vw, 32px);
+      line-height: 1.32;
+      letter-spacing: -0.01em;
+      max-width: 28ch;
+    }
+    .quote-author { color: var(--muted); font-size: 14px; margin-top: var(--gap-md); }
+    .quote-mark   {
+      font-family: var(--font-display);
+      font-size: 140px; line-height: 0.7;
+      color: var(--accent); opacity: 0.18;
+      margin-bottom: -28px;
+    }
+
+    
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; color: var(--muted); }
+    .input, .textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--fg);
+      font: inherit;
+      font-size: 15px;
+    }
+    .input:focus, .textarea:focus {
+      outline: 2px solid var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .textarea { min-height: 96px; resize: vertical; line-height: 1.55; }
+
+    
+    .ds-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .ds-table th, .ds-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    .ds-table th { color: var(--muted); font-weight: 500; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .ds-table tbody tr:hover { background: var(--fg-soft); }
+    .ds-table .num-col { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+
+    
+    .ph-img {
+      background:
+        linear-gradient(135deg, var(--accent-soft), var(--fg-soft)),
+        var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      aspect-ratio: 16 / 10;
+      display: grid; place-items: center;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+    .ph-img.square    { aspect-ratio: 1 / 1; }
+    .ph-img.portrait  { aspect-ratio: 3 / 4; }
+    .ph-img.wide      { aspect-ratio: 16 / 9; }
+    .content-img {
+      display: block;
+      max-width: 100%;
+      max-height: min(70vh, 720px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      justify-self: center;
+      border-radius: var(--radius-lg);
+    }
+
+    
+    .rule  { border: 0; border-top: 1px solid var(--border); margin: 0; }
+    .rule-strong { border: 0; border-top: 1px solid var(--fg); margin: 0; }
+
+    
+    .hero          { padding-block: clamp(80px, 12vw, 160px); }
+    .hero-center   { text-align: center; max-width: 32ch; margin-inline: auto; }
+    .hero h1       { margin-bottom: var(--gap-md); }
+    .hero .lead    { margin-bottom: var(--gap-lg); }
+    .hero-cta      { display: inline-flex; gap: var(--gap-sm); flex-wrap: wrap; }
+    .hero-center .hero-cta { justify-content: center; }
+    .hero-split    { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-2xl); align-items: center; }
+    @media (max-width: 920px) { .hero-split { grid-template-columns: 1fr; } }
+
+    
+    .log-row { display: grid; grid-template-columns: 120px 1fr 100px; gap: var(--gap-lg); padding: 22px 0; border-top: 1px solid var(--border); align-items: baseline; }
+    .log-row .meta { color: var(--muted); }
+    .log-row h3 { font-size: 19px; }
+    .log-row .pull { text-align: right; }
+
+
+body{font-size:13px;text-transform:uppercase;letter-spacing:.045em;line-height:1.6}h1,h2,h3{font-family:var(--font-display);font-weight:700;letter-spacing:.02em;margin:0}h1{font-size:40px;line-height:1.1}h2{font-size:22px}h3{font-size:16px}p{margin:8px 0}button,input,select{font:inherit;text-transform:inherit;letter-spacing:inherit}button,a,input,select,summary{min-height:44px}button{cursor:pointer;color:var(--fg)}button:disabled{opacity:.4;cursor:default}a{display:inline-flex;align-items:center}a:hover{color:var(--accent-hover);text-decoration:underline}:focus-visible{outline:2px solid var(--accent);outline-offset:4px}.meta,.eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--muted)}.eyebrow{margin:0 0 12px}.btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:12px 22px;background:var(--border-soft);color:var(--fg);border:1px solid var(--border);border-radius:32px;font-size:10px;letter-spacing:.08em}.btn:hover{background:color-mix(in oklch,var(--fg) 22%,var(--bg));border-color:var(--fg);color:var(--accent-hover)}.btn-ghost{border-color:transparent;background:transparent;padding:10px 4px}.btn-ghost:hover{background:transparent;text-decoration:underline}.shell{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:100vh}.rail{padding:32px 22px;display:flex;flex-direction:column;align-items:stretch;gap:8px}.logo{font-family:var(--font-display);font-size:19px;letter-spacing:.12em;margin-bottom:40px}.rail nav{display:flex;flex-direction:column;gap:6px}.rail nav a{padding:10px 8px;gap:14px;font-size:11px;color:var(--muted)}.rail nav a[aria-current=page]{color:var(--fg);background:var(--border-soft)}.rail nav a:hover{color:var(--fg)}.rail .railfoot{margin-top:auto;padding-top:48px;font-size:9px;color:var(--muted);line-height:2}.stage{min-width:0;padding:0 40px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:26px 0}.context{display:flex;align-items:center;gap:18px}.context label{font-size:9px;color:var(--muted)}select,input{background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:10px 12px;max-width:100%;font-size:11px}select{min-width:200px}.mast{display:flex;justify-content:space-between;align-items:end;gap:24px;margin:16px 0 22px}.mast p{font-size:11px;color:var(--muted);max-width:82ch}.helpstrip{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:10px 0 18px}.helpstrip p{font-size:11px;color:var(--muted);max-width:86ch}.helpstrip h2{font-size:20px}.tabs{display:flex;gap:28px;flex-wrap:wrap;margin:18px 0}.tabs button{border:0;border-bottom:1px solid transparent;background:none;font-size:10px;color:var(--muted);padding:10px 0}.tabs button[aria-selected=true]{border-color:var(--fg);color:var(--fg)}.tabs button:hover{background:var(--border-soft);color:var(--fg)}.systemmap{padding:24px 0 8px}.maphead{display:flex;justify-content:space-between;gap:24px;align-items:center}.chain{display:flex;gap:18px;align-items:center;min-height:150px}.station{flex:1;min-width:0;padding:20px 0}.station h3{font-size:24px;margin:12px 0 6px}.station p{font-size:11px;color:var(--muted);max-width:38ch;line-height:1.8}.wire{flex:0 0 60px;border-top:1px dashed var(--border);position:relative}.wire:after{content:'>';position:absolute;right:0;top:-14px;font-size:18px}.wire span{position:absolute;top:12px;text-align:center;width:100%;font-size:8px;color:var(--muted)}.branches{display:flex;gap:40px;margin-bottom:26px}.branch{flex:1;display:flex;align-items:center;justify-content:space-between;gap:20px}.branch h3{font-size:15px}.branch p{font-size:10px;color:var(--muted)}.section{padding:0}.section+.section{border:0}.row-between{gap:24px}.runtime{margin-top:18px}.runtimeheader{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:12px}.runtimeheader h2{font-size:19px}.toolrow{display:grid;grid-template-columns:minmax(130px,1.2fr) minmax(110px,1fr) minmax(100px,1fr) 110px;gap:20px;padding:10px 0;border-top:1px solid var(--border-soft);align-items:center}.toolrow strong{font-size:12px}.toolrow .meta{font-size:9px}.toolrow button{justify-self:end}.labelrow{color:var(--muted);font-size:9px;padding:10px 0}.notice{font-size:11px;color:var(--muted);line-height:1.8}.foot{display:flex;justify-content:space-between;gap:24px;padding:24px 0;font-size:9px;color:var(--muted)}details{margin:16px 0}summary{cursor:pointer;display:flex;align-items:center;gap:12px;font-size:11px;list-style:none}summary:before{content:'+'}details[open]>summary:before{content:'-'}summary:hover{background:var(--border-soft)}details p{font-size:12px;color:var(--muted);line-height:1.8;max-width:80ch}.config{padding:16px 0;display:grid;grid-template-columns:1fr 1fr;gap:24px}.field{gap:8px}.field label{font-size:10px;color:var(--muted)}.input{width:100%;background:var(--bg);color:var(--fg);border-color:var(--border);border-radius:4px;padding:12px;font-size:12px}.input:focus{outline:2px solid var(--fg)}.log-row{grid-template-columns:100px minmax(0,1fr) 100px;gap:24px;padding:20px 0}.log-row h3{font-size:15px}.log-row p{font-size:11px;color:var(--muted)}.empty{padding:40px 0}.empty h2{margin-bottom:12px}.empty p{max-width:70ch;font-size:12px;color:var(--muted)}.asset{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:24px 0}.asset p{font-size:12px;color:var(--muted)}.filterbar{display:flex;justify-content:space-between;gap:24px;align-items:center;flex-wrap:wrap}#feedback{min-height:22px;font-size:11px;color:var(--fg)}[hidden]{display:none!important}@media(min-width:1600px){.stage{padding-inline:64px}.chain{min-height:240px}.toolrow{padding-block:20px}}@media(max-width:1100px){.shell{grid-template-columns:156px 1fr}.stage{padding-inline:24px}.rail{padding-inline:16px}.wire{flex-basis:30px}.chain{gap:14px}.station h3{font-size:20px}.branches{gap:24px}.toolrow{gap:12px;grid-template-columns:1.2fr 1fr 1fr 88px}.topbar{flex-wrap:wrap}.mast{align-items:start}}@media(max-width:720px){.shell{display:block}.rail{padding:16px 20px;gap:12px}.logo{margin-bottom:0}.rail nav{flex-direction:row;flex-wrap:wrap}.rail nav a{font-size:10px;padding:6px}.rail .railfoot{display:none}.stage{padding-inline:20px}.topbar{padding-top:12px}.context{flex-wrap:wrap;gap:10px}h1{font-size:32px}.mast,.helpstrip,.branches,.runtimeheader,.branch{flex-direction:column;align-items:start}.chain{flex-direction:column;align-items:stretch;gap:6px}.station{padding:14px 0}.wire{height:24px;flex-basis:24px;border-top:0;border-left:1px dashed var(--border);margin-left:12px}.wire:after{content:'v';left:-4px;right:auto;top:8px;font-size:12px}.wire span{left:20px;top:0;text-align:left;width:140px}.station p{max-width:50ch}.toolrow{grid-template-columns:1fr 1fr;gap:12px;padding:20px 0}.labelrow{display:none}.toolrow button{justify-self:start}.config,.asset{grid-template-columns:1fr}.log-row{grid-template-columns:70px 1fr}.log-row>.meta:last-child{grid-column:2}.foot{flex-direction:column}.maphead{align-items:start;flex-direction:column}.asset{gap:20px}select{min-width:0;width:100%}}
+</style></head><body><div class="shell"><aside class="rail" data-od-id="management-navigation"><a class="logo" href="drone-workspace.html">DRONE DECK</a><p class="eyebrow">MANAGE</p><nav aria-label="Primary"><a data-nav="system" data-od-id="nav-system" href="drone-workspace.html"><span class="meta">01</span>System</a><a data-nav="tools" data-od-id="nav-tools" href="system-tools.html"><span class="meta">02</span>Tools & config</a><a data-nav="data" data-od-id="nav-data" href="system-data.html"><span class="meta">03</span>Data & models</a><a data-nav="activity" data-od-id="nav-activity" href="system-activity.html"><span class="meta">04</span>Activity</a></nav><a href="system-setup.html" class="btn btn-ghost" style="justify-content:start;margin-top:28px" data-od-id="guided-setup-navigation">Guided setup &nearr;</a><div class="railfoot">WINDOWS DESKTOP<br>LOCAL FIRST<br><br><span id="runtime-label">NO ACTIVE SESSION</span><br>PROTOTYPE</div></aside><div class="stage"><header class="topbar" data-od-id="system-context"><div class="context"><label for="context">ACTIVE SYSTEM</label><select id="context" data-od-id="system-selector"><option value="0">Local simulation</option><option value="1">ROS & sensor capture</option><option value="2">Offline AI workspace</option><option value="3">Physical vehicle</option></select></div><span class="meta" id="environment"></span></header><main id="content" data-od-id="management-content"></main><footer class="foot" data-od-id="management-footer"><span>NO REAL VEHICLE CONNECTION / ALL PROCESS ACTIONS ARE SAMPLES</span><span>CONFIGURATION &ne; CONNECTION &ne; DATA HEALTH</span></footer></div></div><script>const page='data';
+const $=id=>document.getElementById(id),safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const contexts=['Local simulation','ROS & sensor capture','Offline AI workspace','Physical vehicle'];
+const catalog={endpoint:['Vehicle endpoint','Serial / UDP / TCP source','Windows','Telemetry','Dedicated connection'],px4:['PX4 / SIH','Autopilot + internal physics','Ubuntu / WSL','Simulation','make px4_sitl_sih sihsim_quadx'],relay:['Display relay','Vehicle state to Windows','Ubuntu / WSL','Transport','UDP 19410'],jmv:['jMAVSim','Native vehicle visualizer','Windows / Java','Simulation','jmavsim_run.jar -disponly'],qgc:['QGroundControl','External flight controls','Windows','Ground station','QGroundControl.exe -swrast'],mav:['MAVSDK telemetry','Read-only vehicle data','Ubuntu / WSL','Telemetry','UDP 14540'],dds:['DDS Agent','PX4 to ROS transport','Ubuntu / WSL','Transport','MicroXRCEAgent udp4 -p 8888'],ros:['ROS 2 Jazzy','Matching messages + publishers','Ubuntu / WSL','Data','/opt/ros/jazzy/setup.bash'],mcap:['rosbag2 / MCAP','Record and replay topics','Ubuntu / WSL','Data','Capture domain 0 / replay domain 77'],onnx:['ONNX CPU runtime','Local inference','Ubuntu / WSL','AI','Verified Python environment'],project:['Inference project','User model + prepared inputs','Ubuntu / WSL','AI','main.py --model --inputs'],report:['Run artifacts','Outputs + version hashes','Local files','Data','artifacts/run.json'],hardware:['MAVLink monitor','Native read-only monitoring','Windows','Telemetry','serial:COM4:115200'],tlog:['Telemetry logs','Local MAVLink capture','Windows','Data','workspace/hardware']};
+const groups=[['px4','relay','jmv','qgc','mav'],['px4','dds','ros','mcap','qgc'],['onnx','project','report'],['hardware','tlog','qgc']];
+let choice=0,prepared=false,name='',filter='All tools',tab='Recordings',running={},events=[],settings={},records=[];
+try{choice=Math.min(3,Math.max(0,Number(localStorage.getItem('dd-system-choice')||0)));events=JSON.parse(localStorage.getItem('dd-events')||'[]');settings=JSON.parse(localStorage.getItem('dd-profiles')||'{}');records=JSON.parse(localStorage.getItem('dd-records')||'[]')}catch(e){}
+try{running=JSON.parse(sessionStorage.getItem('dd-sample-processes')||'{}')}catch(e){}
+function persistProcesses(){try{sessionStorage.setItem('dd-sample-processes',JSON.stringify(running))}catch(e){}}
+function config(){prepared=false;name=contexts[choice];try{let c=JSON.parse(localStorage.getItem('dd-system-config-'+choice)||'null');if(c){prepared=!!c.prepared;name=c.name||name}}catch(e){}}
+function btn(t,id,ghost=false,disabled=false){return '<button class="btn'+(ghost?' btn-ghost':'')+'" data-action="'+id+'" data-od-id="'+id+'" '+(disabled?'disabled':'')+'>'+t+'</button>'}
+function log(text){events.unshift({time:new Date().toLocaleTimeString(),system:contexts[choice],text});events=events.slice(0,60);try{localStorage.setItem('dd-events',JSON.stringify(events))}catch(e){}}
+function head(title,desc,action=''){return '<div class="mast"><div><p class="eyebrow">'+safe(name)+' / '+(prepared?'SAMPLE CONFIGURATION':'PREPARATION REQUIRED')+'</p><h1 data-od-id="page-title">'+title+'</h1><p>'+desc+'</p></div>'+action+'</div>'}
+function station(id){let t=catalog[id];return '<article class="station" data-od-id="station-'+id+'"><span class="meta">'+t[2]+'</span><h3>'+t[0]+'</h3><p>'+t[1]+'</p><span class="meta">'+(running[id]?'PROCESS RUNNING / SAMPLE':prepared?'CONFIGURED / SAMPLE':'NOT CHECKED')+'</span></article>'}
+function row(id){let t=catalog[id];return '<div class="toolrow" data-od-id="runtime-'+id+'"><div><strong>'+t[0]+'</strong><br><span class="meta">'+t[1]+'</span></div><span class="meta">'+t[2]+'</span><span class="meta">'+(running[id]?'Running / sample':prepared?'Configured / sample':'Not checked')+'</span>'+btn(running[id]?'Stop':'Start','toggle-'+id,true,!prepared||['report','tlog','onnx'].includes(id))+'</div>'}
+function render(){config();$('context').value=choice;$('environment').textContent=choice===3?'Windows native / no WSL required':'Windows + Ubuntu 24.04 / WSL';document.querySelectorAll('[data-nav]').forEach(a=>{if(a.dataset.nav===page)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});let html='';
+if(page==='system'){let ids=groups[choice],chain=choice===3?['endpoint','hardware','tlog']:ids.slice(0,3);html=head('Your system. In one place.','Manage the tools behind your UAV workflow. Configuration, process state and live connection evidence stay distinct.',btn(Object.values(running).some(Boolean)?'Stop session / sample':'Start workspace / sample','session',false,!prepared));if(!prepared)html+='<div class="helpstrip" data-od-id="guided-entry"><div><h2>First time here? Build the foundation.</h2><p>Choose what you want to do. Guided setup finds existing tools, explains the connections and prepares only what this system needs.</p></div><a href="system-setup.html" class="btn" data-od-id="setup-entry">Prepare a system &rarr;</a></div>';else html+='<div class="helpstrip"><p>Sample configuration saved. Use direct controls below, or return to guided setup when your system changes.</p><a href="system-setup.html" class="btn btn-ghost" data-od-id="review-setup">Review setup &nearr;</a></div>';
+html+='<section class="section systemmap" data-od-id="system-topology"><div class="maphead"><h2>System connections</h2><span class="meta">PLANNED TOPOLOGY / NO LIVE DATA</span></div><div class="chain">'+chain.map(station).join('<div class="wire"><span>UNVERIFIED</span></div>')+'</div>'+(choice<2?'<div class="branches"><div class="branch"><div><h3>PX4 &harr; QGroundControl</h3><p>MAVLink / external vehicle setup and flight controls</p></div>'+btn('Open / sample','toggle-qgc',true,!prepared)+'</div><div class="branch"><div><h3>'+(choice===0?'PX4 &rarr; MAVSDK':'ROS 2 &rarr; MCAP')+'</h3><p>'+(choice===0?'UDP 14540 / read-only telemetry':'Live topics / sensor recording')+'</p></div>'+btn('Inspect tools','tools',true)+'</div></div>':'')+'<p class="notice">'+(choice===3?'No physical vehicle identified. A fresh autopilot heartbeat is required; no flight commands are sent.':choice===2?'No model or inputs selected. A prepared runtime does not establish model compatibility.':'Dashed lines describe intended routing. A running process does not prove vehicle readiness or message arrival.')+'</p></section><section class="section runtime" data-od-id="runtime-list"><div class="runtimeheader"><h2>Runtime</h2><a class="btn btn-ghost" href="system-tools.html">Configuration & paths &nearr;</a></div><div class="toolrow labelrow"><span>COMPONENT / ROLE</span><span>EXECUTION TARGET</span><span>PROCESS STATE</span><span>ACTION</span></div>'+ids.map(row).join('')+'</section>';}
+if(page==='tools'){html=head('Tools & configuration.','Inspect execution targets, commands and saved paths. Reuse known installations before installing another copy.','<a class="btn" href="system-setup.html">Guided preparation &nearr;</a>');html+='<div class="filterbar"><div class="tabs" role="tablist" aria-label="Tool filters">'+['All tools','Simulation','Transport','Telemetry','Data','AI'].map(t=>'<button role="tab" aria-selected="'+(filter===t)+'" data-filter="'+t+'" data-od-id="filter-'+t.replaceAll(' ','-')+'">'+t+'</button>').join('')+'</div><span class="meta">ACTIVE SYSTEM ONLY</span></div>';let ids=groups[choice].filter(id=>filter==='All tools'||catalog[id][3]===filter);html+=ids.length?ids.map(id=>{let t=catalog[id],saved=settings[choice+'-'+id]||{};return '<article data-od-id="profile-'+id+'">'+row(id)+'<details><summary>Configure '+t[0]+'</summary><p>'+t[1]+'. '+(id==='mav'?'Avoid another listener on UDP 14540. Telemetry must become stale after five seconds without updates.':id==='dds'?'Match Agent/client and px4_msgs versions; installation alone does not establish ROS routing.':id==='hardware'?'Choose a dedicated endpoint; identity and a fresh heartbeat are separate from port availability.':'Discovery and compatibility checks are required before adopting a path.')+'</p><div class="config"><div class="field"><label for="path-'+id+'">Executable / source path</label><input class="input" id="path-'+id+'" value="'+safe(saved.path||'')+'" placeholder="Absolute path or endpoint" '+(running[id]?'disabled':'')+'></div><div class="field"><label for="command-'+id+'">Command / endpoint</label><input class="input" id="command-'+id+'" value="'+safe(saved.command||t[4])+'" '+(running[id]?'disabled':'')+'></div></div>'+btn('Save prototype profile','save-'+id,true,!!running[id])+'<span class="notice">'+(running[id]?' Stop this process before editing.':' Saved locally for this preview; never executed.')+'</span></details></article>'}).join(''):'<p class="empty">No tools in this category for the selected system.</p>';}
+if(page==='data'){html=head('Data stays with the system.','Recordings, models and run outputs have different prerequisites. Preserve source files and their provenance.');html+='<div class="tabs" role="tablist" aria-label="Data modules">'+['Recordings','Models','Run outputs'].map(t=>'<button role="tab" aria-selected="'+(tab===t)+'" data-tab="'+t+'" data-od-id="data-'+t.replaceAll(' ','-')+'">'+t+'</button>').join('')+'</div>';if(tab==='Recordings'){html+='<div class="asset"><div><h2>Sensor capture & replay</h2><p>rosbag2 records selected live ROS topics as MCAP. Stop gracefully to finalize metadata. Replay uses a separate ROS domain, normally 77.</p>'+btn('Create sample recording','record',false,choice!==1||!prepared)+'</div><div><p class="eyebrow">READINESS</p><p>'+(choice===1?'Topics have not been discovered. Sensor messages are unverified.':'Choose the ROS & sensor capture system and prepare its dependencies first.')+'</p><p>PX4 SIH alone does not publish ROS sensor topics.</p></div></div>';html+=records.filter(r=>r.choice===choice).map((r,i)=>'<article class="log-row"><span class="meta">SAMPLE</span><div><h3>Sample finalized recording</h3><p>UI example only / no MCAP file exists. Real recordings must have messages before replay.</p></div><span class="meta">NO REAL DATA</span></article>').join('')||'<div class="empty"><h3>No finalized recordings</h3><p>Completed recordings appear here. Dataset versions reference the originals; they do not copy the files.</p></div>';}
+if(tab==='Models')html+='<div class="asset"><div><h2>Model assets are not runtimes.</h2><p>Provide a Hub repository and inspect a pinned revision before a managed download. Hash verification and license/gated access are separate checks.</p><div class="field"><label for="repo">Repository ID</label><input class="input" id="repo" placeholder="organization/model"></div>'+btn('Validate repository format','repo',false)+'</div><div><p class="eyebrow">LOCAL LIBRARY</p><h3>No model assets in this preview</h3><p>Use the offline AI system for ONNX inference. Prepared NPZ tensors and a compatible runtime are required. No model is downloaded here.</p></div></div>';
+if(tab==='Run outputs')html+='<div class="empty"><h2>No run artifacts yet</h2><p>Real inference projects retain model/input hashes, runtime versions and output tensors. Evaluation requires a valid predictions CSV and supplied targets. This preview has executed no model or training job.</p><a href="system-tools.html" class="btn btn-ghost">Inspect project configuration &nearr;</a></div>';}
+if(page==='activity'){html=head('A traceable workspace.','Review actions across sessions and systems. This local history records prototype actions, not installer or vehicle output.',btn('Export sample history','export'));html+='<div class="maphead"><h2>Activity history</h2><span class="meta">'+events.length+' LOCAL PREVIEW EVENTS</span></div>';html+=events.length?events.map((e,i)=>'<article class="log-row" data-od-id="event-'+i+'"><span class="meta">'+safe(e.time)+'</span><div><h3>'+safe(e.text)+'</h3><p>'+safe(e.system)+'</p></div><span class="meta">SAMPLE EVENT</span></article>').join(''):'<div class="empty"><h3>No activity yet</h3><p>Start a sample process or save a tool profile to see its history here. Nothing is running in the real application.</p></div>';html+='<details><summary>Process and installation ownership</summary><p>Native installation jobs persist through application close. Owned simulator/recording processes stop on normal close. Stop session is not a vehicle land/disarm command and does not cancel installation jobs.</p></details>';}
+$('content').innerHTML=html+'<p id="feedback" role="status"></p>';$('runtime-label').textContent=Object.values(running).filter(Boolean).length+' SAMPLE PROCESSES';document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>act(b.dataset.action));document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;render()});document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});}
+function act(action){if(action==='tools'){location.href='system-tools.html';return}if(action==='session'){if(!prepared)return;let active=Object.values(running).some(Boolean);running={};if(!active){(choice===2?['project']:groups[choice].slice(0,choice===0?3:1)).forEach(id=>running[id]=true)}persistProcesses();log(active?'Stopped owned sample processes':'Requested sample workspace startup');render();$('feedback').textContent=active?'Sample session stopped. No vehicle command sent.':'Sample processes started; real readiness and data remain unverified.';return}if(action.startsWith('toggle-')){if(!prepared)return;let id=action.slice(7);running[id]=!running[id];persistProcesses();log((running[id]?'Started ':'Stopped ')+catalog[id][0]+' / sample');render();$('feedback').textContent='Prototype process action only. No actual executable launched.';return}if(action.startsWith('save-')){let id=action.slice(5),path=$('path-'+id).value.trim(),command=$('command-'+id).value.trim();if(!command){$('feedback').textContent='Enter a command or endpoint before saving.';return}if(path&&!/^(\/|[A-Za-z]:\\|serial:|udp:|tcp:)/.test(path)){$('feedback').textContent='Use an absolute path or serial/UDP/TCP endpoint.';return}settings[choice+'-'+id]={path,command};try{localStorage.setItem('dd-profiles',JSON.stringify(settings))}catch(e){}log('Saved '+catalog[id][0]+' prototype profile');$('feedback').textContent='Profile saved for this system in local preview storage. Nothing executed.';return}if(action==='record'){if(choice!==1||!prepared)return;records.push({choice});try{localStorage.setItem('dd-records',JSON.stringify(records))}catch(e){}log('Created sample recording entry / no MCAP artifact');render();return}if(action==='repo'){$('feedback').textContent=/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test($('repo').value.trim())?'Format accepted. Revision, license, access and size have not been inspected.':'Use organization/model format.';return}if(action==='export'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({sampleOnly:true,events},null,2)],{type:'application/json'}));a.download='sample-workspace-history.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}}
+$('context').onchange=()=>{if(Object.values(running).some(Boolean)){alert('Stop the active sample session before changing systems.');$('context').value=choice;return}choice=Number($('context').value);filter='All tools';try{localStorage.setItem('dd-system-choice',String(choice))}catch(e){}render()};render();
+</script></body></html>

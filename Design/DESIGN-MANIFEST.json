@@ -1,30 +1,70 @@
 {
   "schema": "open-design.design-manifest.v1",
   "title": "Design",
-  "entryFile": "index.html",
+  "entryFile": "drone-workspace-v2.html",
   "sourceFiles": {
     "all": [
-      "app.js",
-      "index.html",
-      "README.md",
-      "styles.css"
+      "drone-workspace-v2.html",
+      "drone-workspace-v3.html",
+      "drone-workspace.html",
+      "product-and-ux-review-v2.md",
+      "product-and-ux-review-v3.md",
+      "product-and-ux-review.md",
+      "system-activity.html",
+      "system-data.html",
+      "system-setup.html",
+      "system-tools.html"
     ],
     "html": [
-      "index.html"
+      "drone-workspace-v2.html",
+      "drone-workspace-v3.html",
+      "drone-workspace.html",
+      "system-activity.html",
+      "system-data.html",
+      "system-setup.html",
+      "system-tools.html"
     ],
-    "css": [
-      "styles.css"
-    ],
-    "scriptsAndComponents": [
-      "app.js"
-    ],
+    "css": [],
+    "scriptsAndComponents": [],
     "assets": [
-      "README.md"
+      "product-and-ux-review-v2.md",
+      "product-and-ux-review-v3.md",
+      "product-and-ux-review.md"
     ]
   },
   "screens": [
     {
-      "file": "index.html",
+      "file": "drone-workspace-v2.html",
+      "role": "product-screen",
+      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+    },
+    {
+      "file": "drone-workspace-v3.html",
+      "role": "product-screen",
+      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+    },
+    {
+      "file": "drone-workspace.html",
+      "role": "product-screen",
+      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+    },
+    {
+      "file": "system-activity.html",
+      "role": "screen",
+      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+    },
+    {
+      "file": "system-data.html",
+      "role": "screen",
+      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+    },
+    {
+      "file": "system-setup.html",
+      "role": "screen",
+      "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
+    },
+    {
+      "file": "system-tools.html",
       "role": "screen",
       "implementationNote": "Preserve visual hierarchy, responsive behavior, and interactive states from this screen."
     }
@@ -60,7 +100,7 @@
   },
   "tokens": {
     "source": [
-      "styles.css"
+      "drone-workspace-v2.html"
     ],
     "required": [
       "background",
@@ -79,7 +119,7 @@
   },
   "interactions": {
     "source": [
-      "app.js"
+      "drone-workspace-v2.html"
     ],
     "requiredStates": [
       "default",

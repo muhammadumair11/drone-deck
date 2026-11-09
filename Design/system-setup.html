@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drone Deck - System setup</title><style>
+    
+     :root {--bg:#000000;--surface:#000000;--surface-warm:var(--surface);--fg:#f0f0fa;--fg-2:var(--fg);--muted:rgba(240,240,250,.7);--meta:var(--muted);--border:rgba(240,240,250,.35);--border-soft:rgba(240,240,250,.1);--accent:#f0f0fa;--accent-on:#000000;--accent-hover:#ffffff;--accent-active:#d8d8e6;--success:#16a34a;--warn:#eab308;--danger:#dc2626;--font-display:"D-DIN-Bold","D-DIN","DIN Alternate","Helvetica Neue",Arial,Verdana,sans-serif;--font-body:"D-DIN","DIN Alternate","Helvetica Neue",Arial,Verdana,sans-serif;--font-mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Monaco,Consolas,monospace;--text-xs:10px;--text-sm:12px;--text-base:16px;--text-lg:20px;--text-xl:24px;--text-2xl:32px;--text-3xl:40px;--text-4xl:48px;--leading-body:1.5;--leading-tight:1.0;--tracking-display:.02em;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-12:48px;--section-y-desktop:120px;--section-y-tablet:80px;--section-y-phone:56px;--radius-sm:4px;--radius-md:4px;--radius-lg:4px;--radius-pill:32px;--elev-flat:none;--elev-ring:0 0 0 1px var(--border);--elev-raised:none;--focus-ring:0 0 0 2px var(--accent);--motion-fast:150ms;--motion-base:200ms;--ease-standard:cubic-bezier(.2,0,0,1);--container-max:1440px;--container-gutter-desktop:24px;--container-gutter-tablet:20px;--container-gutter-phone:18px;}
+
+    
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    img, svg { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+    p { text-wrap: pretty; }
+    h1, h2, h3, h4 { text-wrap: balance; }
+
+    
+    .container {
+      max-width: var(--container);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+    .section {
+      padding-block: clamp(48px, 8vw, var(--gap-2xl));
+    }
+    .section + .section { border-top: 1px solid var(--border); }
+    .stack { display: flex; flex-direction: column; }
+    .stack > * + * { margin-top: var(--gap-md); }
+    .row { display: flex; align-items: center; gap: var(--gap-md); }
+    .row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--gap-md); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--gap-lg); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap-lg); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap-md); }
+    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap-xl); align-items: start; }
+    .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap-xl); align-items: start; }
+    @media (max-width: 920px) {
+      .grid-2, .grid-3, .grid-4, .grid-2-1, .grid-1-2 { grid-template-columns: 1fr; }
+    }
+
+    
+    .h1, h1 { font-family: var(--font-display); font-size: var(--fs-h1); line-height: 1.04; letter-spacing: -0.02em; margin: 0; }
+    .h2, h2 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.1; letter-spacing: -0.015em; margin: 0; }
+    .h3, h3 { font-size: var(--fs-h3); font-weight: 600; line-height: 1.3; letter-spacing: -0.005em; margin: 0; }
+    .lead   { font-size: var(--fs-lead); line-height: 1.55; color: var(--muted); max-width: 60ch; margin: 0; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 var(--gap-md);
+    }
+    .meta { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--muted); }
+    .num  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    
+    .topnav {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in oklch, var(--bg) 92%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-inner { display: flex; align-items: center; justify-content: space-between; padding-block: 14px; }
+    .topnav .logo { font-family: var(--font-display); font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+    .topnav nav { display: flex; gap: var(--gap-lg); }
+    .topnav nav a { font-size: 14px; color: var(--muted); }
+    .topnav nav a:hover { color: var(--fg); }
+    .pagefoot { padding-block: var(--gap-xl); color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+    .pagefoot .row-between { flex-wrap: wrap; gap: var(--gap-md); }
+
+    
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 20px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .btn-primary:hover { background: color-mix(in oklch, var(--accent) 88%, black); }
+    .btn-secondary { background: transparent; color: var(--fg); border-color: var(--border); }
+    .btn-secondary:hover { border-color: var(--fg); }
+    .btn-ghost { background: transparent; color: var(--fg); border-color: transparent; padding-inline: 8px; }
+    .btn-ghost:hover { color: var(--accent); }
+    .btn-arrow::after { content: '→'; transition: transform 0.15s ease; }
+    .btn-arrow:hover::after { transform: translateX(2px); }
+
+    
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+    }
+    .card-flat { background: transparent; border: 0; padding: 0; }
+    .card-rule { background: transparent; border: 0; border-top: 1px solid var(--fg); padding: 24px 0 0; border-radius: 0; }
+
+    
+    .feature .feature-mark {
+      width: 36px; height: 36px;
+      display: grid; place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--accent);
+      margin-bottom: var(--gap-md);
+    }
+    .feature .feature-mark svg { width: 18px; height: 18px; }
+    .feature h3 { margin-bottom: 6px; }
+    .feature p  { margin: 0; color: var(--muted); font-size: 15px; }
+
+    
+    .stat .stat-num {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 8vw, 96px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .stat .stat-label { color: var(--muted); font-size: 14px; margin-top: 8px; max-width: 24ch; }
+    .stat .stat-unit  { font-size: 0.5em; opacity: 0.7; margin-left: 2px; }
+
+    
+    .quote {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 2.6vw, 32px);
+      line-height: 1.32;
+      letter-spacing: -0.01em;
+      max-width: 28ch;
+    }
+    .quote-author { color: var(--muted); font-size: 14px; margin-top: var(--gap-md); }
+    .quote-mark   {
+      font-family: var(--font-display);
+      font-size: 140px; line-height: 0.7;
+      color: var(--accent); opacity: 0.18;
+      margin-bottom: -28px;
+    }
+
+    
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; color: var(--muted); }
+    .input, .textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--fg);
+      font: inherit;
+      font-size: 15px;
+    }
+    .input:focus, .textarea:focus {
+      outline: 2px solid var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .textarea { min-height: 96px; resize: vertical; line-height: 1.55; }
+
+    
+    .ds-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .ds-table th, .ds-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    .ds-table th { color: var(--muted); font-weight: 500; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .ds-table tbody tr:hover { background: var(--fg-soft); }
+    .ds-table .num-col { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+
+    
+    .ph-img {
+      background:
+        linear-gradient(135deg, var(--accent-soft), var(--fg-soft)),
+        var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      aspect-ratio: 16 / 10;
+      display: grid; place-items: center;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+    .ph-img.square    { aspect-ratio: 1 / 1; }
+    .ph-img.portrait  { aspect-ratio: 3 / 4; }
+    .ph-img.wide      { aspect-ratio: 16 / 9; }
+    .content-img {
+      display: block;
+      max-width: 100%;
+      max-height: min(70vh, 720px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      justify-self: center;
+      border-radius: var(--radius-lg);
+    }
+
+    
+    .rule  { border: 0; border-top: 1px solid var(--border); margin: 0; }
+    .rule-strong { border: 0; border-top: 1px solid var(--fg); margin: 0; }
+
+    
+    .hero          { padding-block: clamp(80px, 12vw, 160px); }
+    .hero-center   { text-align: center; max-width: 32ch; margin-inline: auto; }
+    .hero h1       { margin-bottom: var(--gap-md); }
+    .hero .lead    { margin-bottom: var(--gap-lg); }
+    .hero-cta      { display: inline-flex; gap: var(--gap-sm); flex-wrap: wrap; }
+    .hero-center .hero-cta { justify-content: center; }
+    .hero-split    { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-2xl); align-items: center; }
+    @media (max-width: 920px) { .hero-split { grid-template-columns: 1fr; } }
+
+    
+    .log-row { display: grid; grid-template-columns: 120px 1fr 100px; gap: var(--gap-lg); padding: 22px 0; border-top: 1px solid var(--border); align-items: baseline; }
+    .log-row .meta { color: var(--muted); }
+    .log-row h3 { font-size: 19px; }
+    .log-row .pull { text-align: right; }
+
+body{font-size:14px;text-transform:uppercase;letter-spacing:.055em;line-height:1.6}h1,h2,h3{font-family:var(--font-display);letter-spacing:.02em;font-weight:700}h1{font-size:clamp(36px,4vw,56px);line-height:1.04}h2{font-size:28px}h3{font-size:19px}button,input,select{font:inherit;letter-spacing:inherit;text-transform:inherit}button,a,input,select,summary{min-height:44px}button{cursor:pointer}button:disabled{opacity:.45;cursor:default}button,a,summary{transition:background var(--motion-fast),border-color var(--motion-fast)}:focus-visible{outline:2px solid var(--accent);outline-offset:5px}a:hover{text-decoration:underline;color:var(--accent-hover)}.container{max-width:1140px;padding-inline:40px}.topnav{position:static;border:0;background:var(--bg);backdrop-filter:none}.topnav-inner{padding:28px 38px;gap:24px}.topnav .logo{font-family:var(--font-display);font-size:19px;letter-spacing:.16em}.meta,.eyebrow{font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.09em}.eyebrow{margin:0 0 18px}.lead{font-size:14px;line-height:1.85;color:var(--muted);max-width:62ch}.btn{display:inline-flex;justify-content:center;align-items:center;gap:16px;min-height:48px;padding:14px 25px;border:1px solid var(--border);border-radius:var(--radius-pill);background:var(--border-soft);color:var(--fg);font-size:11px;letter-spacing:.08em}.btn:hover{background:color-mix(in oklch,var(--fg) 22%,var(--bg));border-color:var(--fg);color:var(--accent-hover)}.btn-ghost{background:transparent;border-color:transparent;padding-inline:0}.btn-ghost:hover{background:transparent;text-decoration:underline;color:var(--accent-hover)}.journey{display:flex;gap:0;justify-content:center;margin:24px auto 0;max-width:720px;padding:0 24px;list-style:none}.journey li{flex:1;min-width:0}.journey button{width:100%;background:transparent;border:0;padding:12px 8px;color:var(--muted);font-size:10px;text-align:left;border-top:1px solid var(--border-soft)}.journey button[aria-current=step]{color:var(--fg);border-color:var(--fg)}.journey button:hover:enabled{background:var(--border-soft);color:var(--fg)}.section{padding:32px 0 24px}.hero-center{max-width:none;text-align:left}.intro{display:grid;grid-template-columns:1.4fr 1fr;gap:72px;align-items:end;margin-bottom:32px}.intro p{margin:0}.intro h1{max-width:22ch}.choice{width:100%;display:grid;grid-template-columns:52px 1fr 1.1fr 28px;align-items:center;gap:24px;padding:18px 16px;border:0;border-top:1px solid var(--border);background:transparent;color:var(--fg);text-align:left;text-transform:uppercase;min-height:88px}.choice:last-child{border-bottom:1px solid var(--border)}.choice strong{font-family:var(--font-display);font-size:22px;line-height:1.2;letter-spacing:.02em}.choice p{font-size:11px;color:var(--muted);margin:0;line-height:1.8}.choice .circle{width:18px;height:18px;border:1px solid var(--border);border-radius:50%;justify-self:end}.choice[aria-checked=true]{background:var(--border-soft)}.choice[aria-checked=true] .circle{background:var(--fg);box-shadow:inset 0 0 0 4px var(--bg)}.choice:hover{background:color-mix(in oklch,var(--fg) 16%,var(--bg));color:var(--fg)}.actionbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:32px}.actionbar p{font-size:10px;color:var(--muted);margin:0}.actionbar .btn{flex-shrink:0}.pagefoot{border:0;padding:32px 0;color:var(--muted);font-size:9px}.pagefoot .row-between{gap:20px}.blueprint{display:flex;gap:20px;align-items:stretch;margin:48px 0 30px}.blueprint article{flex:1;min-width:0;padding:20px 0}.blueprint h3{font-size:23px;margin:12px 0}.blueprint p{font-size:12px;color:var(--muted);line-height:1.8;margin:8px 0}.connector{width:50px;flex-shrink:0;display:flex;align-items:center;color:var(--muted);font-size:22px}.connector:before{content:'';width:100%;border-top:1px dashed var(--border)}.log-row{grid-template-columns:40px minmax(0,1fr) 140px;gap:24px;padding:22px 0}.log-row h3{font-size:17px}.log-row p{font-size:12px;color:var(--muted);margin:6px 0;line-height:1.8}.pull{font-size:10px;line-height:1.8;color:var(--muted)}details{margin-top:24px}summary{cursor:pointer;color:var(--fg);font-size:11px;display:flex;align-items:center;gap:12px;list-style:none}summary:before{content:'+';font-size:20px}details[open]>summary:before{content:'-'}summary:hover{background:var(--border-soft)}details p{font-size:12px;color:var(--muted);line-height:1.9;max-width:80ch}.field{gap:10px;margin:18px 0}.field label{font-size:10px;color:var(--muted)}.input,select{background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:13px;width:100%}.input:focus{outline:2px solid var(--fg)}.grid-2{gap:32px}.notice{font-size:11px;color:var(--muted);line-height:1.9}.taskhead{display:flex;justify-content:space-between;align-items:center;gap:24px;margin:36px 0 24px}.taskhead p{font-size:12px;color:var(--muted);max-width:60ch}.task{padding:25px 0;border-top:1px solid var(--border);display:grid;grid-template-columns:36px 1fr;gap:20px}.task h3{font-size:20px}.task p{font-size:12px;color:var(--muted);max-width:76ch;line-height:1.9;margin:10px 0}.task code{font-family:var(--font-mono);font-size:11px;overflow-wrap:anywhere}.task .btn{margin-top:10px}.receipt{font-size:12px;line-height:2.2;padding:24px 0}.receipt dt{color:var(--muted);font-size:10px}.receipt dd{margin:0 0 18px}.smalllink{background:none;border:0;color:var(--fg);font-size:10px;text-decoration:underline;padding:8px 0}.smalllink:hover{background:var(--border-soft)}[hidden]{display:none!important}progress{accent-color:var(--fg);width:100%;height:5px}.empty{padding:36px 0;font-size:12px;color:var(--muted)}
+@media(min-width:1600px){.section{padding-top:90px}.intro{margin-bottom:64px}.choice{min-height:120px}}@media(max-width:920px){.intro{grid-template-columns:1fr;gap:24px}.intro h1{max-width:22ch}.hero-center{max-width:none}.section{padding-top:40px}.choice{grid-template-columns:36px 1fr 1fr 22px;gap:16px}.choice strong{font-size:19px}.grid-2{grid-template-columns:1fr}.topnav-inner{padding:22px 24px}.blueprint{gap:16px}.connector{width:20px}}@media(max-width:600px){.container{padding-inline:22px}.topnav-inner{flex-wrap:wrap;gap:10px}.topnav-inner>.meta{display:none}.journey{padding-inline:22px;margin-top:12px}.journey button{font-size:9px;padding:12px 3px}.journey button span{display:block;margin-bottom:8px}.section{padding-top:30px}.choice{grid-template-columns:24px 1fr 20px;padding:20px 8px}.choice p{grid-column:2;grid-row:2}.choice .circle{grid-column:3;grid-row:1 / 3}.choice strong{font-size:20px}.blueprint{flex-direction:column;gap:0;margin-top:24px}.blueprint article{padding:10px 0}.connector{height:28px;margin-left:10px;border-left:1px dashed var(--border)}.connector:before{display:none}.actionbar,.taskhead{align-items:start;flex-direction:column}.actionbar .btn{width:100%}.log-row{grid-template-columns:24px 1fr;gap:14px}.pull{grid-column:2;text-align:left!important}.pagefoot .row-between{flex-direction:column;align-items:start}.task{grid-template-columns:24px 1fr;gap:12px}h1{font-size:36px}}
+</style></head><body><header class="topnav" data-od-id="app-header"><div class="topnav-inner"><a class="logo" href="drone-workspace.html" data-od-id="back-to-management">DRONE DECK / WORKSPACE</a><span class="meta" id="projectlabel">SYSTEM PREPARATION</span><button class="btn btn-ghost" id="restart" data-od-id="new-system">Start over &nearr;</button></div></header><nav aria-label="System chapters" data-od-id="chapter-navigation"><ol class="journey" id="journey"></ol></nav><main id="content" tabindex="-1"></main><footer class="pagefoot" data-od-id="footer"><div class="container row-between"><span>WINDOWS DESKTOP / LOCAL FIRST</span><span>DESIGN PROTOTYPE &middot; NO REAL INSTALLATIONS OR VEHICLE CONNECTIONS</span></div></footer><script>
+const $=id=>document.getElementById(id);
+const systems=[
+ {name:'Watch a virtual drone',desc:'See an autopilot, a simulated vehicle and a ground station working together.',tag:'Start here / no hardware',title:'A flight lab on your laptop.',result:'A virtual drone you can observe, with flight controls in a separate ground-station window.',steps:[['PX4 / SIH','Simulate the vehicle','The autopilot and internal physics run together in Ubuntu.','Ubuntu 24.04 / WSL'],['Display relay','Move state to Windows','Forwards vehicle state across the Linux-to-Windows boundary.','WSL / UDP 19410'],['jMAVSim','See the result','A separate Windows window displays the simulated movement.','Windows / Java']],extra:'QGroundControl opens separately for vehicle setup and flight controls. MAVSDK is optional for read-only telemetry on UDP 14540.',packages:[['PX4 v1.17.0 SIH','Source build / WSL','Install in app-owned tools directory'],['jMAVSim + Java','Native visualizer / Windows','Verify Java; reuse compatible JAR'],['QGroundControl v5.1.5','Ground station / Windows','Verified installer; may require input']],tasks:[['Start the virtual vehicle','Drone Deck starts PX4, waits for SIH readiness, starts the relay, then opens jMAVSim.','Confirm that live state reaches the visualizer.'],['Open the ground station','QGroundControl opens as a separate window. Drone Deck does not arm or fly the vehicle.','Confirm a vehicle appears in QGroundControl.'],['Read the result','Compare the vehicle shown in the visualizer with the connected ground station.','Process running and vehicle readiness remain separate checks.']]},
+ {name:'Capture sensor data',desc:'Connect ROS streams, record them, and keep a dataset you can return to.',tag:'ROS / recordings',title:'From live messages to a reusable recording.',result:'A finalized MCAP recording, ready for isolated replay and a versioned dataset.',steps:[['PX4 + matching messages','Provide the source','A compatible DDS client and firmware-matched px4_msgs are prerequisites.','Ubuntu 24.04 / WSL'],['DDS Agent + ROS 2','Connect the streams','The Agent bridges messages. Live publishers must actually be present.','UDP 8888 / ROS Jazzy'],['rosbag2 / MCAP','Keep the evidence','Capture selected topics, then stop gracefully to finalize metadata.','Local Linux storage']],extra:'Replay uses a separate ROS domain, normally 77. Camera and LiDAR streams need their own publishers; SIH does not automatically create them.',packages:[['PX4 + matching px4_msgs','Firmware/message compatibility / WSL','Reuse only after version checks'],['ROS 2 Jazzy + DDS Agent','Recording and transport / WSL','DDS client/Agent version must match'],['rosbag2 + MCAP plugin','Capture and replay / WSL','Installed packages do not prove topics are live']],tasks:[['Check publishers','Start the compatible middleware and discover live ROS topics.','Verify /fmu/out or your sensor topics contain messages.'],['Record selected topics','Select actual streams and the correct clock mode before capture.','A running recorder may still contain zero messages.'],['Finalize and keep the recording','Stop gracefully, inspect message counts, then reference the original files from a dataset version.','Keep originals; dataset versions do not copy MCAP files.']]},
+ {name:'Test a model offline',desc:'Use prepared inputs to inspect a local model and retain its outputs.',tag:'AI / no vehicle needed',title:'Test the model before connecting it to flight.',result:'Local output tensors and a reproducible run record; evaluation requires supplied labels.',steps:[['Model + prepared input','Choose the material','Select a compatible ONNX file and correctly preprocessed NPZ tensors.','Local assets'],['ONNX CPU runtime','Run the system','The editable starter executes inference inside the selected WSL environment.','Ubuntu 24.04 / WSL'],['Artifacts + evaluation','Inspect the evidence','Retain hashes and outputs. Use a predictions CSV for labeled evaluation.','Local results']],extra:'Hugging Face downloads are optional. Downloaded weights do not supply a sensor adapter, calibration, preprocessing or flight capability.',packages:[['ONNX CPU runtime','Private Python environment / WSL','Install optional runtime explicitly'],['ONNX inference starter','Editable project source / WSL','Attach model and prepared NPZ input'],['Model + input files','Provided by you / local','Verify input names and preprocessing']],tasks:[['Select compatible inputs','Provide the ONNX model and prepared NPZ tensors named for model inputs.','Input preparation is task-specific; it is not automatic.'],['Run the local project','Execute the editable ONNX starter in its saved WSL environment.','Record model/input hashes and runtime versions.'],['Inspect artifacts','Read output tensors; evaluate a predictions CSV only when labels are available.','No accuracy score is invented when targets are absent.']]},
+ {name:'Observe my physical drone',desc:'Connect a flight controller for read-only monitoring and local logs.',tag:'Hardware / Windows native',title:'Know what is connected before doing anything.',result:'An identified vehicle with fresh telemetry and a local tlog. Flight controls stay in the ground station.',steps:[['Serial / UDP / TCP','Choose the connection','Use a dedicated endpoint so tools do not compete for the same port.','Windows native'],['MAVLink monitor','Identify the vehicle','Look for a fresh autopilot heartbeat and select its identity.','Read-only monitoring'],['Telemetry + tlog','Keep the record','Inspect freshness and retain the local telemetry log.','Windows local storage']],extra:'This route does not need PX4 simulation or WSL. Parameter requests are read-only; direct flight commands and parameter writes are not implemented.',packages:[['Windows MAVLink monitor','Built into Drone Deck','No simulation installation required'],['Vehicle endpoint','Serial or network / Windows','Choose actual device, baud rate or address'],['QGroundControl','Optional external ground station','Use for flight control and vehicle setup']],tasks:[['Choose an endpoint','Enter serial:COM4:115200, a dedicated UDP endpoint, or a TCP address.','Avoid an endpoint already owned by another ground station.'],['Identify the vehicle','Start read-only monitoring and wait for a fresh autopilot heartbeat.','Select the actual vehicle identity before requesting parameters.'],['Inspect and retain','Review freshness, local tlogs and optional read-only parameter backup.','Signatures are not authenticated; signed parameter links are refused.']]}
+];
+let state={chapter:0,choice:0,name:'',scan:false,prepared:false,task:0,awaiting:false,done:false,error:false,path:''};
+try{const s=JSON.parse(localStorage.getItem('dd-guided-system')||'null');if(s)state={...state,...s,chapter:Math.min(s.chapter||0,2),scan:false,prepared:false,task:0,awaiting:false,done:false,error:false}}catch(e){}
+try{let active=Number(localStorage.getItem('dd-system-choice')||0);if(active!==state.choice){state.choice=Math.max(0,Math.min(3,active));state.chapter=0;state.name='';state.scan=state.prepared=false;}}catch(e){}
+const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function save(){try{localStorage.setItem('dd-guided-system',JSON.stringify({choice:state.choice,name:state.name,chapter:state.chapter,path:state.path}))}catch(e){}}
+function button(text,id,ghost=false){return '<button class="btn'+(ghost?' btn-ghost':'')+'" id="'+id+'" data-od-id="'+id+'">'+text+'</button>'}
+function frame(eyebrow,title,lead,body,action,note){return '<section class="section" data-od-id="chapter-'+state.chapter+'"><div class="container hero-center"><p class="eyebrow">'+eyebrow+'</p><div class="intro"><h1 data-od-id="chapter-title">'+title+'</h1><p class="lead">'+lead+'</p></div>'+body+'<div class="actionbar" data-od-id="chapter-action"><p>'+note+'</p>'+action+'</div></div></section>'}
+function go(n){state.chapter=n;save();render();$('content').focus()}
+function render(){let e=systems[state.choice];$('projectlabel').textContent=state.name||'System preparation';$('journey').innerHTML=['Intention','The system','Preparation','First run'].map((x,i)=>'<li><button data-chapter="'+i+'" data-od-id="chapter-nav-'+i+'" '+(i===state.chapter?'aria-current="step"':'')+' '+(i>state.chapter?'disabled':'')+'><span>0'+(i+1)+' / </span>'+x+'</button></li>').join('');let body='';
+if(state.chapter===0){body=frame('01 / START WITH AN OUTCOME','What would you like to try?','You bring the idea. Drone Deck brings the right tools together, helps prepare your computer, and guides you to a first result.','<div role="radiogroup" aria-label="System starting point">'+systems.map((x,i)=>'<button class="choice" role="radio" aria-checked="'+(state.choice===i)+'" data-choice="'+i+'" data-od-id="intent-'+i+'"><span class="meta">0'+(i+1)+'</span><strong>'+x.name+'</strong><p>'+x.desc+'<br><span class="meta">'+x.tag+'</span></p><span class="circle" aria-hidden="true"></span></button>').join('')+'</div>',button('Shape this system &rarr;','next'),'No tool knowledge required. Nothing installs yet.');}
+if(state.chapter===1){body=frame('02 / A SMALL, COMPLETE SYSTEM',e.title,e.result,'<div class="blueprint" data-od-id="system-story">'+e.steps.map((x,i)=>'<article data-od-id="system-stage-'+i+'"><span class="meta">0'+(i+1)+' / '+x[1]+'</span><h3>'+x[0]+'</h3><p>'+x[2]+'</p><span class="meta">'+x[3]+'</span></article>').join('<div class="connector" aria-hidden="true">&rsaquo;</div>')+'</div><p class="notice">'+e.extra+'</p><details data-od-id="technical-recipe"><summary>Inspect or adapt the technical recipe</summary><p>This is a proposed relationship, not a discovered live network. The selected environment and every connection need separate verification.</p><div class="grid-2"><div class="field"><label for="environment">Execution target</label><select id="environment" '+(state.choice===3?'disabled':'')+'><option>'+(state.choice===3?'Windows local':'Ubuntu-24.04 / WSL 2')+'</option></select></div><div class="field"><label for="override">Existing tool path (optional)</label><input class="input" id="override" value="'+safe(state.path||'')+'" placeholder="Absolute executable or source path"><span class="notice" id="pathmessage">An existing path needs compatibility checks before adoption.</span></div></div></details><div class="field" style="max-width:440px"><label for="name">Give your system a name</label><input class="input" id="name" maxlength="60" value="'+safe(state.name)+'" placeholder="My first system"><span id="nameerror" class="notice" role="status"></span></div>',button('Prepare my computer &rarr;','next'),'A plan you can understand before a tool is installed.');}
+if(state.chapter===2){let rows=e.packages.map((x,i)=>'<article class="log-row" data-od-id="dependency-'+i+'"><span class="meta">0'+(i+1)+'</span><div><h3>'+x[0]+'</h3><p>'+x[1]+'<br>'+x[2]+'</p><details><summary>Source, location & verification</summary><p>'+sourceDetails(state.choice,i)+'</p></details></div><div class="pull">'+(state.scan?(i===0?'Found / sample<br>Reuse after verification':'Not found / sample<br>Review setup'):'Not checked')+'</div></article>').join('');body=frame('03 / PREPARE ONLY WHAT YOU NEED',state.prepared?'The tools are prepared.':state.error?'One dependency needs attention.':'Let us do the groundwork.',state.prepared?'Sample preparation is complete. Connections are still unverified. Return to the system workspace for direct controls, tool configuration and session history.':state.scan?'Sample discovery results are shown below. Review what will be reused, installed and configured.':'First, check this computer for compatible tools. Existing installations stay intact. Nothing installs as a result of checking.',rows+(state.path?'<p class="notice">Requested existing location: '+safe(state.path)+'. Discovery must validate it before reuse.</p>':'')+(state.error?'<p class="notice" role="alert">Sample dependency failure: a required runtime is missing. Later jobs are paused. No rollback is implied. Retry rechecks the prerequisite.</p>':'')+(state.scan&&!state.prepared?'<p class="notice">Review before continuing: this sample plan reuses the first component and prepares the remaining dependencies. Shared Linux packages may require root; Windows installers may request input or restart. Versions and paths require verification on the real machine. Size and duration are unknown.</p><label class="notice"><input type="checkbox" id="consent" data-od-id="setup-consent"> I reviewed the example changes for this system.</label><details><summary>What happens if I close the app?</summary><p>Installation jobs continue and recover their status when you return. Cancel at a safe boundary from the job controls. Simulation and recording processes stop on normal application close. Stopping a session does not land a vehicle.</p></details>':'')+'<p class="notice" id="preperror" role="status"></p>',button(state.prepared?'Open system workspace &rarr;':state.scan?(state.error?'Retry sample preparation':'Apply reviewed sample plan'):'Check this computer','next'),state.prepared?'Example only / no machine changes made.':'Prototype / discovery and setup results are examples.');}
+if(state.chapter===3){let task=e.tasks[state.task];let tBody=state.done?'<dl class="receipt" data-od-id="system-receipt"><dt>System</dt><dd>'+safe(state.name)+'</dd><dt>What you walked through</dt><dd>'+e.result+'</dd><dt>Evidence</dt><dd>Prototype acknowledgements only. No real telemetry, recording, model output or vehicle identity was collected.</dd><dt>Continue in the real application</dt><dd>Use the same checks with actual tool output. Keep the resulting files and configuration together.</dd></dl>':'<div class="taskhead"><span class="meta">STEP '+(state.task+1)+' OF '+e.tasks.length+'</span><p>Do one thing, observe the result, then continue.</p></div>'+e.tasks.map((t,i)=>'<article class="task" data-od-id="run-task-'+i+'"><span class="meta">'+(i<state.task?'DONE':'0'+(i+1))+'</span><div><h3>'+t[0]+'</h3>'+(i===state.task?'<p>'+t[1]+'</p><p>'+t[2]+'</p>'+(state.awaiting?'<p role="status" class="notice">Example action requested. In the real app, wait for actual output before confirming.</p>':''):'<p>'+(i<state.task?'Sample observation acknowledged.':'Available after the previous observation.')+'</p>')+'</div></article>').join('');body=frame('04 / LEARN BY DOING',state.done?'Your first system, documented.':'A first result. One step at a time.',safe(state.name)+' / '+e.name,tBody,button(state.done?'Open system workspace &rarr;':state.awaiting?'Confirm sample observation &rarr;':'Try this step / sample','next'),state.done?'No result metrics are claimed.':(state.choice===0?'External windows / flight controls remain in QGroundControl.':'Sample run / no real command is executed.'));}
+$('content').innerHTML=body;document.querySelectorAll('[data-chapter]').forEach(b=>b.onclick=()=>go(Number(b.dataset.chapter)));document.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{state.choice=Number(b.dataset.choice);state.scan=state.prepared=state.error=false;state.path='';save();render()});if($('name'))$('name').oninput=()=>{state.name=$('name').value;save();$('projectlabel').textContent=state.name||'System preparation'};if($('override'))$('override').oninput=()=>{state.path=$('override').value;save();$('pathmessage').textContent=/^(\/|[A-Za-z]:\\)/.test($('override').value)?'Path format accepted; compatibility has not been checked.':'Use an absolute Windows or Linux path.'};$('next').onclick=advance;document.querySelectorAll('[data-choice]').forEach((b,i,all)=>b.onkeydown=event=>{if(['ArrowDown','ArrowRight','ArrowUp','ArrowLeft'].includes(event.key)){event.preventDefault();let direction=['ArrowDown','ArrowRight'].includes(event.key)?1:-1;let index=(i+direction+all.length)%all.length;state.choice=index;state.scan=state.prepared=false;save();render();document.querySelectorAll('[data-choice]')[index].focus()}});
+}
+function sourceDetails(c,i){const sets=[['Official PX4 source / v1.17.0 SIH recipe. App-owned WSL tools directory; check executable and SIH readiness. No existing checkout is upgraded.','PX4-matched jMAVSim recipe. Windows JAR plus Java. Validate existing package and launch path before reuse.','Official QGroundControl release / v5.1.5 AMD64. Published hash or trusted signature required before installer execution. Discover final Windows executable afterward.'],['PX4 source and firmware-matched px4_msgs. Record versions and bind paths to the selected WSL distribution.','ROS Jazzy packages and a compatible Micro XRCE-DDS Agent. The maintained 2.4.3 recipe requires a compatible DDS-v2 client; other firmware needs matching configuration.','ROS rosbag2 and MCAP storage plugin. Verify dependencies, topic schemas and actual message arrival.'],['ONNX Runtime CPU recipe in a private Python environment. Verify providers; no optional runtime installs from opening this system.','Editable app-provided ONNX starter under the selected WSL project directory. Preserve source and manifest.','User-selected ONNX model and prepared NPZ input. No model is bundled. Optional Hub assets require a pinned revision and hash verification.'],['Built-in Windows monitor; not a WSL process. Verify a fresh decoded heartbeat from the selected vehicle.','User-selected serial/UDP/TCP endpoint. Verify device identity and endpoint ownership. No connection is made by checking tools.','Optional official QGroundControl Windows installer. Verify publisher/hash before running; flight commands stay in the ground station.']];return sets[c][i]}
+function advance(){if(state.chapter===0){go(1);return}if(state.chapter===1){state.name=($('name').value||'').trim();if(!state.name){$('nameerror').textContent='Give this system a name so you can return to it.';$('name').focus();return}go(2);return}if(state.chapter===2){if(state.prepared){try{localStorage.setItem('dd-system-choice',String(state.choice));localStorage.setItem('dd-system-config-'+state.choice,JSON.stringify({name:state.name,prepared:true,path:state.path||''}));}catch(e){}location.href='drone-workspace.html';return}if(!state.scan){state.scan=true;render();return}if(!$('consent').checked){$('preperror').textContent='Review the example changes and check the acknowledgement first.';return}state.error=false;state.prepared=true;render();return}if(state.done){try{localStorage.setItem('dd-system-choice',String(state.choice));localStorage.setItem('dd-system-config-'+state.choice,JSON.stringify({name:state.name,prepared:true,path:state.path||''}));}catch(e){}location.href='drone-workspace.html';return}if(!state.awaiting){state.awaiting=true;render();return}state.awaiting=false;if(state.task===systems[state.choice].tasks.length-1)state.done=true;else state.task++;render()}
+$('restart').onclick=()=>{if((state.prepared||state.chapter>0)&&!confirm('Start a new system? The current prototype walkthrough will be reset.'))return;state={chapter:0,choice:0,name:'',scan:false,prepared:false,task:0,awaiting:false,done:false,error:false};save();render()};render();
+</script></body></html>
