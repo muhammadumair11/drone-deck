@@ -1,0 +1,1 @@
+- Add Windows/WSL first-run discovery, live distribution selection, reviewed managed setup recipes, existing-tool adoption bound to its environment, persistent installation job status/logs and recovery, and prerequisite gating without changing saved simulator profiles.

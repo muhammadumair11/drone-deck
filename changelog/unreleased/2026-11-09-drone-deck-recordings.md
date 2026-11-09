@@ -1,0 +1,1 @@
+- Add a native rosbag2/MCAP recording workspace with dependency checks, topic selection, graceful finalization, persisted session metadata, library browsing, and separate-domain local replay; verify real ROS sensor recording/playback alongside responsive UI tests.

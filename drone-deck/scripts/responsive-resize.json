@@ -1,0 +1,7 @@
+{"events":[
+ {"t":0.1,"type":"resize","dw":-600,"dh":-132,"dur":0.4},
+ {"t":0.7,"type":"resize","dw":-480,"dh":164,"dur":0.4},
+ {"t":1.3,"type":"tap","key":"open-menu"},
+ {"t":1.6,"type":"key","name":"Escape"},
+ {"t":1.9,"type":"resize","dw":1080,"dh":-32,"dur":0.4}
+]}

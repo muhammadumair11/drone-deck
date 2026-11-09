@@ -1,0 +1,6 @@
+{"events":[
+  {"t":0.1,"type":"tap","key":"nav-1"},
+  {"t":0.4,"type":"tap","key":"nav-4"},
+  {"t":0.7,"type":"tap","key":"nav-5"},
+  {"t":1.0,"type":"tap","key":"edit-profiles"}
+]}

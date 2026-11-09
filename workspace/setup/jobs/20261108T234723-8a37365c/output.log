@@ -1,0 +1,3 @@
+2026-11-08T23:47:24.7442455Z Checking existing installation and prerequisites
+{"tool": "ros2", "found": true, "compatible": true, "path": "/opt/ros/jazzy", "executable": "/opt/ros/jazzy/bin/ros2", "version": "Jazzy", "reason": "Jazzy + rosbag2 / MCAP", "managed": false, "environment": "Ubuntu-24.04"}
+2026-11-08T23:47:26.3920925Z Compatible launch candidate found. Nothing was updated. Detect and apply its configuration to reuse it.

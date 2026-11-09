@@ -1,0 +1,1 @@
+- Match Drone Deck's native UI to the supplied light design with responsive navigation/content, monitor work-area and DPI fitting, usable modal controls, and headless resize regression tests.

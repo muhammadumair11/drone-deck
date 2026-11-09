@@ -1,0 +1,1 @@
+- Add a consistent Drone Deck logo to the native UI, Windows window/taskbar, executable, and shortcut using embedded multi-resolution icon assets.

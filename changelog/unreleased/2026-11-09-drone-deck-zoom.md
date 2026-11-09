@@ -1,0 +1,1 @@
+- Add discoverable application settings, persisted 50–150% layout-aware UI zoom with an 85% default, global zoom controls, keyboard shortcuts, and scaled interaction regression tests.

@@ -1,0 +1,1 @@
+- Add the Drone Deck Windows autonomy workspace application, based on the hello example, with managed WSL sessions, integration profiles and headless interaction checks. The local source subset retains only application dependencies.

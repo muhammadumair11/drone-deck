@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Stage, sign, atomically exchange and check the replacement's Rune ready receipt.
+# --help lists the existing bundle flags; --no-rune-ready supports older binaries.
+# All installers use flock on Applications/.NAME.app.install.lock (see mac-app.md).
+set -euo pipefail
+exec python3 "$(dirname "$0")/mac_app_install.py" "$@"
