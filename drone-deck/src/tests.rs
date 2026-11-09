@@ -1,17 +1,63 @@
 use super::*;
 use rune::{Env, Runtime};
 
-#[test]
-fn layout_reflows_across_reference_sizes_and_live_resizing() {
+fn runtime(state: State, size: (f32, f32)) -> Runtime<State> {
     let mut rt = Runtime::new(
-        State::new(),
+        state,
         view,
-        (1440., 900.),
+        size,
         Env {
-            system_dark: false,
+            system_dark: true,
             scale: 1.,
         },
     );
+    rt.frame(0.);
+    rt
+}
+fn settle(rt: &mut Runtime<State>) {
+    for _ in 0..10 {
+        rt.frame(0.1);
+    }
+}
+fn tap(rt: &mut Runtime<State>, key: &str) {
+    let target = key.to_string();
+    rt.update(move |_, tx| tx.scroll_into_view(&target));
+    settle(rt);
+    let (x, y) = rt
+        .find(key)
+        .unwrap_or_else(|| panic!("{key} is not on screen"));
+    rt.pointer_down(x, y);
+    rt.pointer_up(x, y);
+    rt.frame(0.2);
+}
+fn escape(rt: &mut Runtime<State>) {
+    rt.key(rune::KeyEvent {
+        key: rune::Key::Escape,
+        mods: rune::Mods::default(),
+    });
+    rt.frame(0.2);
+}
+fn assert_inside(rt: &Runtime<State>, key: &str, w: f32, h: f32, context: &str) {
+    let (r, _) = rt
+        .presented(key)
+        .unwrap_or_else(|| panic!("Missing {key} ({context})"));
+    assert!(
+        r[0] >= -1. && r[1] >= -1. && r[0] + r[2] <= w + 1. && r[1] + r[3] <= h + 1.,
+        "{key} overflows {w}x{h} ({context}): {r:?}"
+    );
+}
+const PAGES: [Page; 6] = [
+    Page::System,
+    Page::Tools,
+    Page::Data,
+    Page::Activity,
+    Page::Settings,
+    Page::Setup,
+];
+
+#[test]
+fn layout_reflows_across_reference_sizes_and_live_resizing() {
+    let mut rt = runtime(State::new(), (1440., 900.));
     for (w, h) in [
         (1920., 1080.),
         (1440., 900.),
@@ -26,51 +72,43 @@ fn layout_reflows_across_reference_sizes_and_live_resizing() {
         (1440., 900.),
     ] {
         rt.set_viewport((w, h), 1.);
-        for page in 0..9 {
-            rt.update(|s, _| s.navigate(page));
-            for _ in 0..10 {
-                rt.frame(0.1);
+        for kind in 0..4 {
+            rt.update(|s, _| {
+                s.select_system(kind);
+            });
+            for page in PAGES {
+                rt.update(|s, _| s.navigate(page));
+                settle(&mut rt);
+                let context = format!("{page:?}, system {kind}");
+                for key in [
+                    "app-root",
+                    "app-stage",
+                    "topbar",
+                    "main-scroll",
+                    "statusbar",
+                ] {
+                    assert_inside(&rt, key, w, h, &context);
+                }
+                if page != Page::Setup {
+                    assert_eq!(
+                        rt.find("open-menu").is_some(),
+                        w / (rt.state.ui.zoom_percent as f32 / 100.) <= 720.,
+                        "Navigation breakpoint at {w} ({context})"
+                    );
+                }
             }
-            for key in [
-                "app-root",
-                "app-stage",
-                "topbar",
-                "main-scroll",
-                "statusbar",
-            ] {
-                let (r, _) = rt.presented(key).unwrap_or_else(|| panic!("Missing {key}"));
-                assert!(
-                    r[0] >= -1. && r[1] >= -1. && r[0] + r[2] <= w + 1. && r[1] + r[3] <= h + 1.,
-                    "{key} overflows {w}x{h}, page {page}: {r:?}"
-                );
-            }
-            assert_eq!(
-                rt.find("open-menu").is_some(),
-                w / (rt.state.ui.zoom_percent as f32 / 100.) < 900.,
-                "Navigation breakpoint at {w}"
-            );
         }
     }
 }
 
 #[test]
 fn zoom_reflows_without_overflow_and_controls_remain_clickable() {
-    let mut rt = Runtime::new(
-        State::new(),
-        view,
-        (1216., 576.),
-        Env {
-            system_dark: false,
-            scale: 1.,
-        },
-    );
+    let mut rt = runtime(State::new(), (1216., 576.));
     for (w, h) in [(1216., 576.), (390., 844.), (360., 320.)] {
         rt.set_viewport((w, h), 1.);
         for percent in [50, 75, 85, 100, 125, 150] {
             rt.update(|s, _| s.ui.zoom_percent = percent);
-            for _ in 0..10 {
-                rt.frame(0.1);
-            }
+            settle(&mut rt);
             for key in [
                 "window-frame",
                 "app-root",
@@ -80,16 +118,9 @@ fn zoom_reflows_without_overflow_and_controls_remain_clickable() {
                 "zoom-reset",
                 "zoom-in",
             ] {
-                let (r, _) = rt.presented(key).unwrap();
-                assert!(
-                    r[0] >= -1. && r[1] >= -1. && r[0] + r[2] <= w + 1. && r[1] + r[3] <= h + 1.,
-                    "{key} at {percent}% on {w}x{h}: {r:?}"
-                );
+                assert_inside(&rt, key, w, h, &format!("{percent}%"));
             }
-            let (x, y) = rt.find("zoom-reset").unwrap();
-            rt.pointer_down(x, y);
-            rt.pointer_up(x, y);
-            rt.frame(0.1);
+            tap(&mut rt, "zoom-reset");
             assert_eq!(rt.state.ui.zoom_percent, 100);
         }
     }
@@ -97,26 +128,12 @@ fn zoom_reflows_without_overflow_and_controls_remain_clickable() {
 
 #[test]
 fn settings_zoom_buttons_and_keyboard_shortcuts_work() {
-    let mut rt = Runtime::new(
-        State::new(),
-        view,
-        (1216., 700.),
-        Env {
-            system_dark: false,
-            scale: 1.,
-        },
-    );
-    rt.frame(0.);
-    let (x, y) = rt.find("open-settings").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
-    assert_eq!(rt.state.page, 6);
-    let (x, y) = rt.find("settings-zoom-out").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
-    assert_eq!(rt.state.ui.zoom_percent, 80);
+    let mut rt = runtime(State::new(), (1216., 700.));
+    tap(&mut rt, "open-settings");
+    assert_eq!(rt.state.page, Page::Settings);
+    assert_eq!(rt.state.ui.zoom_percent, 100, "the redesign opens at 100%");
+    tap(&mut rt, "settings-zoom-out");
+    assert_eq!(rt.state.ui.zoom_percent, 95);
     let event = |c| rune::KeyEvent {
         key: rune::Key::Command(c),
         mods: rune::Mods {
@@ -125,10 +142,8 @@ fn settings_zoom_buttons_and_keyboard_shortcuts_work() {
             ..Default::default()
         },
     };
-    rt.update(|s, tx| {
-        assert!(ui::zoom_shortcuts(s, &event('='), tx));
-    });
-    assert_eq!(rt.state.ui.zoom_percent, 85);
+    rt.update(|s, tx| assert!(ui::zoom_shortcuts(s, &event('='), tx)));
+    assert_eq!(rt.state.ui.zoom_percent, 100);
     rt.update(|s, tx| {
         for _ in 0..100 {
             ui::zoom_shortcuts(s, &event('+'), tx);
@@ -146,47 +161,28 @@ fn settings_zoom_buttons_and_keyboard_shortcuts_work() {
     });
     assert_eq!(rt.state.ui.zoom_percent, 100);
     rt.update(|s, tx| {
-        s.navigate(0);
+        s.navigate(Page::System);
         ui::zoom_shortcuts(s, &event(','), tx);
     });
-    assert_eq!(rt.state.page, 6);
+    assert_eq!(rt.state.page, Page::Settings);
 }
 
 #[test]
 fn compact_navigation_and_tool_search_work() {
-    let mut rt = Runtime::new(
-        State::new(),
-        view,
-        (390., 844.),
-        Env {
-            system_dark: false,
-            scale: 1.,
-        },
-    );
-    rt.frame(0.);
-    let (x, y) = rt.find("open-menu").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
+    let mut rt = runtime(State::new(), (390., 844.));
+    tap(&mut rt, "open-menu");
     assert!(rt.state.ui.menu);
-    rt.key(rune::KeyEvent {
-        key: rune::Key::Escape,
-        mods: rune::Mods::default(),
-    });
-    rt.frame(0.2);
+    escape(&mut rt);
     assert!(!rt.state.ui.menu, "Escape closes the navigation drawer");
-    let (x, y) = rt.find("open-menu").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
-    let (x, y) = rt.find("nav-1").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
-    assert_eq!(rt.state.page, 1);
+    tap(&mut rt, "open-menu");
+    tap(&mut rt, "rail-tools");
+    assert_eq!(rt.state.page, Page::Tools);
     assert!(!rt.state.ui.menu);
-    rt.update(|s, _| s.ui.search = TextEdit::new("Gazebo"));
-    rt.frame(0.2);
+    rt.update(|s, _| {
+        s.ui.tools_all = true;
+        s.ui.search = TextEdit::new("Gazebo");
+    });
+    settle(&mut rt);
     assert!(rt.find("tool-gazebo").is_some());
     assert!(rt.find("tool-ardupilot").is_none());
 }
@@ -203,25 +199,12 @@ fn startup_window_fits_the_work_area() {
 fn confirmation_stays_visible_in_short_windows_and_escape_dismisses_it() {
     let mut s = State::new();
     s.confirm = Some("stop".into());
-    let mut rt = Runtime::new(
-        s,
-        view,
-        (360., 320.),
-        Env {
-            system_dark: false,
-            scale: 1.,
-        },
-    );
-    rt.frame(0.);
+    let mut rt = runtime(s, (360., 320.));
     let (r, _) = rt.presented("confirmation").unwrap();
     assert!(r[0] >= 0. && r[1] >= 0. && r[0] + r[2] <= 360. && r[1] + r[3] <= 320.);
     let (x, y) = rt.find("confirm-action").unwrap();
     assert!((0.0..=360.).contains(&x) && (0.0..=320.).contains(&y));
-    rt.key(rune::KeyEvent {
-        key: rune::Key::Escape,
-        mods: rune::Mods::default(),
-    });
-    rt.frame(0.2);
+    escape(&mut rt);
     assert!(rt.state.confirm.is_none());
 }
 
@@ -259,31 +242,18 @@ fn process_manager_captures_real_output_and_exit_status() {
         "process output and lifecycle must both arrive"
     );
 }
+
 #[test]
-fn navigation_and_configuration_are_interactive() {
-    let mut state = State::new();
-    state.headless = true;
-    let mut rt = Runtime::new(
-        state,
-        view,
-        (1440., 960.),
-        Env {
-            system_dark: true,
-            scale: 1.,
-        },
-    );
-    rt.frame(0.);
-    for page in 1..6 {
-        let (x, y) = rt.find(&format!("nav-{page}")).unwrap();
-        rt.pointer_down(x, y);
-        rt.pointer_up(x, y);
-        rt.frame(0.2);
+fn rail_navigation_and_profile_registry_are_interactive() {
+    let mut rt = runtime(State::new(), (1440., 960.));
+    for (page, slug, _, _) in ui::RAIL {
+        tap(&mut rt, &format!("rail-{slug}"));
         assert_eq!(rt.state.page, page);
+        assert!(rt.find("page-title").is_some(), "{slug} has a page title");
     }
-    let (x, y) = rt.find("edit-profiles").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
+    tap(&mut rt, "open-settings");
+    assert_eq!(rt.state.page, Page::Settings);
+    tap(&mut rt, "edit-profiles");
     assert!(rt.state.editing);
     rt.state.editor = TextEdit::new("invalid JSON");
     rt.state.apply();
@@ -292,11 +262,12 @@ fn navigation_and_configuration_are_interactive() {
     rt.state.apply();
     assert!(!rt.state.editing);
 }
+
 #[test]
 fn preview_never_starts_processes() {
     let mut s = State::new();
     s.headless = true;
-    s.bundle();
+    s.bundle(systems::SESSIONS[systems::SIMULATION]);
     assert!(s.backend.is_none());
     assert!(s.status.is_empty());
 }
@@ -305,28 +276,206 @@ fn preview_never_starts_processes() {
 fn integration_form_validates_arguments_and_persists_in_state() {
     let mut state = State::new();
     profile_editor::open(&mut state);
-    let mut rt = Runtime::new(
-        state,
-        view,
-        (1440., 960.),
-        Env {
-            system_dark: true,
-            scale: 1.,
-        },
-    );
-    rt.frame(0.);
+    assert_eq!(state.page, Page::Tools);
+    let mut rt = runtime(state, (1440., 960.));
     rt.state.form.as_mut().unwrap().fields[0] = TextEdit::new("");
-    let (x, y) = rt.find("save-form").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
+    tap(&mut rt, "save-form");
     assert!(rt.state.notice.starts_with("Name, program"));
     rt.state.form.as_mut().unwrap().fields[0] = TextEdit::new("Configured tool");
     rt.state.form.as_mut().unwrap().fields[2] = TextEdit::new("echo configured");
-    let (x, y) = rt.find("save-form").unwrap();
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.2);
+    rt.frame(0.1);
+    tap(&mut rt, "save-form");
     assert!(rt.state.form.is_none());
     assert_eq!(rt.state.config.profiles[0].args, vec!["echo configured"]);
+}
+
+#[test]
+fn active_system_selector_switches_context_and_refuses_while_running() {
+    let mut rt = runtime(State::new(), (1440., 900.));
+    tap(&mut rt, "system-select");
+    assert!(rt.state.ui.system_menu);
+    tap(&mut rt, "system-option-3");
+    assert_eq!(rt.state.systems.active, systems::PHYSICAL);
+    assert!(!rt.state.ui.system_menu);
+    assert_eq!(
+        rt.state.hardware.mode, 1,
+        "physical system uses native monitoring"
+    );
+    tap(&mut rt, "system-select");
+    escape(&mut rt);
+    assert!(!rt.state.ui.system_menu, "Escape closes the system list");
+
+    rt.update(|s, _| {
+        s.select_system(systems::SIMULATION);
+        s.status.insert("sih".into(), "Running".into());
+        s.select_system(systems::ROS);
+    });
+    assert_eq!(rt.state.systems.active, systems::SIMULATION);
+    assert!(rt.state.notice.starts_with("Stop the active session"));
+    rt.update(|s, _| {
+        s.status.insert("sih".into(), "Exited 0".into());
+        s.recorder.recording = true;
+        s.select_system(systems::AI);
+    });
+    assert_eq!(
+        rt.state.systems.active,
+        systems::SIMULATION,
+        "capture blocks switching"
+    );
+    rt.update(|s, _| {
+        s.recorder.recording = false;
+        s.select_system(systems::AI);
+    });
+    assert_eq!(rt.state.systems.active, systems::AI);
+}
+
+#[test]
+fn guided_setup_validates_the_name_and_returns_to_the_workspace() {
+    let mut rt = runtime(State::new(), (1440., 900.));
+    tap(&mut rt, "open-guided-setup");
+    assert_eq!(rt.state.page, Page::Setup);
+    assert_eq!(rt.state.guided.chapter, 0);
+    tap(&mut rt, "intent-3");
+    assert_eq!(rt.state.guided.choice, systems::PHYSICAL);
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, 1);
+    rt.update(|s, _| s.guided.name = TextEdit::new("   "));
+    rt.frame(0.1);
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, 1, "a blank name does not advance");
+    assert!(!rt.state.guided.name_error.is_empty());
+    rt.update(|s, _| s.guided.name = TextEdit::new("Bench quad"));
+    rt.frame(0.1);
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, 2);
+    tap(&mut rt, "chapter-nav-0");
+    assert_eq!(
+        rt.state.guided.chapter, 0,
+        "earlier chapters stay reachable"
+    );
+    tap(&mut rt, "back-to-management");
+    assert_eq!(rt.state.page, Page::System);
+    assert!(rt.state.setup.jobs.is_empty() && !rt.state.setup.pending);
+}
+
+#[test]
+fn activity_records_actions_and_bounds_history() {
+    let mut s = State::new();
+    for i in 0..250 {
+        activity::record(&mut s, format!("event {i}"));
+    }
+    assert_eq!(s.activity.entries.len(), 200);
+    assert_eq!(s.activity.entries[0].text, "event 249");
+    assert_eq!(s.activity.entries[0].system, "Local simulation");
+}
+
+#[test]
+fn component_states_never_promote_process_state_to_readiness() {
+    let mut s = State::new();
+    assert_eq!(systems::profile_state(&s, "sih").0, "Not checked");
+    s.detected.insert("sih".into(), true);
+    assert_eq!(systems::profile_state(&s, "sih").0, "Path found");
+    s.status.insert("sih".into(), "Running".into());
+    assert_eq!(systems::profile_state(&s, "sih").0, "Running");
+    s.readiness.insert("sih".into(), "Ready".into());
+    assert_eq!(systems::profile_state(&s, "sih").0, "Ready");
+    s.status.insert("telemetry".into(), "Running".into());
+    assert_eq!(
+        systems::profile_state(&s, "telemetry").0,
+        "Running / no data"
+    );
+    s.metrics.insert("link".into(), "Stale".into());
+    assert_eq!(
+        systems::profile_state(&s, "telemetry").1,
+        systems::Tone::Warn
+    );
+    assert_eq!(systems::profile_state(&s, "missing").0, "Not configured");
+}
+
+#[test]
+fn recipe_only_tools_are_listed_under_all_registered_tools() {
+    let mut s = State::new();
+    s.navigate(Page::Tools);
+    assert!(!s.config.profiles.iter().any(|p| p.id == "torch"));
+    let mut rt = runtime(s, (1440., 900.));
+    assert!(
+        rt.find("tool-torch").is_none(),
+        "active simulation system has no torch"
+    );
+    rt.update(|s, _| s.ui.tools_all = true);
+    settle(&mut rt);
+    assert!(rt.find("tool-torch").is_some());
+    assert!(rt.find("tool-ros-workspace").is_some());
+    assert!(
+        rt.find("start-torch").is_none(),
+        "nothing to start before install/adopt"
+    );
+    rt.update(|s, _| s.ui.tools_filter = 6);
+    settle(&mut rt);
+    assert!(rt.find("tool-torch").is_some());
+    assert!(rt.find("tool-onnx").is_some());
+    assert!(
+        rt.find("tool-gazebo").is_none(),
+        "AI filter hides simulators"
+    );
+    tap(&mut rt, "configure-torch");
+    assert_eq!(rt.state.ui.expanded.as_deref(), Some("torch"));
+    tap(&mut rt, "setup-review-torch");
+    assert!(rt.state.setup.review);
+    assert_eq!(rt.state.setup.recipes[rt.state.setup.selected].id, "torch");
+}
+
+#[test]
+fn existing_installation_can_be_detected_and_adopted_from_a_tool_row() {
+    let mut s = State::new();
+    s.navigate(Page::Tools);
+    s.ui.tools_all = true;
+    let mut rt = runtime(s, (1440., 900.));
+    tap(&mut rt, "configure-torch");
+    for key in [
+        "setup-existing-location",
+        "browse-existing-tool",
+        "detect-selected-tool",
+    ] {
+        assert!(rt.find(key).is_some(), "{key} renders for a recipe row");
+    }
+    assert!(
+        rt.find("adopt-tool").is_none(),
+        "no result before detection"
+    );
+    tap(&mut rt, "detect-selected-tool");
+    assert!(
+        rt.state.notice.starts_with("Preview"),
+        "headless refuses detection"
+    );
+    let torch = rt.state.setup.recipe_index("torch").unwrap();
+    assert_eq!(rt.state.setup.selected, torch);
+    rt.update(|s, _| {
+        let distro = s.setup.distro.text.clone();
+        s.setup.candidate = Some(setup::Candidate {
+            tool: "torch".into(),
+            found: true,
+            compatible: true,
+            path: "/home/pilot/.local/share/drone-deck/venvs/torch".into(),
+            executable: "/home/pilot/.local/share/drone-deck/venvs/torch/bin/python".into(),
+            version: "2.5.1".into(),
+            reason: "PyTorch, NumPy and ONNX import.".into(),
+            environment: distro,
+            ..Default::default()
+        });
+    });
+    settle(&mut rt);
+    assert!(rt.find("tool-candidate").is_some());
+    tap(&mut rt, "adopt-tool");
+    assert_eq!(rt.state.setup.last_applied.as_deref(), Some("torch"));
+    assert!(rt.state.config.profiles.iter().any(|p| p.id == "torch"));
+    assert!(
+        rt.state.activity.entries[0]
+            .text
+            .starts_with("Applied detected configuration"),
+        "adoption is recorded"
+    );
+    settle(&mut rt);
+    assert!(rt.find("tool-torch").is_some());
+    assert!(rt.find("start-torch").is_some(), "adopted tool can start");
 }

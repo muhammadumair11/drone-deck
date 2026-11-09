@@ -1,362 +1,582 @@
+//! Data & models tabs backed by Studio: models, datasets & evaluation, projects, plus the
+//! Hugging Face access block that Settings also embeds.
 use super::*;
-use crate::ui::*;
-fn action(key: &str, label: &str, command: &'static str, s: &State) -> El {
-    button(key, label, true, move |s| request(s, command)).disabled(s.studio.pending)
+use crate::ui::{Page, kit::*, theme::*};
+mod library;
+mod runs;
+
+/// Sends a Studio request and records it in Activity once the request is in flight.
+pub(super) fn act(s: &mut State, command: &str, record: impl Into<String>) {
+    request(s, command);
+    if s.studio.pending {
+        activity::record(s, record);
+    }
 }
-pub(crate) fn settings(s: &State) -> El {
-    card().key("huggingface-settings").child(heading("Hugging Face","WINDOWS CREDENTIAL MANAGER"))
- .child(label(if s.studio.stored{"An access token is stored for this Windows user."}else{"Check status or save a read/fine-grained access token. Public model downloads also work without one."},13.,muted()).wrap())
- .child(text_input(&s.studio.token,TextStyle::new(13.,400.)).key("hf-token").secure().single_line().on_edit(|s:&mut State|&mut s.studio.token).w_full().h(40.).padding(8.).fill(surface()).border(1.,line()))
- .child(row().gap(8.).flex_wrap().child(action("hf-status","Check saved token","credential_status",s)).child(action("hf-save","Save token","save_token",s)).child(action("hf-validate","Validate access","validate_token",s)).child(action("hf-forget","Remove saved token","forget_token",s)))
- .child(label("Removing the saved token does not revoke it on Hugging Face. Manage access and license requests on the model's official page.",12.,muted()).wrap())
- .child(label(&s.studio.message,13.,ink()).wrap())
+
+/// A selectable list row: the whole row is one button.
+pub(super) fn choose(row: El, name: &str, selected: bool, on: impl Fn(&mut State) + 'static) -> El {
+    row.role("button")
+        .label(name)
+        .focus_selected(selected)
+        .focusable(true)
+        .cursor(rune::Cursor::Pointer)
+        .fill(if selected {
+            soft()
+        } else {
+            rune::Color::TRANSPARENT
+        })
+        .hover(soft())
+        .focus_ring(2., 0., fg())
+        .on_press(on)
 }
-pub(crate) fn page(s: &State) -> El {
+
+/// The pull column of a selectable row.
+pub(super) fn pick_label(selected: bool) -> El {
+    meta_sized(
+        if selected { "Selected" } else { "Select" },
+        10.,
+        if selected { fg() } else { muted() },
+    )
+}
+
+/// The lead column of a log row; 9px on compact so words like "Downloading" fit its 56px.
+pub(super) fn lead(t: impl Into<String>, tone: rune::Color, compact: bool) -> El {
+    meta_sized(t, if compact { 9. } else { 10. }, tone).wrap()
+}
+
+/// A mono label / value pair for manifests and reviews.
+pub(super) fn kv(label: &str, value: impl Into<String>, compact: bool) -> El {
+    let value = code(value, 12., fg()).wrap_anywhere().selectable(true);
+    if compact {
+        return col()
+            .w_full()
+            .min_w(0.)
+            .gap(2.)
+            .child(meta(label))
+            .child(value);
+    }
+    row()
+        .w_full()
+        .min_w(0.)
+        .gap(16.)
+        .items_start()
+        .child(meta(label).w(120.).pt(2.))
+        .child(col().grow(1.).min_w(0.).child(value))
+}
+
+/// The shared Studio status line (`#feedback` in the design).
+pub(super) fn status(s: &State) -> El {
     let r = &s.studio;
-    let mut tabs = row().gap(8.).flex_wrap();
-    for (index, name) in ["Models", "Datasets & evaluation", "Projects"]
-        .iter()
-        .enumerate()
-    {
-        tabs = tabs.child(button(
-            format!("studio-tab-{index}"),
-            *name,
-            r.tab == index,
-            move |s| s.studio.tab = index,
+    row()
+        .key("studio-status")
+        .role("status")
+        .label(r.message.clone())
+        .w_full()
+        .min_w(0.)
+        .gap(14.)
+        .py(10.)
+        .items_start()
+        .child(
+            meta_sized(
+                if r.pending { "Working" } else { "Status" },
+                9.,
+                if r.pending { fg() } else { muted() },
+            )
+            .w(64.)
+            .pt(4.),
+        )
+        .child(body(r.message.clone(), 11., fg()).grow(1.))
+}
+
+/// The Data & models tabs Studio owns (`ui.data_tab` 1–3).
+pub(crate) fn page(s: &State, vp: &Viewport) -> El {
+    let content = match s.ui.data_tab {
+        1 => models(s, vp),
+        2 => library::datasets(s, vp),
+        _ => runs::projects(s, vp),
+    };
+    col()
+        .key("studio-tab")
+        .w_full()
+        .min_w(0.)
+        .child(status(s))
+        .child(content)
+}
+
+/// First visit of a tab (or the AI system overview) requests what it lists, one request at a time (Studio has one lock).
+pub(super) fn lazy_load(s: &mut State) -> bool {
+    if s.headless || s.studio.pending {
+        return false;
+    }
+    // The System page shows project and artifact counts for the offline AI system.
+    let on_system = s.page == Page::System && s.systems.active == crate::systems::AI;
+    let wanted: &[&'static str] = match (s.page, s.ui.data_tab) {
+        (Page::Data, 1) => &["models", "credential_status"],
+        (Page::Data, 2 | 3) => &["data_library"],
+        _ if on_system => &["data_library"],
+        _ => &[],
+    };
+    for &action in wanted {
+        if s.studio.loaded.contains(&action) {
+            continue;
+        }
+        if action == "data_library" && !s.wsl_ready() {
+            return false;
+        }
+        s.studio.loaded.push(action);
+        request(s, action);
+        return true;
+    }
+    false
+}
+
+/// Token actions all report whether a token is stored, so any of them counts as a status check.
+fn credential(s: &mut State, action: &str, record: bool) {
+    request(s, action);
+    if !s.studio.pending {
+        return;
+    }
+    if !s.studio.loaded.contains(&"credential_status") {
+        s.studio.loaded.push("credential_status");
+    }
+    match (record, action) {
+        (true, "save_token") => {
+            activity::record(s, "Saved a Hugging Face token to Credential Manager")
+        }
+        (true, _) => activity::record(s, "Removed the saved Hugging Face token"),
+        _ => {}
+    }
+}
+
+fn hf_access(s: &State, with_status: bool) -> El {
+    let r = &s.studio;
+    let checked = r.loaded.contains(&"credential_status");
+    let state = if r.stored {
+        "A token is stored for this Windows user in Credential Manager."
+    } else if checked && !r.pending {
+        "No token is stored. Public models download without one; gated models need a read or fine-grained token."
+    } else {
+        "Token status not checked yet. Public models download without a token."
+    };
+    let enabled = !r.pending;
+    let mut block = col()
+        .key("huggingface-settings")
+        .w_full()
+        .min_w(0.)
+        .gap(12.)
+        .child(
+            row()
+                .w_full()
+                .min_w(0.)
+                .gap(10.)
+                .center_y()
+                .child(dot(if r.stored { success() } else { muted() }))
+                .child(meta(if r.stored {
+                    "Token stored / Windows Credential Manager"
+                } else {
+                    "No token confirmed / Windows Credential Manager"
+                })
+                .wrap()
+                .grow(1.)),
+        )
+        .child(p(state, 11.))
+        .child(labeled(
+            "Access token",
+            field(&r.token, "hf-token", "hf_…")
+                .secure()
+                .on_edit(|s: &mut State| &mut s.studio.token),
+        ))
+        .child(
+            row()
+                .gaps(4., 16.)
+                .flex_wrap()
+                .center_y()
+                .child(pill(
+                    "hf-save",
+                    "Save token",
+                    enabled && !r.token.text.trim().is_empty(),
+                    |s| credential(s, "save_token", true),
+                ))
+                .child(ghost("hf-status", "Check saved token", enabled, |s| {
+                    credential(s, "credential_status", false)
+                }))
+                .child(ghost("hf-validate", "Validate access", enabled, |s| {
+                    credential(s, "validate_token", false)
+                }))
+                .child(ghost("hf-forget", "Remove saved token", enabled && r.stored, |s| {
+                    credential(s, "forget_token", true)
+                })),
+        )
+        .child(notice(
+            "Removing the saved token does not revoke it on Hugging Face. Manage access and license requests on the model's official page.",
+        ));
+    if with_status {
+        block = block.child(status(s));
+    }
+    block
+}
+
+/// Hugging Face access: token storage in Windows Credential Manager.
+pub(crate) fn settings(s: &State) -> El {
+    hf_access(s, true)
+}
+
+fn repo_valid(t: &str) -> bool {
+    let part = |p: Option<&str>| {
+        p.is_some_and(|p| {
+            !p.is_empty()
+                && p.chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
+        })
+    };
+    let mut parts = t.split('/');
+    part(parts.next()) && part(parts.next()) && parts.next().is_none()
+}
+
+fn mib(bytes: f64) -> String {
+    format!("{:.1} MiB", bytes / 1048576.)
+}
+
+/// A file size in the unit that keeps small files from reading as 0.0 MiB.
+fn size(bytes: f64) -> String {
+    if bytes >= 1048576. {
+        mib(bytes)
+    } else if bytes >= 1024. {
+        format!("{:.1} KiB", bytes / 1024.)
+    } else {
+        format!("{bytes:.0} bytes")
+    }
+}
+
+fn review(s: &State, preview: &Value, compact: bool) -> El {
+    let files = preview["files"].as_array().cloned().unwrap_or_default();
+    let mut list = col().w_full().min_w(0.).gap(2.);
+    for file in files.iter().take(30) {
+        let name = file["name"].as_str().unwrap_or("");
+        let line = match file["size"].as_f64() {
+            Some(bytes) => format!("{name} · {}", size(bytes)),
+            None => format!("{name} · size not reported"),
+        };
+        list = list.child(code(line, 11., muted()).wrap_anywhere());
+    }
+    if files.len() > 30 {
+        list = list.child(meta(format!("+ {} more files", files.len() - 30)));
+    }
+    let repo = preview["repo"].as_str().unwrap_or("").to_string();
+    let sha = preview["sha"].as_str().unwrap_or("").to_string();
+    col()
+        .key("model-review")
+        .w_full()
+        .min_w(0.)
+        .gap(10.)
+        .mt(8.)
+        .pt(18.)
+        .border_sides([1., 0., 0., 0.], rule())
+        .child(meta("Review before download / immutable revision"))
+        .child(h3("Review model download", 16.))
+        .child(kv("Repository", repo.clone(), compact))
+        .child(kv("Commit", sha.clone(), compact))
+        .child(kv(
+            "License",
+            preview["license"].as_str().unwrap_or("Not specified"),
+            compact,
+        ))
+        .child(kv(
+            "Gated",
+            match &preview["gated"] {
+                Value::Bool(false) => "No".to_string(),
+                Value::Bool(true) => "Yes / request access on Hugging Face".to_string(),
+                Value::String(t) => format!("Yes / {t}"),
+                _ => "Not reported".to_string(),
+            },
+            compact,
+        ))
+        .child(kv(
+            "Selected files",
+            format!(
+                "{} files / {}",
+                files.len(),
+                mib(preview["bytes"].as_f64().unwrap_or(0.))
+            ),
+            compact,
+        ))
+        .child(kv(
+            "Destination",
+            preview["destination"].as_str().unwrap_or(""),
+            compact,
+        ))
+        .child(list)
+        .child(notice(
+            "Review the model's license and access terms on Hugging Face. Files are downloaded and hash-verified; repository code is not executed. An inference runtime and task-specific inputs are separate requirements.",
+        ))
+        .child(row().child(pill(
+            "download-reviewed-model",
+            "Download reviewed files",
+            !s.studio.pending,
+            move |s| {
+                let short: String = sha.chars().take(12).collect();
+                act(
+                    s,
+                    "start_model",
+                    format!("Started model download {repo} @ {short}"),
+                )
+            },
+        )))
+}
+
+fn local_library(s: &State) -> El {
+    let r = &s.studio;
+    let mut list = col().key("model-library").w_full().min_w(0.);
+    for model in &r.models {
+        let repo = model["repo"].as_str().unwrap_or("").to_string();
+        let sha = model["sha"].as_str().unwrap_or("").to_string();
+        let path = model["path"].as_str().unwrap_or("").to_string();
+        let selected = !path.is_empty() && r.model_path == path;
+        let short: String = sha.chars().take(12).collect();
+        let entry = ruled(false)
+            .key(format!("model-{repo}-{sha}"))
+            .gap(12.)
+            .py(12.)
+            .px(4.)
+            .items_start()
+            .child(
+                col()
+                    .grow(1.)
+                    .min_w(0.)
+                    .gap(4.)
+                    .child(code(repo.clone(), 12., fg()).wrap_anywhere())
+                    .child(
+                        row()
+                            .gap(8.)
+                            .center_y()
+                            .child(meta("Revision"))
+                            .child(code(short, 11., muted()).help(sha.clone())),
+                    ),
+            )
+            .child(pick_label(selected));
+        list = list.child(choose(entry, &repo, selected, move |s| {
+            s.studio.model_path = path.clone()
+        }));
+    }
+    if r.models.is_empty() {
+        let (title, text) = if r.loaded.contains(&"models") && !r.pending {
+            (
+                "No model assets",
+                "Inspect and download a pinned revision to add one. Use the offline AI system for ONNX inference: prepared NPZ tensors and a compatible runtime are also required.",
+            )
+        } else {
+            (
+                "Library not loaded",
+                "Refresh to read downloaded models from this computer. Nothing is sent to Hugging Face.",
+            )
+        };
+        list = list.child(empty("models-empty", title, text).py(16.));
+    }
+    let can_verify = !r.pending
+        && r.models
+            .iter()
+            .any(|m| m["path"].as_str() == Some(&r.model_path));
+    col()
+        .w_full()
+        .min_w(0.)
+        .gap(8.)
+        .child(
+            row()
+                .w_full()
+                .gap(12.)
+                .center_y()
+                .justify_between()
+                .child(meta("Local library"))
+                .child(meta(format!("{} assets", r.models.len()))),
+        )
+        .child(list)
+        .child(
+            row()
+                .gaps(4., 20.)
+                .flex_wrap()
+                .child(ghost(
+                    "refresh-models",
+                    "Refresh library",
+                    !r.pending,
+                    |s| request(s, "models"),
+                ))
+                .child(ghost(
+                    "verify-model",
+                    "Verify selected offline",
+                    can_verify,
+                    |s| {
+                        act(
+                            s,
+                            "verify_model",
+                            "Requested offline verification of a local model",
+                        )
+                    },
+                )),
+        )
+}
+
+fn downloads(s: &State, vp: &Viewport) -> El {
+    let r = &s.studio;
+    let mut list = col().key("model-downloads").w_full().min_w(0.);
+    for job in &r.jobs {
+        let id = job["id"].as_str().unwrap_or("").to_string();
+        let selected = r.selected_job.as_deref() == Some(id.as_str());
+        let status = job["status"].as_str().unwrap_or("Unknown").to_string();
+        let alive = job["alive"].as_bool().unwrap_or(false);
+        let tone = match status.as_str() {
+            "Ready" => success(),
+            "Failed" | "Interrupted" => danger(),
+            "Cancelled" => warn(),
+            _ if alive => fg(),
+            _ => muted(),
+        };
+        let repo = job["repo"].as_str().unwrap_or("").to_string();
+        let done = mib(job["progress"]["bytes"].as_f64().unwrap_or(0.));
+        let mut detail = match job["progress"]["total"].as_f64() {
+            Some(total) if total > 0. => format!("{done} of {}", mib(total)),
+            _ => format!("{done} downloaded"),
+        };
+        if let Some(message) = job["message"].as_str().filter(|m| !m.is_empty()) {
+            detail = format!("{detail} / {message}");
+        }
+        let main = col()
+            .w_full()
+            .min_w(0.)
+            .gap(4.)
+            .child(code(repo.clone(), 13., fg()).wrap_anywhere())
+            .child(p(detail, 11.));
+        let entry = log_row(
+            format!("model-job-{id}"),
+            lead(status.clone(), tone, vp.compact()),
+            main,
+            pick_label(selected),
+            vp.compact(),
+        );
+        let pick = id.clone();
+        list = list.child(choose(entry, &repo, selected, move |s| {
+            s.studio.selected_job = Some(pick.clone())
+        }));
+        if selected {
+            let label = repo.clone();
+            list = list.child(
+                row()
+                    .key("model-job-actions")
+                    .w_full()
+                    .gaps(4., 20.)
+                    .flex_wrap()
+                    .pb(12.)
+                    .pl(if vp.compact() { 70. } else { 124. })
+                    .child(ghost(
+                        "cancel-model",
+                        "Cancel download",
+                        alive && !r.pending,
+                        {
+                            let label = label.clone();
+                            move |s| {
+                                act(
+                                    s,
+                                    "cancel_model",
+                                    format!("Requested cancel of model download {label}"),
+                                )
+                            }
+                        },
+                    ))
+                    .child(ghost(
+                        "retry-model",
+                        "Retry pinned download",
+                        !alive && status != "Ready" && !r.pending,
+                        move |s| act(s, "retry_model", format!("Retried model download {label}")),
+                    )),
+            );
+        }
+    }
+    if r.jobs.is_empty() {
+        list = list.child(empty(
+            "downloads-empty",
+            "No model downloads yet",
+            "Inspect a repository revision, review its files and license, then download. Progress persists if Drone Deck closes; interrupted downloads can be retried.",
         ));
     }
     col()
         .w_full()
         .min_w(0.)
-        .gap(16.)
-        .child(
-            card()
-                .child(heading(
-                    "Autonomy workspace",
-                    "MODELS / DATA / REPRODUCIBLE RUNS",
-                ))
-                .child(tabs)
-                .child(label(&r.message, 13., ink()).wrap()),
-        )
-        .child(match r.tab {
-            0 => models(s),
-            1 => datasets(s),
-            _ => projects(s),
-        })
-}
-fn models(s: &State) -> El {
-    let r = &s.studio;
-    let mut body = col().w_full().min_w(0.).gap(16.).child(
-        card()
-            .child(heading(
-                "Download a model revision",
-                "REVIEW BEFORE DOWNLOADING",
-            ))
-            .child(label("Repository · organization/model", 12., muted()))
-            .child(field(&r.repo, "model-repo").on_edit(|s: &mut State| {
-                s.studio.preview = None;
-                &mut s.studio.repo
-            }))
-            .child(label("Revision · tag, branch, or commit", 12., muted()))
-            .child(
-                field(&r.revision, "model-revision").on_edit(|s: &mut State| {
-                    s.studio.preview = None;
-                    &mut s.studio.revision
-                }),
-            )
-            .child(label(
-                "Selected file patterns · comma separated",
-                12.,
-                muted(),
-            ))
-            .child(
-                field(&r.patterns, "model-patterns").on_edit(|s: &mut State| {
-                    s.studio.preview = None;
-                    &mut s.studio.patterns
-                }),
-            )
-            .child(
-                row()
-                    .gap(8.)
-                    .flex_wrap()
-                    .child(action(
-                        "inspect-model",
-                        "Inspect revision and size",
-                        "inspect_model",
-                        s,
-                    ))
-                    .child(button("model-settings", "Token settings", false, |s| {
-                        s.navigate(6)
-                    })),
-            ),
-    );
-    if let Some(preview) = &r.preview {
-        let files = preview["files"].as_array().cloned().unwrap_or_default();
-        let mut review = card()
-            .key("model-review")
-            .child(heading(
-                "Review model download",
-                "IMMUTABLE REVISION / VERIFIED FILES",
-            ))
-            .child(
-                label(
-                    format!(
-                        "{}\nCommit: {}\nLicense: {} · Gated: {}\n{} files · {:.1} MiB\nCache: {}",
-                        preview["repo"].as_str().unwrap_or(""),
-                        preview["sha"].as_str().unwrap_or(""),
-                        preview["license"].as_str().unwrap_or("Not specified"),
-                        preview["gated"],
-                        files.len(),
-                        preview["bytes"].as_f64().unwrap_or(0.) / 1048576.,
-                        preview["destination"].as_str().unwrap_or("")
-                    ),
-                    13.,
-                    ink(),
-                )
-                .wrap_anywhere(),
-            );
-        for file in files.iter().take(30) {
-            review = review.child(
-                label(
-                    format!(
-                        "{} · {} bytes",
-                        file["name"].as_str().unwrap_or(""),
-                        file["size"]
-                    ),
-                    12.,
-                    muted(),
-                )
-                .wrap(),
-            );
-        }
-        body=body.child(review.child(label("Review the model's license/access terms on Hugging Face. Files are downloaded and verified; repository code is not executed. An inference runtime and task-specific inputs are separate.",13.,muted()).wrap()).child(action("download-reviewed-model","Download reviewed files","start_model",s)));
-    }
-    let mut jobs = card().child(heading("Model downloads", "PERSISTENT PROGRESS / RETRY"));
-    for job in &r.jobs {
-        let id = job["id"].as_str().unwrap_or("").to_string();
-        jobs = jobs.child(button(
-            format!("model-job-{id}"),
-            &format!(
-                "{} · {} · {} / {} bytes",
-                job["repo"].as_str().unwrap_or(""),
-                job["status"].as_str().unwrap_or(""),
-                job["progress"]["bytes"].as_u64().unwrap_or(0),
-                job["progress"]["total"].as_u64().unwrap_or(0)
-            ),
-            r.selected_job.as_ref() == Some(&id),
-            move |s| s.studio.selected_job = Some(id.clone()),
-        ));
-        if r.selected_job.as_deref() == job["id"].as_str() {
-            jobs = jobs
-                .child(label(job["message"].as_str().unwrap_or(""), 12., muted()).wrap())
-                .child(
-                    row()
-                        .gap(8.)
-                        .flex_wrap()
-                        .child(action("cancel-model", "Cancel download", "cancel_model", s))
-                        .child(action(
-                            "retry-model",
-                            "Retry pinned download",
-                            "retry_model",
-                            s,
-                        ))
-                        .disabled(r.pending),
-                );
-        }
-    }
-    let mut library = card()
-        .child(heading("Local model library", "OFFLINE ASSETS"))
-        .child(
-            row()
-                .gap(8.)
-                .flex_wrap()
-                .child(action(
-                    "refresh-models",
-                    "Refresh local models",
-                    "models",
-                    s,
-                ))
-                .child(action(
-                    "verify-model",
-                    "Verify selected model offline",
-                    "verify_model",
-                    s,
-                )),
-        );
-    for model in &r.models {
-        let path = model["path"].as_str().unwrap_or("").to_string();
-        library = library.child(button(
-            format!(
-                "model-{}-{}",
-                model["repo"].as_str().unwrap_or(""),
-                model["sha"].as_str().unwrap_or("")
-            ),
-            &format!(
-                "{} · {}",
-                model["repo"].as_str().unwrap_or(""),
-                model["sha"].as_str().unwrap_or("")
-            ),
-            r.model_path == path,
-            move |s| s.studio.model_path = path.clone(),
-        ));
-    }
-    body.child(jobs).child(library)
-}
-fn datasets(s: &State) -> El {
-    let r = &s.studio;
-    let mut body = col().w_full().min_w(0.).gap(16.).child(
-        card()
-            .child(heading("Recording datasets", "IMMUTABLE PROVENANCE"))
-            .child(action(
-                "refresh-data",
-                "Load recordings, datasets and reports",
-                "data_library",
-                s,
-            ))
-            .child(label("Dataset name", 12., muted()))
-            .child(field(&r.name, "dataset-name").on_edit(|s: &mut State| &mut s.studio.name))
-            .child(label(
-                "Finalized recording session identifier",
-                12.,
-                muted(),
-            ))
-            .child(
-                field(&r.session, "dataset-session").on_edit(|s: &mut State| &mut s.studio.session),
-            )
-            .child(action(
-                "create-dataset",
-                "Create version from recording",
-                "dataset_create",
-                s,
-            )),
-    );
-    if let Some(sessions) = r.library["sessions"].as_array() {
-        for session in sessions {
-            let id = session["id"].as_str().unwrap_or("").to_string();
-            body = body.child(button(
-                format!("source-{id}"),
-                &format!("Use recording: {id}"),
-                r.session.text == id,
-                move |s| s.studio.session = TextEdit::new(&id),
-            ));
-        }
-    }
-    if let Some(datasets) = r.library["datasets"].as_array() {
-        for dataset in datasets {
-            let selected = dataset.clone();
-            body = body.child(button(
-                format!("dataset-{}", dataset["version"].as_str().unwrap_or("")),
-                &format!(
-                    "{} · {}",
-                    dataset["name"].as_str().unwrap_or(""),
-                    dataset["version"].as_str().unwrap_or("")
-                ),
-                r.dataset
-                    .as_ref()
-                    .is_some_and(|d| d["version"] == dataset["version"]),
-                move |s| s.studio.dataset = Some(selected.clone()),
-            ));
-        }
-    }
-    body=body.child(card().child(heading("Evaluate supplied predictions","OFFLINE / NO FLIGHT COMMANDS"))
-  .child(label("CSV inside WSL: sample_id,target,prediction; optional latency_ms. Scores use your exported ground truth and predictions; this does not infer camera labels automatically.",13.,muted()).wrap())
-  .child(field(&r.csv,"evaluation-csv").on_edit(|s:&mut State|&mut s.studio.csv))
-  .child(row().gap(8.).flex_wrap().child(button("task-classification","Classification",r.task.text=="classification",|s|s.studio.task=TextEdit::new("classification"))).child(button("task-regression","Regression",r.task.text=="regression",|s|s.studio.task=TextEdit::new("regression"))))
-  .child(row().gap(8.).flex_wrap().child(action("verify-dataset","Verify dataset offline","dataset_verify",s)).child(action("run-evaluation","Evaluate CSV and save report","evaluate",s))));
-    if let Some(reports) = r.library["reports"].as_array() {
-        for report in reports {
-            body = body.child(
-                card()
-                    .child(title(
-                        format!(
-                            "{} · {} samples",
-                            report["task"].as_str().unwrap_or(""),
-                            report["samples"]
-                        ),
-                        14.,
-                    ))
-                    .child(
-                        mono(
-                            serde_json::to_string_pretty(&report["metrics"]).unwrap_or_default(),
-                            12.,
-                            ink(),
-                        )
-                        .wrap(),
-                    )
-                    .child(label(report["manifest"].as_str().unwrap_or(""), 11., muted()).wrap()),
-            );
-        }
-    }
-    body
-}
-pub(crate) fn projects(s: &State) -> El {
-    let r = &s.studio;
-    let mut choices = row().gap(8.).flex_wrap();
-    for (index, label) in [
-        "ONNX inference",
-        "ROS 2 subscriber",
-        "MAVSDK monitor",
-        "PyTorch CPU training",
-    ]
-    .iter()
-    .enumerate()
-    {
-        choices = choices.child(button(
-            format!("project-kind-{index}"),
-            *label,
-            r.kind == index,
-            move |s| s.studio.kind = index,
-        ));
-    }
-    let mut body=card().key("project-workspace").child(heading("Create an autonomy project","WSL / USER-OWNED SOURCE"))
- .child(field(&r.project_name,"project-name").on_edit(|s:&mut State|&mut s.studio.project_name)).child(choices)
- .child(label(format!("Selected model: {}\nSelected dataset: {}",if r.model_path.is_empty(){"None"}else{&r.model_path},r.dataset.as_ref().and_then(|d|d["name"].as_str()).unwrap_or("None")),12.,muted()).wrap_anywhere())
- .child(label("Creates editable source and a manifest without installing or starting code. ONNX uses prepared NPZ tensors; CPU training uses features/targets and exports ONNX. ROS and MAVSDK starters only monitor. These are starting points for your own autonomy code.",13.,muted()).wrap())
- .child(row().gap(8.).flex_wrap().child(action("create-project","Create project","project_create",s)).child(action("refresh-projects","Refresh projects","data_library",s)).child(button("project-setup","Install project prerequisites",false,|s|s.navigate(8))));
-    body = body
-        .child(label(
-            "Run inputs: Linux model path for ONNX; NPZ input path for inference or CPU training",
-            12.,
-            muted(),
+        .pt(16.)
+        .child(section_head(
+            "Model downloads",
+            meta("Persistent progress / hash verified"),
+            vp.compact(),
         ))
-        .child(
-            field(&r.model_file, "project-model-file")
-                .on_edit(|s: &mut State| &mut s.studio.model_file),
-        )
-        .child(field(&r.inputs, "project-inputs").on_edit(|s: &mut State| &mut s.studio.inputs));
-    if let Some(projects) = r.library["projects"].as_array() {
-        for project in projects {
-            let selected = project.clone();
-            let id = format!("project-{}", project["name"].as_str().unwrap_or(""));
-            let running = s
-                .status
-                .get(&id)
-                .is_some_and(|v| v == "Running" || v == "Starting");
-            body = body
-                .child(
-                    label(
-                        format!(
-                            "{} · {}\n{}",
-                            project["name"].as_str().unwrap_or(""),
-                            project["kind"].as_str().unwrap_or(""),
-                            project["path"].as_str().unwrap_or("")
-                        ),
-                        13.,
-                        ink(),
-                    )
-                    .wrap_anywhere(),
-                )
-                .child(button(
-                    format!("run-{id}"),
-                    if running {
-                        "Stop project"
-                    } else {
-                        "Run project"
-                    },
-                    true,
-                    move |s| super::projects::run(s, selected.clone()),
-                ));
-        }
+        .child(list)
+}
+
+fn models(s: &State, vp: &Viewport) -> El {
+    let r = &s.studio;
+    let repo = r.repo.text.trim();
+    let invalid = !repo.is_empty() && !repo_valid(repo);
+    let mut repo_field = field(&r.repo, "model-repo", "organization/model")
+        .invalid(invalid)
+        .on_edit(|s: &mut State| {
+            s.studio.preview = None;
+            &mut s.studio.repo
+        });
+    if invalid {
+        repo_field = repo_field.border(1., danger());
     }
-    body
+    let mut left = col()
+        .key("model-source")
+        .w_full()
+        .min_w(0.)
+        .gap(14.)
+        .child(h2("Model assets are not runtimes.", 22.))
+        .child(p(
+            "Provide a Hub repository and inspect a pinned revision before a managed download. Hash verification and license or gated access are separate checks.",
+            12.,
+        ))
+        .child(labeled("Repository ID", repo_field));
+    if invalid {
+        left = left.child(body("Use organization/model format.", 11., danger()));
+    }
+    left = left
+        .child(labeled(
+            "Revision / tag, branch or commit",
+            field(&r.revision, "model-revision", "main").on_edit(|s: &mut State| {
+                s.studio.preview = None;
+                &mut s.studio.revision
+            }),
+        ))
+        .child(labeled(
+            "File patterns / comma separated",
+            field(&r.patterns, "model-patterns", "*.onnx,*.json").on_edit(|s: &mut State| {
+                s.studio.preview = None;
+                &mut s.studio.patterns
+            }),
+        ))
+        .child(row().child(pill(
+            "inspect-model",
+            "Inspect revision",
+            !r.pending && !repo.is_empty(),
+            |s| {
+                if !repo_valid(s.studio.repo.text.trim()) {
+                    s.studio.message = "Use organization/model format before inspecting.".into();
+                    return;
+                }
+                request(s, "inspect_model")
+            },
+        )));
+    if let Some(preview) = &r.preview {
+        left = left.child(review(s, preview, vp.compact()));
+    }
+    let right = col()
+        .w_full()
+        .min_w(0.)
+        .gap(16.)
+        .child(local_library(s))
+        .child(disclosure(s, "hf-access", "Hugging Face access", || {
+            hf_access(s, false)
+        }));
+    col()
+        .w_full()
+        .min_w(0.)
+        .child(asset(left, right, vp.compact()))
+        .child(downloads(s, vp))
 }

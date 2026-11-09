@@ -46,7 +46,20 @@ pub(super) fn run(s: &mut State, project: Value) {
         }
     };
     let Some(profile) = s.config.profiles.iter().find(|p| p.id == profile_id) else {
-        s.studio.message = format!("Install and apply {profile_id} in Setup first.");
+        let recipe = if profile_id == "telemetry" {
+            "mavsdk"
+        } else {
+            profile_id
+        };
+        let name = s
+            .setup
+            .recipes
+            .iter()
+            .find(|r| r.id == recipe)
+            .map_or(profile_id, |r| r.name.as_str());
+        s.studio.message = format!(
+            "Install or adopt {profile_id} first: Tools & config → All registered tools → {name} → Review installation."
+        );
         return;
     };
     let configured = profile.args.join(" ");

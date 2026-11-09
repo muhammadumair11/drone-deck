@@ -81,17 +81,19 @@ fn recordings_are_reachable_from_navigation_and_ai_page() {
         },
     );
     rt.frame(0.);
-    let (x, y) = rt.find("nav-7").unwrap();
+    let (x, y) = rt.find("rail-data").unwrap();
     rt.pointer_down(x, y);
     rt.pointer_up(x, y);
     rt.frame(0.2);
-    assert_eq!(rt.state.page, 7);
+    assert_eq!(rt.state.page, crate::ui::Page::Data);
+    assert_eq!(rt.state.ui.data_tab, 0, "recordings is the first data tab");
     assert!(rt.find("capture-panel").is_some());
-    rt.update(|s, _| s.navigate(4));
+    rt.update(|s, _| s.ui.data_tab = 1);
     rt.frame(0.2);
-    let (x, y) = rt.find("open-recordings").unwrap();
+    assert!(rt.find("capture-panel").is_none());
+    let (x, y) = rt.find("data-tab-0").unwrap();
     rt.pointer_down(x, y);
     rt.pointer_up(x, y);
     rt.frame(0.2);
-    assert_eq!(rt.state.page, 7);
+    assert!(rt.find("capture-panel").is_some());
 }

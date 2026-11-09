@@ -1,5 +1,8 @@
+//! The reviewed workflow queue: installs missing tools one job at a time and configures
+//! each after verification. Its checkpoint survives app restarts.
 use super::*;
-use crate::ui::*;
+use crate::ui::kit::*;
+use crate::ui::theme::*;
 #[cfg(test)]
 #[path = "batch_tests.rs"]
 mod tests;
@@ -8,6 +11,18 @@ pub(crate) struct Batch {
     remaining: Vec<usize>,
     waiting: Option<String>,
     distro: String,
+}
+impl Batch {
+    /// Recipe indices still to install.
+    pub(crate) fn remaining(&self) -> &[usize] {
+        &self.remaining
+    }
+    /// The job id being waited on, once its job has started.
+    pub(crate) fn waiting(&self) -> Option<&str> {
+        self.waiting
+            .as_deref()
+            .filter(|id| !id.starts_with("starting:"))
+    }
 }
 pub(super) fn restore(s: &mut State) {
     if s.headless {
@@ -72,26 +87,23 @@ pub(super) fn persist(s: &mut State) -> bool {
     }
     false
 }
-pub(super) fn begin(s: &mut State) {
+/// Adopts every verified tool of the preset and queues the rest for installation.
+pub(crate) fn begin(s: &mut State) {
     if s.headless {
-        s.setup.message = "Preview: workflow installation disabled.".into();
+        s.setup.message = "Headless preview: installation is disabled.".into();
         return;
     }
-    if s.busy()
-        || s.setup.pending
-        || !s.wsl_ready()
-        || s.setup.distro.text.trim() != s.config.distro
-    {
-        s.setup.message = "Finish active work and select a working Linux environment first.".into();
+    if s.busy() || s.setup.pending {
+        s.setup.message =
+            "Stop running tools, recordings and installations before applying the plan.".into();
+        return;
+    }
+    if workflow::needs_wsl(s) && (!s.wsl_ready() || s.setup.distro.text.trim() != s.config.distro) {
+        s.setup.message = "Select a working WSL 2 environment before applying the plan.".into();
         return;
     }
     let ids = workflow::PRESETS[s.setup.workflow].1;
-    if !ids.iter().all(|id| {
-        s.setup
-            .checks
-            .get(*id)
-            .is_some_and(|c| c.environment.is_empty() || c.environment == s.setup.distro.text)
-    }) {
+    if !workflow::checked_all(s) {
         s.setup.message =
             "Check the entire workflow in the selected environment before installation.".into();
         return;
@@ -125,7 +137,6 @@ pub(super) fn begin(s: &mut State) {
         waiting: None,
         distro: s.setup.distro.text.clone(),
     });
-    s.setup.batch_review = false;
     s.setup.configure_after = true;
     s.setup.batch_message="Workflow setup started. Components install sequentially and are configured after verification.".into();
 }
@@ -206,80 +217,129 @@ pub(super) fn poll(s: &mut State) -> bool {
     request(s, "start");
     true
 }
-fn cancel(s: &mut State) {
+/// Stops the queue; the running job, if any, is asked to stop at its next safe step.
+pub(crate) fn cancel(s: &mut State) {
     if let Some(batch) = s.setup.batch.take() {
-        if let Some(id) = batch.waiting {
+        if let Some(id) = batch.waiting.filter(|id| !id.starts_with("starting:")) {
             s.setup.selected_job = Some(id);
             request(s, "cancel");
         }
         s.setup.batch_message="Workflow queue cancelled. The active transaction finishes its safe step; completed tools are preserved.".into();
+        activity::record(s, "Cancelled the workflow installation queue");
     }
 }
-pub(super) fn view(s: &State) -> El {
-    let mut body = col().w_full().min_w(0.).gap(10.);
-    if !s.setup.batch_message.is_empty() {
-        body = body.child(label(&s.setup.batch_message, 13., ink()).wrap());
-    }
-    if s.setup.batch.is_some() {
-        return body.child(
-            button(
-                "cancel-workflow-setup",
-                "Cancel workflow after current step",
-                false,
-                cancel,
-            )
-            .disabled(s.setup.pending),
+
+/// The running queue: what is installing, step progress, what remains and the job's log.
+pub(crate) fn progress(s: &State, compact: bool) -> El {
+    let r = &s.setup;
+    let Some(batch) = &r.batch else {
+        return el();
+    };
+    let job = batch
+        .waiting()
+        .and_then(|id| r.jobs.iter().find(|j| j.id == id));
+    let mut block = col()
+        .key("workflow-progress")
+        .w_full()
+        .min_w(0.)
+        .gap(12.)
+        .pt(18.)
+        .border_sides([1., 0., 0., 0.], fg())
+        .child(
+            meta_sized(r.batch_message.clone(), 10., fg())
+                .wrap()
+                .role("status"),
         );
-    }
-    let ids = workflow::PRESETS[s.setup.workflow].1;
-    body = body.child(
-        button(
-            "review-workflow-setup",
-            "Review complete workflow setup",
-            true,
-            |s| s.setup.batch_review = true,
-        )
-        .disabled(
-            !ids.iter().all(|id| s.setup.checks.contains_key(*id)) || s.setup.pending || s.busy(),
-        ),
-    );
-    if s.setup.batch_review {
-        let mut review=card().key("workflow-install-review").child(heading("Review complete setup","REUSE / INSTALL / CONFIGURE"))
-   .child(label("Verified existing components will be reused and their launch paths applied. Missing/incompatible tools get managed installations; shared prerequisites may be installed. Jobs run sequentially. This does not start a simulator, download a model, or fly a vehicle.",13.,ink()).wrap());
-        for id in ids {
-            let recipe = s.setup.recipes.iter().find(|r| r.id == *id).unwrap();
-            let compatible = s.setup.checks.get(*id).is_some_and(|c| c.compatible);
-            review = review.child(
-                label(
-                    format!(
-                        "{} · {}\n{}\n{}",
-                        recipe.name,
-                        if compatible {
-                            "reuse verified installation"
-                        } else {
-                            "install reviewed recipe"
-                        },
-                        recipe.destination,
-                        recipe.privileges
-                    ),
-                    13.,
-                    ink(),
+    match job {
+        Some(job) => {
+            let fraction = if job.total > 0 {
+                (job.step as f32 / job.total as f32).clamp(0., 1.)
+            } else {
+                0.
+            };
+            block = block
+                .child(
+                    row()
+                        .w_full()
+                        .min_w(0.)
+                        .gaps(6., 24.)
+                        .center_y()
+                        .flex_wrap()
+                        .child(h3(&job.tool, 19.).grow(1.))
+                        .child(meta_sized(job.status.clone(), 10., fg()))
+                        .child(meta(format!("Step {}/{}", job.step, job.total))),
                 )
-                .wrap(),
-            );
+                .child(
+                    row()
+                        .key("workflow-progress-bar")
+                        .role("progressbar")
+                        .label("Installation step progress")
+                        .a11y_value(format!("{}/{}", job.step, job.total))
+                        .w_full()
+                        .h(5.)
+                        .fill(soft())
+                        .child(el().w_frac(fraction).h(5.).fill(fg())),
+                )
+                .child(p(&job.message, 12.))
+                .child(super::view::job_log(job, if compact { 180. } else { 240. }));
         }
-        body = body.child(
-            review
-                .child(button(
-                    "confirm-workflow-setup",
-                    "Set up this reviewed workflow",
-                    true,
-                    begin,
-                ))
-                .child(button("back-workflow-setup", "Back", false, |s| {
-                    s.setup.batch_review = false
-                })),
-        );
+        None => {
+            block = block.child(p("Starting the next installation job…", 12.));
+        }
     }
-    body
+    let names: Vec<_> = batch
+        .remaining()
+        .iter()
+        .map(|i| r.recipes[*i].name.as_str())
+        .collect();
+    block
+        .child(
+            meta(if names.is_empty() {
+                "Nothing else queued".to_string()
+            } else {
+                format!("Then: {}", names.join(" / "))
+            })
+            .wrap(),
+        )
+        .child(ghost(
+            "cancel-workflow-setup",
+            "Cancel after current step",
+            !r.pending,
+            cancel,
+        ))
+}
+
+/// Headless fixture: a queue part-way through installing the preset's missing tools.
+pub(crate) fn preview(s: &mut State) {
+    let ids = workflow::ids(s);
+    let indices: Vec<usize> = ids
+        .iter()
+        .filter_map(|id| s.setup.recipe_index(id))
+        .collect();
+    let Some((&first, rest)) = indices.split_first() else {
+        return;
+    };
+    let id = "20260101T120000-0123abcd".to_string();
+    s.setup.jobs = vec![Job {
+        id: id.clone(),
+        tool: s.setup.recipes[first].name.clone(),
+        status: "Installing".into(),
+        message: "Headless preview fixture: no installer runs.".into(),
+        step: 3,
+        total: 7,
+        alive: true,
+        log_tail: "[preview] fixture log; no command was executed".into(),
+        ..Default::default()
+    }];
+    s.setup.selected_job = Some(id.clone());
+    s.setup.batch = Some(Batch {
+        remaining: rest.to_vec(),
+        waiting: Some(id),
+        distro: s.setup.distro.text.clone(),
+    });
+    s.setup.batch_message = format!(
+        "Installing {}. {} components remain.",
+        s.setup.recipes[first].name,
+        rest.len()
+    );
 }

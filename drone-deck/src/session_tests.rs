@@ -2,7 +2,7 @@ use crate::*;
 #[test]
 fn workspace_does_not_start_later_steps_before_readiness() {
     let mut s = State::new();
-    s.bundle();
+    s.bundle(systems::SESSIONS[systems::SIMULATION]);
     session::poll(&mut s);
     s.status.insert("sih".into(), "Running".into());
     session::poll(&mut s);
