@@ -37,9 +37,12 @@ pub(super) fn run(s: &mut State, project: Value) {
     let kind = project["kind"].as_str().unwrap_or("");
     let profile_id = match kind {
         "onnx" => "onnx",
-        "training" => "torch",
         "ros2" => "ros-workspace",
         "mavsdk" => "telemetry",
+        "training" => {
+            s.studio.message = "Drone Deck no longer runs PyTorch training projects. The project files are kept; run its main.py in your own environment.".into();
+            return;
+        }
         _ => {
             s.studio.message = "Unknown project type. Review its manifest.".into();
             return;
@@ -64,23 +67,6 @@ pub(super) fn run(s: &mut State, project: Value) {
     };
     let configured = profile.args.join(" ");
     let command = match kind {
-        "training" => {
-            if s.studio.inputs.text.trim().is_empty() {
-                s.studio.message =
-                    "Enter an NPZ file with numeric features and integer class targets first."
-                        .into();
-                return;
-            }
-            let Some((python, _)) = configured.split_once(" -c ") else {
-                s.studio.message = "Apply the verified CPU training environment first.".into();
-                return;
-            };
-            format!(
-                "{python} {script} --inputs {} --output {}",
-                quote(s.studio.inputs.text.trim()),
-                quote(&format!("{path}/artifacts"))
-            )
-        }
         "onnx" => {
             if s.studio.model_file.text.trim().is_empty() || s.studio.inputs.text.trim().is_empty()
             {

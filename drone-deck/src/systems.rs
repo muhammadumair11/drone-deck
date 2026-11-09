@@ -427,9 +427,7 @@ impl Systems {
         if headless {
             return Self::default();
         }
-        std::fs::read(Self::path())
-            .ok()
-            .and_then(|b| serde_json::from_slice::<Systems>(&b).ok())
+        crate::store::read_json::<Systems>(&Self::path())
             .map(|mut s| {
                 s.active = s.active.min(3);
                 s
@@ -440,9 +438,7 @@ impl Systems {
         if headless {
             return Ok(());
         }
-        std::fs::create_dir_all(backend::root()).map_err(|e| e.to_string())?;
-        std::fs::write(Self::path(), serde_json::to_vec_pretty(self).unwrap())
-            .map_err(|e| e.to_string())
+        crate::store::write_json(&Self::path(), self)
     }
     /// The saved name, or the system type when none was given.
     pub fn name(&self, kind: usize) -> &str {

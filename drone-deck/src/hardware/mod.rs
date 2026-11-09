@@ -84,11 +84,7 @@ pub(crate) fn start(s: &mut State) {
     }
     let program = std::env::var("WINDIR").unwrap_or_else(|_| "C:\\Windows".into())
         + "\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
-    let script = std::env::current_exe()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("runtime/studio/hardware.ps1");
+    let script = crate::backend::scripts().join("studio/hardware.ps1");
     let p = backend::Profile {
         id: "hardware".into(),
         name: "Native vehicle monitor".into(),

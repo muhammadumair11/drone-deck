@@ -21,7 +21,7 @@ pub(crate) const FILTERS: [&str; 7] = [
     "AI",
 ];
 
-const FIELDS: [(&str, &str); 8] = [
+const FIELDS: [(&str, &str); 7] = [
     ("Display name", "Name shown throughout the workspace"),
     (
         "Program",
@@ -38,10 +38,6 @@ const FIELDS: [(&str, &str); 8] = [
     (
         "Installation probe",
         "A Bash test for WSL, or a file path for Windows",
-    ),
-    (
-        "Package download URL",
-        "Optional. The publisher's official HTTPS package. Download asks first, saves to workspace/downloads and never runs the file",
     ),
     ("Ubuntu distribution", "Shared by every WSL profile"),
     (
@@ -72,7 +68,6 @@ pub fn open(s: &mut State) {
             },
             p.cwd.clone(),
             p.probe.clone(),
-            p.download_url.clone(),
             s.config.distro.clone(),
             p.category.clone(),
         ]
@@ -115,7 +110,7 @@ pub fn create(s: &mut State, category: &str) {
     s.form = Some(Form {
         creating: true,
         error: String::new(),
-        fields: ["My tool", "wsl", "", "", "", "", &s.config.distro, category]
+        fields: ["My tool", "wsl", "", "", "", &s.config.distro, category]
             .into_iter()
             .map(TextEdit::new)
             .collect(),
@@ -160,10 +155,10 @@ fn save(s: &mut State) {
             .map(str::to_owned)
             .collect()
     };
-    if fields[0].is_empty() || fields[1].is_empty() || fields[6].is_empty() {
+    if fields[0].is_empty() || fields[1].is_empty() || fields[5].is_empty() {
         return refuse(s, "Name, program and WSL distribution are required.");
     }
-    if fields[6] != s.config.distro && (s.busy() || s.setup.batch.is_some()) {
+    if fields[5] != s.config.distro && (s.busy() || s.setup.batch.is_some()) {
         return refuse(
             s,
             "Stop active tools, recordings and installations before changing the WSL distribution.",
@@ -206,9 +201,8 @@ fn save(s: &mut State) {
     p.args = args;
     p.cwd = fields[3].clone();
     p.probe = fields[4].clone();
-    p.download_url = fields[5].clone();
-    p.category = fields[7].clone();
-    next.distro = fields[6].clone();
+    p.category = fields[6].clone();
+    next.distro = fields[5].clone();
     if !s.headless {
         if let Err(e) = backend::save(&next) {
             return refuse(s, &format!("The profile could not be saved: {e}"));
@@ -341,9 +335,8 @@ pub fn view(s: &State, compact: bool) -> El {
         .pt(8.)
         .child(head.w_full().min_w(0.).child(h3(title, 15.)).child(actions))
         .child(status)
-        .child(pair(input(s, 0, locked), input(s, 7, locked), compact))
-        .child(pair(input(s, 1, locked), input(s, 6, locked), compact))
+        .child(pair(input(s, 0, locked), input(s, 6, locked), compact))
+        .child(pair(input(s, 1, locked), input(s, 5, locked), compact))
         .child(input(s, 2, locked))
         .child(pair(input(s, 3, locked), input(s, 4, locked), compact))
-        .child(input(s, 5, locked))
 }

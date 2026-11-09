@@ -380,26 +380,8 @@ fn foot(vp: &Viewport) -> El {
         .child(meta_sized("Configuration ≠ connection ≠ data health", 9., muted()).wrap())
 }
 
-/// Confirms stopping owned processes (`"stop"`) or downloading a profile's package URL.
-fn confirm_dialog(action: &str, w: f32, h: f32) -> [El; 2] {
-    let stop = action == "stop";
-    let (eyebrow, title, copy, verb) = if stop {
-        (
-            "Owned processes".to_string(),
-            "Stop owned processes?",
-            "This closes managed tools, simulators, recordings and replay started by Drone Deck. It does not land or disarm a vehicle, and it does not cancel installation jobs.".to_string(),
-            "Stop session",
-        )
-    } else {
-        (
-            "Package download".to_string(),
-            "Download this package?",
-            format!("{action}
-
-The file is saved to workspace/downloads with a safe file name. It is never opened or run; install it yourself after checking the publisher."),
-            "Download",
-        )
-    };
+/// Confirms stopping owned processes (`s.confirm == Some("stop")`).
+fn confirm_dialog(w: f32, h: f32) -> [El; 2] {
     let dw = (w - 32.).min(560.);
     let dh = (h - 32.).min(280.);
     [
@@ -422,8 +404,8 @@ The file is saved to workspace/downloads with a safe file name. It is never open
             .border(1., rule())
             .radius(4.)
             .modal(true, |s: &mut State| s.confirm = None)
-            .child(meta(eyebrow))
-            .child(h2(title, 22.))
+            .child(meta("Owned processes"))
+            .child(h2("Stop owned processes?", 22.))
             .child(
                 col()
                     .grow(1.)
@@ -432,20 +414,19 @@ The file is saved to workspace/downloads with a safe file name. It is never open
                     .scroll(ScrollSpec {
                         stick_bottom: false,
                     })
-                    .child(if stop { p(copy, 12.) } else { code(copy, 12., muted()).wrap_anywhere() }),
+                    .child(p(
+                        "This closes managed tools, simulators, recordings and replay started by Drone Deck. It does not land or disarm a vehicle, and it does not cancel installation jobs.",
+                        12.,
+                    )),
             )
             .child(
                 row()
                     .gap(12.)
                     .flex_wrap()
-                    .child(pill("confirm-action", verb, true, |s| match s.confirm.take() {
-                        Some(a) if a == "stop" => s.stop_all(),
-                        Some(url) => {
-                            s.send(Request::Download(url.clone()));
-                            s.notice = "Downloading package; completion appears in Activity → Process output.".into();
-                            crate::activity::record(s, format!("Requested package download: {url}"));
+                    .child(pill("confirm-action", "Stop session", true, |s| {
+                        if s.confirm.take().as_deref() == Some("stop") {
+                            s.stop_all()
                         }
-                        None => {}
                     }))
                     .child(ghost("cancel-action", "Cancel", true, |s| s.confirm = None)),
             ),
@@ -544,8 +525,8 @@ pub(super) fn view(s: &State, cx: &mut Cx<State>) -> El {
     if s.page != Page::Setup && s.ui.system_menu {
         root = root.child(system_menu(s));
     }
-    if let Some(action) = &s.confirm {
-        for e in confirm_dialog(action, w, h) {
+    if s.confirm.as_deref() == Some("stop") {
+        for e in confirm_dialog(w, h) {
             root = root.child(e);
         }
     }

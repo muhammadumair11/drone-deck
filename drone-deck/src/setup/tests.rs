@@ -262,3 +262,51 @@ fn check_progress_never_underflows_when_the_queue_outgrows_the_preset() {
     assert!(s.setup.queue.len() > workflow::ids(&s).len());
     assert_eq!(workflow::progress(&s), Some((0, workflow::ids(&s).len())));
 }
+
+#[test]
+fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
+    let s = State::new();
+    for (name, ids) in workflow::PRESETS {
+        for id in *ids {
+            assert!(
+                s.setup.recipe_index(id).is_some(),
+                "{name} needs unknown recipe {id}"
+            );
+        }
+    }
+    let names: Vec<_> = crate::guided::PRESET
+        .iter()
+        .map(|&i| workflow::PRESETS[i].0)
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "Lightweight visual simulation",
+            "PX4 with ROS 2 and recordings",
+            "Offline CPU inference",
+            "Native vehicle monitoring",
+        ]
+    );
+}
+
+#[test]
+fn adopting_qgroundcontrol_keeps_gpu_safe_mode_opt_in() {
+    let mut s = State::new();
+    let qgc = s.setup.recipe_index("qgc").unwrap();
+    let i = s
+        .config
+        .profiles
+        .iter()
+        .position(|p| p.id == "qgc")
+        .unwrap();
+    let exe = r"C:\Program Files\QGroundControl\bin\QGroundControl.exe";
+    for (before, after) in [(vec![], vec![]), (vec!["--swrast"], vec!["-swrast"])] {
+        s.config.profiles[i].args = before.into_iter().map(String::from).collect();
+        choose(&mut s, qgc);
+        s.setup.candidate = Some(candidate("qgc", r"C:\Program Files\QGroundControl", exe));
+        profiles::adopt(&mut s);
+        assert_eq!(s.setup.last_applied.as_deref(), Some("qgc"));
+        assert_eq!(s.config.profiles[i].args, after);
+        assert_eq!(s.config.profiles[i].program, exe);
+    }
+}

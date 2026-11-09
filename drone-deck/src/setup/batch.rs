@@ -28,14 +28,22 @@ pub(super) fn restore(s: &mut State) {
     if s.headless {
         return;
     }
-    let Ok(bytes) = std::fs::read(backend::root().join("setup/workflow-state.json")) else {
-        return;
-    };
-    let Ok(value) = serde_json::from_slice::<Value>(&bytes) else {
-        s.setup.batch_message =
-            "Previous workflow state could not be read. Recheck the workflow before continuing."
-                .into();
-        return;
+    let path = backend::root().join("setup/workflow-state.json");
+    let value = match crate::store::load(&path, |bytes| {
+        serde_json::from_slice::<Value>(bytes).map_err(|e| e.to_string())
+    }) {
+        crate::store::Read::Missing => return,
+        crate::store::Read::Loaded(value) => value,
+        crate::store::Read::Recovered(value, notice) => {
+            crate::activity::record(s, notice.clone());
+            s.setup.batch_message = notice;
+            value
+        }
+        crate::store::Read::Lost(notice) => {
+            crate::activity::record(s, notice.clone());
+            s.setup.batch_message = format!("{notice} Recheck the workflow before continuing.");
+            return;
+        }
     };
     if value["batch"].is_null() {
         return;
@@ -73,12 +81,7 @@ pub(super) fn persist(s: &mut State) -> bool {
         return false;
     }
     let path = backend::root().join("setup/workflow-state.json");
-    let result = (|| -> std::io::Result<()> {
-        std::fs::create_dir_all(path.parent().unwrap())?;
-        let temporary = path.with_extension("tmp");
-        std::fs::write(&temporary, &value)?;
-        std::fs::rename(temporary, path)
-    })();
+    let result = crate::store::write(&path, value.as_bytes());
     s.setup.checkpoint_cache = value;
     if let Err(error) = result {
         s.setup.batch_message =

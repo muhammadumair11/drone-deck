@@ -9,6 +9,7 @@ mod qgc_launch;
 mod recordings;
 mod session;
 mod setup;
+mod store;
 mod studio;
 mod systems;
 mod ui;
@@ -47,6 +48,7 @@ struct State {
     last_metric: Option<Instant>,
     readiness: HashMap<String, String>,
     session: Option<session::Launch>,
+    qgc: qgc_launch::Watch,
 }
 impl State {
     fn new() -> Self {
@@ -68,6 +70,7 @@ impl State {
                 "Headless preview · external processes disabled".into(),
             )
         } else {
+            backend::prepare_root();
             match backend::load() {
                 Ok(c) => (
                     c,
@@ -107,8 +110,20 @@ impl State {
             last_metric: None,
             readiness: HashMap::new(),
             session: None,
+            qgc: Default::default(),
         };
         ui::restore_preferences(&mut state);
+        let notices = if headless {
+            Vec::new()
+        } else {
+            store::take_notices()
+        };
+        if !notices.is_empty() {
+            state.notice = format!("{} {}", notices.join(" "), state.notice);
+            for notice in notices {
+                activity::record(&mut state, notice);
+            }
+        }
         state.setup.distro = TextEdit::new(&state.config.distro);
         state
     }
@@ -317,6 +332,7 @@ fn poll(s: &mut State, _: f64, tx: &mut Tx) -> bool {
         .unwrap_or_default();
     for e in events {
         changed = true;
+        qgc_launch::observe(s, &e);
         match e {
             Event::Log(id, line) => s.log(format!("[{id}] {line}")),
             Event::Status(id, status) => {

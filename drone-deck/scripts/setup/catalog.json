@@ -304,29 +304,5 @@
       "numpy==2.2.6"
     ],
     "verification": "Isolated environment recipe provided. No runtime is installed until you click Install."
-  },
-  {
-    "id": "torch",
-    "name": "PyTorch CPU training environment",
-    "version": "torch 2.7.1 CPU / ONNX 1.18.0",
-    "target": "WSL",
-    "docs": "https://pytorch.org/get-started/previous-versions/",
-    "summary": "Private CPU training environment for prepared numeric datasets. The starter exports ONNX; task-specific perception and sensor alignment require your own adapter.",
-    "steps": [
-      "Check Ubuntu and managed ownership",
-      "Install Python venv prerequisites",
-      "Install pinned CPU wheels",
-      "Verify imports and record environment"
-    ],
-    "automatic": true,
-    "destination": "~/.local/share/drone-deck/tools/torch",
-    "privileges": "WSL root for Python prerequisites; regular user for private environment",
-    "packages": [
-      "python3-venv",
-      "torch==2.7.1 (official CPU index)",
-      "numpy==2.2.6",
-      "onnx==1.18.0"
-    ],
-    "verification": "Recipe and scaffold tested without installing PyTorch. Training/export must be validated after explicit runtime installation."
   }
 ]

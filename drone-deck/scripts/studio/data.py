@@ -127,7 +127,7 @@ def library():
 def project_create(request):
     name=named(request['name']);kind=request.get('kind','onnx');path=ROOT/'projects'/name
     if path.exists():raise ValueError('That project already exists. Choose a new name; existing files are preserved.')
-    if kind not in ('onnx','ros2','mavsdk','training'):raise ValueError('Choose ONNX, ROS 2, MAVSDK or CPU training.')
+    if kind not in ('onnx','ros2','mavsdk'):raise ValueError('Choose ONNX, ROS 2 or MAVSDK.')
     path.mkdir(parents=True)
     try:
         model=str(request.get('model',''));dataset=str(request.get('dataset',''))
@@ -136,8 +136,7 @@ def project_create(request):
         (path/'main.py').write_text(template.read_text(),encoding='utf-8')
         (path/'README.md').write_text('# '+name+'\n\nGenerated '+kind+' project.\n\nRun in the selected WSL distribution. '+
             'No dependency installation or flight commands were performed by project creation.\n'+
-            ({'onnx':'Use the managed ONNX environment with an ONNX model and NPZ named tensors. Optional integer targets export classification predictions.csv; latency is amortized batch time.\n',
-              'training':'Use the CPU training environment. Prepare an NPZ file with float32 NxD features and N integer class targets (minimum four samples). The seed-42 80/20 split is a baseline, not a flight-safety validation. Artifacts include model.onnx, validation.npz, weights.pt and training.json. Run ONNX inference on validation.npz, then evaluate predictions.csv against the selected dataset version. Sensor extraction/label alignment is your project adapter responsibility.\n'}.get(kind,'Use the matching environment configured in Setup. This starter monitors data and never arms or flies.\n')),encoding='utf-8')
+            ({'onnx':'Use the managed ONNX environment with an ONNX model and NPZ named tensors. Optional integer targets export classification predictions.csv; latency is amortized batch time.\n'}.get(kind,'Use the matching environment configured in Setup. This starter monitors data and never arms or flies.\n')),encoding='utf-8')
         save(path/'project.json',manifest)
     except Exception:
         # Preserve incomplete source for inspection; never delete user project material.

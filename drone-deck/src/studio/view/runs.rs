@@ -1,19 +1,13 @@
 //! Projects: editable autonomy projects in the selected Ubuntu and their runs.
 use super::*;
 
-const KINDS: [&str; 4] = [
-    "ONNX inference",
-    "ROS 2 subscriber",
-    "MAVSDK monitor",
-    "PyTorch CPU training",
-];
+const KINDS: [&str; 3] = ["ONNX inference", "ROS 2 subscriber", "MAVSDK monitor"];
 
 fn kind_name(kind: &str) -> &str {
     match kind {
         "onnx" => KINDS[0],
         "ros2" => KINDS[1],
         "mavsdk" => KINDS[2],
-        "training" => KINDS[3],
         other => other,
     }
 }
@@ -157,7 +151,7 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
             field(&r.project_name, "project-name", "drone-project")
                 .on_edit(|s: &mut State| &mut s.studio.project_name),
         ))
-        .child(tabs("project-kind", &KINDS, r.kind.min(3), |s: &mut State, i: usize| {
+        .child(tabs("project-kind", &KINDS, r.kind.min(2), |s: &mut State, i: usize| {
             s.studio.kind = i
         }))
         .child(
@@ -197,7 +191,11 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
         .min_w(0.)
         .gap(14.)
         .child(meta("Linked at creation"))
-        .child(linked("Model", model, "None selected / choose one under Models"))
+        .child(linked(
+            "Model",
+            model,
+            "None selected / choose one under Models",
+        ))
         .child(linked(
             "Dataset",
             dataset,
@@ -215,7 +213,7 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
                 .on_edit(|s: &mut State| &mut s.studio.inputs),
         ))
         .child(notice(
-            "ONNX inference needs a model and correctly preprocessed NPZ tensors. CPU training needs NPZ features and integer targets, and exports ONNX.",
+            "ONNX inference needs a model and correctly preprocessed NPZ tensors.",
         ));
     let mut page = col().w_full().min_w(0.);
     if !ready {

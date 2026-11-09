@@ -101,7 +101,7 @@ fn recipe_filter(recipe: &str) -> &'static str {
         "dds" => "Transport",
         "mavsdk" => "Telemetry",
         "qgc" => "Ground station",
-        "onnx" | "torch" => "AI",
+        "onnx" => "AI",
         _ => "Data",
     }
 }
@@ -271,11 +271,22 @@ fn tool_row(s: &State, it: &Item, vp: &Viewport) -> El {
         (Some(_), _) | (None, None) => systems::profile_state(s, &it.id),
         (None, Some(c)) => systems::state(s, c),
     };
-    let name = col()
+    let mut name = col()
         .gap(4.)
         .min_w(0.)
         .child(caps(it.name(s), 12., 700., 0.045, fg()).wrap())
         .child(meta_sized(it.description(s), 9., muted()).wrap());
+    if it.id == "qgc" && s.qgc.hint.is_some() {
+        name = name.child(
+            meta_sized(
+                "Likely graphics failure / try GPU-safe mode under Configure",
+                9.,
+                warn(),
+            )
+            .key("qgc-row-hint")
+            .wrap(),
+        );
+    }
     let target = meta_sized(it.target(s), 9., muted()).wrap();
     let status = row()
         .gap(8.)
