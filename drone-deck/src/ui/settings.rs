@@ -13,10 +13,8 @@ pub(crate) fn restore(s: &mut State) {
     if s.headless {
         return;
     }
-    if let Ok(bytes) = std::fs::read(preference_path()) {
-        if let Ok(p) = serde_json::from_slice::<Preferences>(&bytes) {
-            s.ui.zoom_percent = p.zoom_percent.clamp(50, 150);
-        }
+    if let Some(p) = crate::store::read_json::<Preferences>(&preference_path()) {
+        s.ui.zoom_percent = p.zoom_percent.clamp(50, 150);
     }
 }
 pub(crate) fn set_zoom(s: &mut State, value: i32) {
@@ -27,15 +25,12 @@ pub(crate) fn set_zoom(s: &mut State, value: i32) {
         s.ui.zoom_percent
     );
     if !s.headless {
-        let result = std::fs::create_dir_all(backend::root()).and_then(|_| {
-            std::fs::write(
-                preference_path(),
-                serde_json::to_vec_pretty(&Preferences {
-                    zoom_percent: s.ui.zoom_percent,
-                })
-                .unwrap(),
-            )
-        });
+        let result = crate::store::write_json(
+            &preference_path(),
+            &Preferences {
+                zoom_percent: s.ui.zoom_percent,
+            },
+        );
         if let Err(e) = result {
             s.notice = format!("Zoom changed, but preferences could not be saved: {e}");
         }

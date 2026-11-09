@@ -396,33 +396,32 @@ fn component_states_never_promote_process_state_to_readiness() {
 fn recipe_only_tools_are_listed_under_all_registered_tools() {
     let mut s = State::new();
     s.navigate(Page::Tools);
-    assert!(!s.config.profiles.iter().any(|p| p.id == "torch"));
+    assert!(!s.config.profiles.iter().any(|p| p.id == "onnx"));
     let mut rt = runtime(s, (1440., 900.));
     assert!(
-        rt.find("tool-torch").is_none(),
-        "active simulation system has no torch"
+        rt.find("tool-onnx").is_none(),
+        "active simulation system has no ONNX runtime"
     );
     rt.update(|s, _| s.ui.tools_all = true);
     settle(&mut rt);
-    assert!(rt.find("tool-torch").is_some());
+    assert!(rt.find("tool-onnx").is_some());
     assert!(rt.find("tool-ros-workspace").is_some());
     assert!(
-        rt.find("start-torch").is_none(),
+        rt.find("start-onnx").is_none(),
         "nothing to start before install/adopt"
     );
     rt.update(|s, _| s.ui.tools_filter = 6);
     settle(&mut rt);
-    assert!(rt.find("tool-torch").is_some());
     assert!(rt.find("tool-onnx").is_some());
     assert!(
         rt.find("tool-gazebo").is_none(),
         "AI filter hides simulators"
     );
-    tap(&mut rt, "configure-torch");
-    assert_eq!(rt.state.ui.expanded.as_deref(), Some("torch"));
-    tap(&mut rt, "setup-review-torch");
+    tap(&mut rt, "configure-onnx");
+    assert_eq!(rt.state.ui.expanded.as_deref(), Some("onnx"));
+    tap(&mut rt, "setup-review-onnx");
     assert!(rt.state.setup.review);
-    assert_eq!(rt.state.setup.recipes[rt.state.setup.selected].id, "torch");
+    assert_eq!(rt.state.setup.recipes[rt.state.setup.selected].id, "onnx");
 }
 
 #[test]
@@ -431,7 +430,7 @@ fn existing_installation_can_be_detected_and_adopted_from_a_tool_row() {
     s.navigate(Page::Tools);
     s.ui.tools_all = true;
     let mut rt = runtime(s, (1440., 900.));
-    tap(&mut rt, "configure-torch");
+    tap(&mut rt, "configure-onnx");
     for key in [
         "setup-existing-location",
         "browse-existing-tool",
@@ -448,18 +447,18 @@ fn existing_installation_can_be_detected_and_adopted_from_a_tool_row() {
         rt.state.notice.starts_with("Preview"),
         "headless refuses detection"
     );
-    let torch = rt.state.setup.recipe_index("torch").unwrap();
-    assert_eq!(rt.state.setup.selected, torch);
+    let onnx = rt.state.setup.recipe_index("onnx").unwrap();
+    assert_eq!(rt.state.setup.selected, onnx);
     rt.update(|s, _| {
         let distro = s.setup.distro.text.clone();
         s.setup.candidate = Some(setup::Candidate {
-            tool: "torch".into(),
+            tool: "onnx".into(),
             found: true,
             compatible: true,
-            path: "/home/pilot/.local/share/drone-deck/venvs/torch".into(),
-            executable: "/home/pilot/.local/share/drone-deck/venvs/torch/bin/python".into(),
-            version: "2.5.1".into(),
-            reason: "PyTorch, NumPy and ONNX import.".into(),
+            path: "/home/pilot/.local/share/drone-deck/tools/onnx".into(),
+            executable: "/home/pilot/.local/share/drone-deck/tools/onnx/bin/python".into(),
+            version: "1.23.2".into(),
+            reason: "Isolated CPU runtime verified".into(),
             environment: distro,
             ..Default::default()
         });
@@ -467,8 +466,8 @@ fn existing_installation_can_be_detected_and_adopted_from_a_tool_row() {
     settle(&mut rt);
     assert!(rt.find("tool-candidate").is_some());
     tap(&mut rt, "adopt-tool");
-    assert_eq!(rt.state.setup.last_applied.as_deref(), Some("torch"));
-    assert!(rt.state.config.profiles.iter().any(|p| p.id == "torch"));
+    assert_eq!(rt.state.setup.last_applied.as_deref(), Some("onnx"));
+    assert!(rt.state.config.profiles.iter().any(|p| p.id == "onnx"));
     assert!(
         rt.state.activity.entries[0]
             .text
@@ -476,6 +475,6 @@ fn existing_installation_can_be_detected_and_adopted_from_a_tool_row() {
         "adoption is recorded"
     );
     settle(&mut rt);
-    assert!(rt.find("tool-torch").is_some());
-    assert!(rt.find("start-torch").is_some(), "adopted tool can start");
+    assert!(rt.find("tool-onnx").is_some());
+    assert!(rt.find("start-onnx").is_some(), "adopted tool can start");
 }

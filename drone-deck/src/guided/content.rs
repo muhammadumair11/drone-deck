@@ -218,4 +218,4 @@ pub(crate) const STORIES: [Story; 4] = [
 ];
 
 /// Workflow preset for each system (`setup::workflow::PRESETS`).
-pub(crate) const PRESET: [usize; 4] = [0, 1, 3, 5];
+pub(crate) const PRESET: [usize; 4] = [0, 1, 3, 4];

@@ -137,7 +137,7 @@ pub(crate) fn request(s: &mut State, action: &str) {
         }
         "project_create" => {
             value["name"] = json!(r.project_name.text.trim());
-            value["kind"] = json!(["onnx", "ros2", "mavsdk", "training"][r.kind.min(3)]);
+            value["kind"] = json!(["onnx", "ros2", "mavsdk"][r.kind.min(2)]);
             value["model"] = json!(windows_to_linux(&r.model_path));
             value["dataset"] = r
                 .dataset

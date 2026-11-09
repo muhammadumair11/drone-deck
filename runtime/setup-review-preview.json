@@ -1,4 +1,0 @@
-{"events":[
- {"t":0.1,"type":"tap","key":"open-settings"},
- {"t":0.4,"type":"tap","key":"review-wsl"}
-]}

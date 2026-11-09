@@ -255,12 +255,7 @@ fn readiness(s: &State, idle: bool) -> El {
                         send(s, "check");
                         send(s, "list");
                     },
-                ))
-                .child(ghost("recording-guide", "Recording guide ↗", true, |s| {
-                    let root = backend::root();
-                    let guide = root.parent().unwrap_or(&root).join("drone-deck/RECORDINGS.md");
-                    s.open(guide.to_string_lossy().into_owned())
-                })),
+                )),
         )
         .child(p("PX4 SIH alone does not publish ROS sensor topics.", 11.))
         .child(p(

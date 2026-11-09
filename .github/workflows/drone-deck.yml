@@ -1,0 +1,139 @@
+name: drone-deck
+
+# Checks, tests and headless snapshots for the Drone Deck app in drone-deck/.
+# A tag v* additionally builds the release package and attaches the zip to a GitHub Release.
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: drone-deck-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  MANIFEST: drone-deck/Cargo.toml
+
+jobs:
+  rust:
+    name: Rust (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        shell: pwsh
+        run: |
+          $channel = (Select-String -Path rust-toolchain.toml -Pattern '^channel\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          rustup toolchain install $channel --profile minimal --component clippy,rustfmt
+          rustup show active-toolchain
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: drone-deck -> target
+
+      - name: cargo fmt --check
+        run: cargo fmt --manifest-path ${{ env.MANIFEST }} --check
+
+      - name: cargo clippy (report only)
+        continue-on-error: true
+        run: cargo clippy --locked --manifest-path ${{ env.MANIFEST }} --all-targets
+
+      - name: cargo test
+        run: cargo test --locked --manifest-path ${{ env.MANIFEST }}
+
+      - name: Build for headless snapshots
+        run: cargo build --locked --manifest-path ${{ env.MANIFEST }}
+
+      - name: Headless snapshots
+        shell: pwsh
+        env:
+          # Keep the runner's real %LOCALAPPDATA% out of the snapshots.
+          DRONE_DECK_DATA_DIR: ${{ runner.temp }}/drone-deck-data
+        run: |
+          $exe = 'drone-deck/target/debug/drone-deck.exe'
+          New-Item -ItemType Directory -Path snapshots -Force | Out-Null
+          & $exe --size 1280x800 --snap snapshots/system.png
+          if ($LASTEXITCODE -ne 0) { throw "Snapshot of the default view failed ($LASTEXITCODE)" }
+          foreach ($scene in 'tools', 'data', 'activity', 'settings', 'ros', 'ai', 'physical', 'setup') {
+            & $exe --scene $scene --size 1280x800 --snap "snapshots/$scene.png"
+            if ($LASTEXITCODE -ne 0) { throw "Snapshot of scene '$scene' failed ($LASTEXITCODE)" }
+          }
+          Get-ChildItem snapshots
+
+      - name: Upload snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drone-deck-snapshots
+          path: snapshots/
+          if-no-files-found: warn
+
+  python:
+    # The helper scripts run inside WSL (they use fcntl and process groups), so their tests run on Linux.
+    name: Python helper tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # recordings.py reads rosbag metadata with PyYAML (python3-yaml inside WSL); the tests exercise that path.
+      - name: Install test dependencies
+        run: python -m pip install pyyaml
+
+      - name: unittest
+        run: |
+          for dir in drone-deck/scripts drone-deck/scripts/setup drone-deck/scripts/studio; do
+            echo "::group::$dir"
+            python -m unittest discover --start-directory "$dir" --top-level-directory "$dir" --pattern 'test_*.py' --verbose
+            echo "::endgroup::"
+          done
+          python drone-deck/scripts/setup/test-linux-tools.py --verbose
+
+  release:
+    name: Release package
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [rust, python]
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        shell: pwsh
+        run: |
+          $channel = (Select-String -Path rust-toolchain.toml -Pattern '^channel\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          rustup toolchain install $channel --profile minimal --component clippy,rustfmt
+          rustup show active-toolchain
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: drone-deck -> target
+
+      - name: Check the tag matches the package version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path drone-deck/Cargo.toml -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          if ("v$version" -ne '${{ github.ref_name }}') { throw "Tag ${{ github.ref_name }} does not match drone-deck/Cargo.toml version $version" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Build and package (Windows PowerShell 5.1)
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File drone-deck/Build.ps1 -NoLocalDeploy
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/DroneDeck-${{ steps.version.outputs.version }}.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true

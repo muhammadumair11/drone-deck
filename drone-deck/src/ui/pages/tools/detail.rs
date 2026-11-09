@@ -108,6 +108,58 @@ fn profile_block(s: &State, p: &crate::backend::Profile, vp: &Viewport) -> El {
         .child(form)
 }
 
+/// QGroundControl's opt-in GPU-safe mode and the hint left by a likely graphics failure.
+fn graphics(s: &State, profile: &crate::backend::Profile) -> El {
+    let on = crate::qgc_launch::gpu_safe(profile);
+    let mut block = col()
+        .key("qgc-graphics")
+        .w_full()
+        .min_w(0.)
+        .gap(8.)
+        .mt(28.)
+        .pt(20.)
+        .border_sides([1., 0., 0., 0.], soft())
+        .child(caps("Graphics", 10., 400., 0.08, muted()))
+        .child(
+            checkbox(
+                "qgc-gpu-safe",
+                "GPU-safe mode (software rendering)",
+                on,
+                move |s| crate::qgc_launch::set_gpu_safe(s, !on),
+            )
+            .self_start(),
+        )
+        .child(
+            p(
+                "Off by default: QGroundControl draws with the graphics card. Turn this on if it closes right after starting or opens a blank or black window, which usually means its OpenGL / Direct3D driver failed to start. GPU-safe mode adds -swrast and draws on the CPU: maps and video are slower, but it starts on almost any machine. The change is saved to this launch profile.",
+                11.,
+            )
+            .max_w(760.),
+        );
+    if systems::running(s, "qgc") {
+        block = block.child(
+            meta_sized(
+                "Stop QGroundControl to change this: a running process keeps the renderer it started with.",
+                9.,
+                muted(),
+            )
+            .wrap(),
+        );
+    }
+    if let Some(hint) = &s.qgc.hint {
+        block = block.child(
+            row()
+                .key("qgc-graphics-hint")
+                .gap(8.)
+                .center_y()
+                .min_w(0.)
+                .child(dot(warn()))
+                .child(meta_sized(hint, 9., fg()).wrap().grow(1.)),
+        );
+    }
+    block
+}
+
 /// Point setup at this row's recipe. Choosing another recipe clears the location typed for the
 /// previous one; the location typed for this recipe is kept.
 fn select_recipe(s: &mut State, i: usize) {
@@ -275,9 +327,6 @@ fn installation(s: &State, it: &Item) -> El {
         .or_else(|| recipe.map(|i| s.setup.recipes[i].docs.clone()))
         .filter(|d| !d.is_empty());
     let folder = profile.map(|p| p.cwd.clone()).unwrap_or_default();
-    let package = profile
-        .map(|p| p.download_url.trim().to_string())
-        .filter(|u| u.starts_with("https://"));
     let mut actions = row()
         .key("tool-installation")
         .gaps(0., 24.)
@@ -310,12 +359,6 @@ fn installation(s: &State, it: &Item) -> El {
                     s.open(d.clone())
                 }
             },
-        ))
-        .child(ghost(
-            "download-package",
-            "Download package…",
-            package.is_some() && !s.headless,
-            move |s| s.confirm = package.clone(),
         ))
         .child(ghost(
             "open-project",
@@ -421,6 +464,9 @@ pub(super) fn view(s: &State, it: &Item, vp: &Viewport) -> El {
         .pb(28.)
         .child(p(guidance, 12.).max_w(760.));
     match it.profile(s) {
+        Some(p) if p.id == "qgc" && p.program != "wsl" => {
+            block = block.child(profile_block(s, p, vp)).child(graphics(s, p))
+        }
         Some(p) => block = block.child(profile_block(s, p, vp)),
         None => {
             block = block.child(

@@ -13,11 +13,7 @@ pub(super) fn request(
 ) {
     thread::spawn(move || {
         let result = (|| -> Result<(), String> {
-            let directory = std::env::current_exe()
-                .map_err(|e| e.to_string())?
-                .parent()
-                .unwrap()
-                .join("runtime/studio");
+            let directory = crate::backend::scripts().join("studio");
             let mut command = if linux {
                 let mut c = Command::new("wsl.exe");
                 let script = directory

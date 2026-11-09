@@ -1,6 +1,6 @@
 # Drone Deck platform plan
 
-Agreed scope: 9 November 2026, revised to Windows-only desktop support and Hugging Face integration. This document records the agreed scope. Version 0.7 implements the first local accounts/model, dataset/evaluation, project and physical-monitoring capabilities; detailed behavior and limits are in [0.7 guide](STUDIO-0.7.md). Broader perception, remote deployment and direct physical flight remain future work.
+Agreed scope: 9 November 2026, revised to Windows-only desktop support and Hugging Face integration. This document records the agreed scope. Version 0.7 implemented the first local accounts/model, dataset/evaluation, project and physical-monitoring capabilities, and 0.8 reorganised them around an active system; current behaviour and limits are in the [user guide](docs/user-guide.md) and [known issues](docs/known-issues.md). Broader perception, remote deployment and direct physical flight remain future work.
 
 ## Confirmed requirements
 
@@ -16,9 +16,9 @@ Agreed scope: 9 November 2026, revised to Windows-only desktop support and Huggi
 
 ## Current delivery and remaining gaps
 
-The current app manages processes, profiles, logs, documentation links, configured HTTPS package downloads, read-only MAVSDK telemetry and rosbag2/MCAP recording/replay. Version 0.5 adds Windows/WSL discovery, live distribution selection, maintained setup recipe implementations, persisted installation jobs/logs/recovery and environment-bound existing-tool adoption. Fresh defaults use user-relative managed Linux locations; saved profiles are preserved.
+The current app manages processes, profiles, logs, documentation links, read-only MAVSDK telemetry and rosbag2/MCAP recording/replay. Version 0.5 adds Windows/WSL discovery, live distribution selection, maintained setup recipe implementations, persisted installation jobs/logs/recovery and environment-bound existing-tool adoption. Fresh defaults use user-relative managed Linux locations; saved profiles are preserved.
 
-An existence probe is not a compatibility or connection test. A command profile is not a complete integration adapter. A downloaded installer is not an installed and configured tool. The new Setup recipes have persistent lifecycle management; the legacy configured-package download button remains separate. Existing-tool discovery and non-installing lifecycle fixtures were validated, while fresh WSL/UAC/reboot and clean source-build validation remain outstanding. See [Setup guide](SETUP.md). Version 0.7 adds Windows Credential Manager-backed Hugging Face settings, pinned/hash-verified model jobs, immutable dataset versions and reports, optional CPU runtime recipes/project starters and native read-only physical monitoring. Full task-specific compatibility, hardware acceptance and clean-machine installer validation remain outstanding.
+An existence probe is not a compatibility or connection test. A command profile is not a complete integration adapter. A downloaded installer is not an installed and configured tool. Setup recipes have persistent lifecycle management; the legacy configured-package download was removed in phase 1, so reviewed installation jobs are the only download route for tools. Existing-tool discovery and non-installing lifecycle fixtures were validated, while fresh WSL/UAC/reboot and clean source-build validation remain outstanding. See [managed installation](docs/user-guide.md#managed-installation). Version 0.7 adds Windows Credential Manager-backed Hugging Face settings, pinned/hash-verified model jobs, immutable dataset versions and reports, optional CPU runtime recipes/project starters and native read-only physical monitoring. Full task-specific compatibility, hardware acceptance and clean-machine installer validation remain outstanding.
 
 ## Environment setup
 
@@ -54,7 +54,7 @@ Record which assets Drone Deck owns. Repair/uninstall must respect shared depend
 
 Represent execution targets as Windows local, WSL distribution, and future remote Linux. Drone Deck's desktop UI always runs on Windows. Bind each component to a target, version, path, environment, and endpoint. Separate the flight stack, simulator, visualizer, communications bridge, ground station, development environment, and AI workload.
 
-Replace personal default paths with discovered or chosen locations. Use appropriate per-user writable Windows application data and explicit WSL workspace/cache locations; migrate the existing portable workspace without losing profiles. Keep WSL and Windows Python environments distinct and label which interpreter runs each project.
+Replace personal default paths with discovered or chosen locations. Use appropriate per-user writable Windows application data and explicit WSL workspace/cache locations; migrate the existing portable workspace without losing profiles (done in phase 1: `%LOCALAPPDATA%\DroneDeck\workspace`, with `portable.txt` and `DRONE_DECK_DATA_DIR` overrides). Keep WSL and Windows Python environments distinct and label which interpreter runs each project.
 
 Offer tested workflow presets rather than installing every catalog entry. Initial presets should cover the existing lightweight PX4 SIH/visualizer workflow, PX4 development with MAVSDK, PX4/ROS 2, and an independently validated ArduPilot workflow. Add Gazebo as an optional richer simulation workflow.
 
@@ -66,7 +66,7 @@ References: [PX4 ROS 2 guide](https://docs.px4.io/main/en/ros2/user_guide), [Ard
 
 ## Simulation, physical vehicles, and recorded data
 
-Projects select Simulation, Physical vehicle, or Replay explicitly. Each connection has an identity and execution target; a simulator process must not stand in for identification of a physical vehicle.
+The active system (Local simulation, ROS & sensor capture, Offline AI workspace, Physical vehicle) selects the simulated, physical or recorded-data context explicitly. Each connection has an identity and execution target; a simulator process must not stand in for identification of a physical vehicle.
 
 Physical workflows need serial/USB and UDP/TCP connection discovery/configuration, autopilot and vehicle identification, reconnect status, telemetry freshness, firmware information, parameter backup/diff/apply results, and flight-log retrieval. Parameter writes must identify the target vehicle and report acknowledgements. Initial integration retains QGroundControl and, for ArduPilot on Windows, Mission Planner for their established workflows.
 
@@ -82,15 +82,15 @@ Provide project templates and managed launch graphs for MAVSDK, ROS 2, and custo
 
 Treat AI as a workflow covering sensor acquisition, synchronized recordings, datasets, model training, evaluation, model versions, inference, and eventual deployment. Track inference latency and dropped/stale data alongside task results. Support recorded-data evaluation and simulation before physical deployment. Keep training and inference engines replaceable.
 
-An onboard companion computer is distinct from the laptop and from the flight controller. Later remote execution should deploy and manage Linux services on such computers without requiring the Windows UI to remain the runtime for onboard autonomy.
+An onboard companion computer is distinct from the Windows PC and from the flight controller. Later remote execution should deploy and manage Linux services on such computers without requiring the Windows UI to remain the runtime for onboard autonomy.
 
-Useful integration candidates include MAVSDK, pymavlink, MAVROS or autopilot-specific ROS bridges; rosbag2 recording/replay; Foxglove visualization; PyTorch training; and ONNX Runtime inference. These have different responsibilities and are not interchangeable substitutes.
+Useful integration candidates include MAVSDK, pymavlink, MAVROS or autopilot-specific ROS bridges; rosbag2 recording/replay; Foxglove visualization; PyTorch training (a starter shipped in 0.7 and was removed in phase 1); and ONNX Runtime inference. These have different responsibilities and are not interchangeable substitutes.
 
 References: [MAVROS](https://github.com/mavlink/mavros/tree/ros2), [pymavlink](https://mavlink.io/en/mavgen_python/), [rosbag2](https://github.com/ros2/rosbag2), [Foxglove](https://docs.foxglove.dev/docs), [PyTorch](https://docs.pytorch.org/tutorials/beginner/basics/intro.html), [ONNX Runtime](https://onnxruntime.ai/docs/).
 
 ## Recording, datasets, offline operation, and evaluation
 
-Accepted scope includes a recording/session library, dataset management, local offline workflows, and AI evaluation against recorded sensor data. The v0.4 implementation adds rosbag2/MCAP dependency checks, explicit topic discovery/selection, managed recording/finalization, session metadata/library browsing, and separate-domain local replay. Dataset management, offline project readiness, model evaluation, and visualization adapters remain planned. See [Recording guide](RECORDINGS.md) for prerequisites and limits.
+Accepted scope includes a recording/session library, dataset management, local offline workflows, and AI evaluation against recorded sensor data. The v0.4 implementation adds rosbag2/MCAP dependency checks, explicit topic discovery/selection, managed recording/finalization, session metadata/library browsing, and separate-domain local replay. Version 0.7 added dataset versions and CSV evaluation; offline project readiness and visualization adapters remain planned. See [Recordings](docs/user-guide.md#recordings-rosbag2--mcap) for prerequisites and limits.
 
 Recommended recording foundation:
 
@@ -114,11 +114,11 @@ References: [rosbag2 for Jazzy](https://github.com/ros2/rosbag2/tree/jazzy), [MC
 
 ## Hugging Face accounts and model library
 
-Add Settings → Accounts & credentials → Hugging Face with a masked token input, Validate connection, account identity/status, Replace token, and Remove saved token. Removing the saved token must explain that it does not revoke it on Hugging Face. Link to the official token-management page for creation/revocation. Use a dedicated fine-grained token with read access to the selected repositories where possible; downloading models does not require repository write permission.
+Settings → Model access (Hugging Face), also reachable from Data & models → Models, should offer a masked token input, Validate connection, account identity/status, Replace token, and Remove saved token. Removing the saved token must explain that it does not revoke it on Hugging Face. Link to the official token-management page for creation/revocation. Use a dedicated fine-grained token with read access to the selected repositories where possible; downloading models does not require repository write permission.
 
 Store the credential through Windows Credential Manager. Keep only a credential reference in ordinary configuration. Exclude tokens from profiles, command arguments, logs, crash reports, manifests, project exports, and screenshots of settings. Retrieve credentials only when needed, scope them to the intended authenticated download process/request, and avoid persistent plaintext Hugging Face login files or copying secrets into WSL homes. Redact authenticated request details from diagnostics. A user must explicitly choose any future credential provisioning to a remote runtime.
 
-Offer an AI & data → Model library page that accepts a Hub repository ID or URL and supports search, selected revision, file/variant selection, model cards, license information, gated-access status, download-size estimates, and destination selection. Use the official Hub client/API with a pinned, tested version. Download only the selected model files and required metadata rather than every weight format in a repository.
+The Data & models → Models tab should grow into a model library that accepts a Hub repository ID or URL and supports search, selected revision, file/variant selection, model cards, license information, gated-access status, download-size estimates, and destination selection. Use the official Hub client/API with a pinned, tested version. Download only the selected model files and required metadata rather than every weight format in a repository.
 
 Integrate downloads with the persisted job system: progress, retry/cancellation, supported interrupted-download recovery, cached-file reuse, revision/hash metadata, and actionable authentication or disk-space failures. Allow import of an existing local model. Show Windows and WSL cache locations clearly, avoiding accidental duplicate multi-gigabyte copies and respecting each environment's performance needs. Cached models should be usable offline when their runtime and other dependencies are also available; explain missing assets explicitly. Cache cleanup must show which workflows reference the files.
 

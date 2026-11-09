@@ -49,9 +49,10 @@ class DataTests(unittest.TestCase):
   result=data.project_create(dict(name='monitor',kind='ros2'))['project']
   self.assertTrue((Path(result['path'])/'main.py').is_file());self.assertFalse((Path(result['path'])/'.venv').exists())
   with self.assertRaises(ValueError):data.project_create(dict(name='monitor',kind='ros2'))
- def test_training_and_inference_templates_are_editable_without_runtime_imports(self):
-  for kind in ('onnx','training','mavsdk'):
+ def test_inference_and_monitor_templates_are_editable_without_runtime_imports(self):
+  for kind in ('onnx','mavsdk'):
    result=data.project_create(dict(name=kind,kind=kind))['project'];path=Path(result['path'])
    ast.parse((path/'main.py').read_text());self.assertFalse((path/'.venv').exists())
-  self.assertIn('validation.npz',(self.root/'projects/training/README.md').read_text())
+  self.assertIn('NPZ named tensors',(self.root/'projects/onnx/README.md').read_text())
+  with self.assertRaises(ValueError):data.project_create(dict(name='trainer',kind='training'))
 if __name__=='__main__':unittest.main()

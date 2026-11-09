@@ -7,8 +7,8 @@ function Find-WindowsTool([string]$Tool,[string]$Location) {
                     (Join-Path $env:ProgramFiles 'QGroundControl\QGroundControl.exe'),
                     (Join-Path $env:LOCALAPPDATA 'QGroundControl\bin\QGroundControl.exe'))
     } elseif (-not $Location -and $Tool -eq 'jmavsim') {
-        $paths += (Join-Path $env:USERPROFILE 'Desktop\Simulator Launchers\jMAVSim-Windows\jmavsim_run.jar')
         $paths += (Join-Path $env:LOCALAPPDATA 'DroneDeck\tools\jmavsim\jmavsim_run.jar')
+        $paths += (Join-Path $env:USERPROFILE 'Desktop\Simulator Launchers\jMAVSim-Windows\jmavsim_run.jar')
     }
     foreach ($path in $paths) {
         if (Test-Path -LiteralPath $path -PathType Leaf) {

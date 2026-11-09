@@ -28,10 +28,7 @@ impl Activity {
         if headless {
             return a;
         }
-        if let Some(mut entries) = std::fs::read(path())
-            .ok()
-            .and_then(|b| serde_json::from_slice::<VecDeque<Entry>>(&b).ok())
-        {
+        if let Some(mut entries) = store::read_json::<VecDeque<Entry>>(&path()) {
             entries.truncate(LIMIT);
             a.entries = entries;
         }
@@ -48,19 +45,14 @@ pub(crate) fn record(s: &mut State, text: impl Into<String>) {
     });
     s.activity.entries.truncate(LIMIT);
     if !s.headless {
-        let _ = std::fs::create_dir_all(backend::root());
-        let _ = std::fs::write(
-            path(),
-            serde_json::to_vec_pretty(&s.activity.entries).unwrap_or_default(),
-        );
+        let _ = store::write_json(&path(), &s.activity.entries);
     }
 }
 /// Writes the history as JSON next to the workspace and returns its path.
 pub(crate) fn export(s: &State) -> Result<std::path::PathBuf, String> {
     let file = backend::root().join("activity-export.json");
-    std::fs::create_dir_all(backend::root()).map_err(|e| e.to_string())?;
     let body = serde_json::json!({ "exported": now(), "events": s.activity.entries });
-    std::fs::write(&file, serde_json::to_vec_pretty(&body).unwrap()).map_err(|e| e.to_string())?;
+    store::write_json(&file, &body)?;
     Ok(file)
 }
 

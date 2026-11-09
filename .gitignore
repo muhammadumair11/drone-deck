@@ -15,3 +15,10 @@ demo/**/*-strip.png
 /.lab-output/
 __pycache__/
 *.pyc
+
+# Drone Deck build outputs (drone-deck/Build.ps1 writes these beside the repo root).
+/Drone Deck.exe
+/runtime/
+/assets/
+/workspace/
+/dist/

@@ -1,7 +1,0 @@
-{"events":[
- {"t":0.1,"type":"key","name":"0","ctrl":true},
- {"t":0.4,"type":"key","name":"-","ctrl":true},
- {"t":0.7,"type":"key","name":"=","ctrl":true},
- {"t":1.0,"type":"key","name":",","ctrl":true},
- {"t":1.4,"type":"tap","key":"zoom-out"}
-]}

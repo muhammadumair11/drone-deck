@@ -15,11 +15,7 @@ pub(super) struct Bridge {
 }
 impl Bridge {
     pub fn spawn(distro: &str) -> Result<Self, String> {
-        let script = std::env::current_exe()
-            .map_err(|e| e.to_string())?
-            .parent()
-            .unwrap()
-            .join("runtime/recordings.py");
+        let script = crate::backend::scripts().join("recordings.py");
         if !script.is_file() {
             return Err(format!("Recording worker is missing: {}", script.display()));
         }

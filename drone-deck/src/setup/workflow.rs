@@ -15,7 +15,6 @@ pub(crate) const PRESETS: &[(&str, &[&str])] = &[
     ),
     ("ArduPilot development", &["ardupilot", "qgc"]),
     ("Offline CPU inference", &["onnx"]),
-    ("CPU training and inference", &["torch", "onnx"]),
     ("Native vehicle monitoring", &["qgc"]),
 ];
 
