@@ -1,0 +1,23 @@
+{
+    "tool":  "ROS 2 Jazzy + rosbag2 / MCAP",
+    "total":  4,
+    "id":  "20261108T234723-8a37365c",
+    "process_ticks":  134386552439118062,
+    "step":  4,
+    "updated":  "2026-11-08T23:47:26.3865154Z",
+    "started_process":  "2026-11-08T23:47:23.9118062Z",
+    "message":  "Compatible launch candidate found. Nothing was updated. Detect and apply its configuration to reuse it.",
+    "pid":  70784,
+    "status":  "Existing installation",
+    "result":  {
+                   "tool":  "ros2",
+                   "found":  true,
+                   "compatible":  true,
+                   "path":  "/opt/ros/jazzy",
+                   "executable":  "/opt/ros/jazzy/bin/ros2",
+                   "version":  "Jazzy",
+                   "reason":  "Jazzy + rosbag2 / MCAP",
+                   "managed":  false,
+                   "environment":  "Ubuntu-24.04"
+               }
+}

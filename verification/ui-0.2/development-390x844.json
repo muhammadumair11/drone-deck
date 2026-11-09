@@ -1,0 +1,4564 @@
+{
+  "accessibility": {
+    "bounds": [
+      0.0,
+      0.0,
+      390.0,
+      844.0
+    ],
+    "children": [
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          390.0,
+          844.0
+        ],
+        "children": [
+          {
+            "bounds": [
+              0.0,
+              0.0,
+              390.0,
+              844.0
+            ],
+            "children": [
+              {
+                "bounds": [
+                  0.0,
+                  0.0,
+                  390.0,
+                  184.3
+                ],
+                "children": [
+                  {
+                    "actions": [
+                      "click",
+                      "focus"
+                    ],
+                    "bounds": [
+                      12.0,
+                      16.1,
+                      58.0,
+                      44.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          22.0,
+                          26.1,
+                          38.0,
+                          24.0
+                        ],
+                        "name": "Menu",
+                        "role": "label"
+                      }
+                    ],
+                    "key": "open-menu",
+                    "name": "Menu",
+                    "role": "button"
+                  },
+                  {
+                    "bounds": [
+                      82.0,
+                      12.0,
+                      165.0,
+                      13.8
+                    ],
+                    "name": "DRONE PROJECTS / LOCAL LAB",
+                    "role": "label"
+                  },
+                  {
+                    "bounds": [
+                      82.0,
+                      31.8,
+                      165.0,
+                      32.5
+                    ],
+                    "name": "Development",
+                    "role": "label"
+                  },
+                  {
+                    "actions": [
+                      "click",
+                      "focus"
+                    ],
+                    "bounds": [
+                      12.0,
+                      76.3,
+                      100.0,
+                      44.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          22.0,
+                          86.3,
+                          80.0,
+                          24.0
+                        ],
+                        "name": "Detect tools",
+                        "role": "label"
+                      }
+                    ],
+                    "key": "detect-tools",
+                    "name": "Detect tools",
+                    "role": "button"
+                  },
+                  {
+                    "actions": [
+                      "click",
+                      "focus"
+                    ],
+                    "bounds": [
+                      120.0,
+                      76.3,
+                      102.0,
+                      44.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          130.0,
+                          86.3,
+                          82.0,
+                          24.0
+                        ],
+                        "name": "Stop session",
+                        "role": "label"
+                      }
+                    ],
+                    "key": "stop-all",
+                    "name": "Stop session",
+                    "role": "button"
+                  },
+                  {
+                    "actions": [
+                      "click",
+                      "focus"
+                    ],
+                    "bounds": [
+                      230.0,
+                      76.3,
+                      99.0,
+                      44.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          240.0,
+                          86.3,
+                          79.0,
+                          24.0
+                        ],
+                        "name": "Hide details",
+                        "role": "label"
+                      }
+                    ],
+                    "key": "toggle-inspector",
+                    "name": "Hide details",
+                    "role": "button"
+                  },
+                  {
+                    "actions": [
+                      "click",
+                      "focus"
+                    ],
+                    "bounds": [
+                      12.0,
+                      128.3,
+                      105.0,
+                      44.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          22.0,
+                          138.3,
+                          85.0,
+                          24.0
+                        ],
+                        "name": "Hide console",
+                        "role": "label"
+                      }
+                    ],
+                    "key": "toggle-console",
+                    "name": "Hide console",
+                    "role": "button"
+                  }
+                ],
+                "key": "topbar",
+                "role": "group"
+              },
+              {
+                "actions": [
+                  "scroll-up",
+                  "scroll-down",
+                  "set-scroll-offset"
+                ],
+                "bounds": [
+                  0.0,
+                  184.3,
+                  390.0,
+                  624.8
+                ],
+                "children": [
+                  {
+                    "actions": [
+                      "scroll-into-view"
+                    ],
+                    "bounds": [
+                      0.0,
+                      184.3,
+                      390.0,
+                      2540.0
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          196.3,
+                          366.0,
+                          608.0
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              216.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "PROCESSES",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              245.3,
+                              326.0,
+                              45.0
+                            ],
+                            "name": "00",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              304.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "Managed by this application",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              371.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "VEHICLE LINK",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              400.3,
+                              326.0,
+                              45.0
+                            ],
+                            "name": "Offline",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              459.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "MAVSDK · read only",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              526.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "ALTITUDE",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              555.3,
+                              326.0,
+                              45.0
+                            ],
+                            "name": "—",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              614.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "Relative to takeoff",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              681.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "FLIGHT MODE",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              710.3,
+                              326.0,
+                              45.0
+                            ],
+                            "name": "—",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              769.3,
+                              326.0,
+                              15.0
+                            ],
+                            "name": "Reported by PX4",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "stats-grid",
+                        "role": "group"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "set-value",
+                          "replace-selected-text",
+                          "set-text-selection",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          820.3,
+                          366.0,
+                          40.0
+                        ],
+                        "key": "tool-search",
+                        "placeholder": "Filter tools by name or description…",
+                        "role": "text-input",
+                        "value": ""
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          36.0,
+                          900.3,
+                          318.0,
+                          15.0
+                        ],
+                        "name": "LOCAL TOOLCHAIN",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          36.0,
+                          929.3,
+                          318.0,
+                          120.0
+                        ],
+                        "name": "Build, run, and inspect autonomy software.",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          36.0,
+                          1063.3,
+                          318.0,
+                          52.5
+                        ],
+                        "name": "Run MAVSDK clients, ROS nodes and the DDS agent with managed lifecycle and captured process output.",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          1155.8,
+                          366.0,
+                          120.0
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1167.8,
+                              322.0,
+                              18.8
+                            ],
+                            "name": "MAVSDK telemetry",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1191.5,
+                              322.0,
+                              16.3
+                            ],
+                            "name": "Read-only live vehicle data · uses UDP 14540",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              29.0,
+                              1234.3,
+                              59.0,
+                              15.0
+                            ],
+                            "name": "Unchecked",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              101.0,
+                              1219.8,
+                              65.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  111.0,
+                                  1229.8,
+                                  45.0,
+                                  24.0
+                                ],
+                                "name": "Details",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "configure-telemetry",
+                            "name": "Details",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              174.0,
+                              1219.8,
+                              47.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  184.0,
+                                  1229.8,
+                                  27.0,
+                                  24.0
+                                ],
+                                "name": "Run",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "start-telemetry",
+                            "name": "Run",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "tool-telemetry",
+                        "role": "group"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          1285.8,
+                          366.0,
+                          120.0
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1297.8,
+                              322.0,
+                              18.8
+                            ],
+                            "name": "ROS 2 Jazzy",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1321.5,
+                              322.0,
+                              16.3
+                            ],
+                            "name": "ROS graph discovery · configure your node command",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              29.0,
+                              1364.3,
+                              59.0,
+                              15.0
+                            ],
+                            "name": "Unchecked",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              101.0,
+                              1349.8,
+                              65.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  111.0,
+                                  1359.8,
+                                  45.0,
+                                  24.0
+                                ],
+                                "name": "Details",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "configure-ros2",
+                            "name": "Details",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              174.0,
+                              1349.8,
+                              47.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  184.0,
+                                  1359.8,
+                                  27.0,
+                                  24.0
+                                ],
+                                "name": "Run",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "start-ros2",
+                            "name": "Run",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "tool-ros2",
+                        "role": "group"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          1421.8,
+                          366.0,
+                          120.0
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1433.8,
+                              322.0,
+                              18.8
+                            ],
+                            "name": "WSL display relay",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1457.5,
+                              322.0,
+                              16.3
+                            ],
+                            "name": "SIH state → native Windows visualizer · UDP 19410",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              29.0,
+                              1500.3,
+                              59.0,
+                              15.0
+                            ],
+                            "name": "Unchecked",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              101.0,
+                              1485.8,
+                              65.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  111.0,
+                                  1495.8,
+                                  45.0,
+                                  24.0
+                                ],
+                                "name": "Details",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "configure-relay",
+                            "name": "Details",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              174.0,
+                              1485.8,
+                              47.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  184.0,
+                                  1495.8,
+                                  27.0,
+                                  24.0
+                                ],
+                                "name": "Run",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "start-relay",
+                            "name": "Run",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "tool-relay",
+                        "role": "group"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          1551.8,
+                          366.0,
+                          120.0
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1563.8,
+                              322.0,
+                              18.8
+                            ],
+                            "name": "Micro XRCE-DDS Agent",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1587.5,
+                              322.0,
+                              16.3
+                            ],
+                            "name": "PX4 ↔ ROS 2 transport · UDP 8888",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              29.0,
+                              1630.3,
+                              59.0,
+                              15.0
+                            ],
+                            "name": "Unchecked",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              101.0,
+                              1615.8,
+                              65.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  111.0,
+                                  1625.8,
+                                  45.0,
+                                  24.0
+                                ],
+                                "name": "Details",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "configure-dds",
+                            "name": "Details",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              174.0,
+                              1615.8,
+                              47.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  184.0,
+                                  1625.8,
+                                  27.0,
+                                  24.0
+                                ],
+                                "name": "Run",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "start-dds",
+                            "name": "Run",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "tool-dds",
+                        "role": "group"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          1687.8,
+                          366.0,
+                          683.5
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              1722.3,
+                              139.0,
+                              15.0
+                            ],
+                            "name": "INTEGRATION INSPECTOR",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              307.0,
+                              1707.8,
+                              51.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  317.0,
+                                  1717.8,
+                                  31.0,
+                                  24.0
+                                ],
+                                "name": "Hide",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "close-inspector",
+                            "name": "Hide",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              1765.8,
+                              326.0,
+                              32.5
+                            ],
+                            "name": "MAVSDK telemetry",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              1812.3,
+                              326.0,
+                              17.5
+                            ],
+                            "name": "Read-only live vehicle data · uses UDP 14540",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              1858.8,
+                              326.0,
+                              13.8
+                            ],
+                            "name": "COMMAND",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              44.0,
+                              1898.5,
+                              302.0,
+                              65.0
+                            ],
+                            "name": "wsl '/mnt/c/Users/HP/Desktop/DroneProjects/px4-mavsdk-starter/.venv/bin/python' -u \"$DRONE_DECK_SCRIPTS/telemetry.py\"",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              1989.5,
+                              326.0,
+                              13.8
+                            ],
+                            "name": "WORKING DIRECTORY",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2017.3,
+                              326.0,
+                              16.3
+                            ],
+                            "name": "C:\\Users\\HP\\Desktop\\DroneProjects\\px4-mavsdk-starter",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2047.5,
+                              123.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  42.0,
+                                  2057.5,
+                                  103.0,
+                                  24.0
+                                ],
+                                "name": "Copy command",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "copy-command",
+                            "name": "Copy command",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              163.0,
+                              2047.5,
+                              99.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  173.0,
+                                  2057.5,
+                                  79.0,
+                                  24.0
+                                ],
+                                "name": "Open folder",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "open-project",
+                            "name": "Open folder",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2105.5,
+                              326.0,
+                              13.8
+                            ],
+                            "name": "SETUP OPTIONS",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2133.3,
+                              326.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  42.0,
+                                  2143.3,
+                                  141.0,
+                                  24.0
+                                ],
+                                "name": "1   Detect installation",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "detect-inspector",
+                            "name": "1   Detect installation",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2191.3,
+                              326.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  42.0,
+                                  2201.3,
+                                  152.0,
+                                  24.0
+                                ],
+                                "name": "2   Guided setup / docs",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "docs",
+                            "name": "2   Guided setup / docs",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2249.3,
+                              326.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  42.0,
+                                  2259.3,
+                                  150.0,
+                                  24.0
+                                ],
+                                "name": "3   Configure manually",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "manual-config",
+                            "name": "3   Configure manually",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2307.3,
+                              326.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  42.0,
+                                  2317.3,
+                                  202.0,
+                                  24.0
+                                ],
+                                "name": "Download configured package",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "download",
+                            "name": "Download configured package",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "inspector",
+                        "role": "group"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          12.0,
+                          2387.3,
+                          366.0,
+                          325.0
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2407.3,
+                              148.0,
+                              25.0
+                            ],
+                            "name": "Process console",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              195.0,
+                              2412.3,
+                              60.0,
+                              15.0
+                            ],
+                            "name": "Live output",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2444.3,
+                              75.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  42.0,
+                                  2454.3,
+                                  55.0,
+                                  24.0
+                                ],
+                                "name": "All tools",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "filter-logs",
+                            "name": "All tools",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              115.0,
+                              2444.3,
+                              64.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  125.0,
+                                  2454.3,
+                                  44.0,
+                                  24.0
+                                ],
+                                "name": "Export",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "export-logs",
+                            "name": "Export",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              187.0,
+                              2444.3,
+                              54.0,
+                              44.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  197.0,
+                                  2454.3,
+                                  34.0,
+                                  24.0
+                                ],
+                                "name": "Clear",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "clear-logs",
+                            "name": "Clear",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view",
+                              "scroll-up",
+                              "scroll-down",
+                              "set-scroll-offset"
+                            ],
+                            "bounds": [
+                              32.0,
+                              2502.3,
+                              326.0,
+                              190.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  48.0,
+                                  2518.3,
+                                  294.0,
+                                  32.5
+                                ],
+                                "name": "No matching process output yet.\nStart a session or run a configured tool.",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "log-scroll",
+                            "role": "scroll-view",
+                            "scroll": [
+                              0.0,
+                              0.0,
+                              0.0
+                            ],
+                            "states": [
+                              "clips"
+                            ]
+                          }
+                        ],
+                        "key": "log-panel",
+                        "role": "group"
+                      }
+                    ],
+                    "key": "page-content",
+                    "role": "group"
+                  }
+                ],
+                "key": "main-scroll",
+                "role": "scroll-view",
+                "scroll": [
+                  0.0,
+                  0.0,
+                  1915.3
+                ],
+                "states": [
+                  "clips"
+                ]
+              },
+              {
+                "bounds": [
+                  0.0,
+                  809.0,
+                  390.0,
+                  35.0
+                ],
+                "children": [
+                  {
+                    "bounds": [
+                      10.0,
+                      819.0,
+                      370.0,
+                      15.0
+                    ],
+                    "name": "Headless preview · external processes disabled",
+                    "role": "label"
+                  }
+                ],
+                "key": "statusbar",
+                "role": "group"
+              }
+            ],
+            "key": "app-stage",
+            "role": "group"
+          }
+        ],
+        "key": "app-root",
+        "role": "group"
+      }
+    ],
+    "name": "Drone Deck · Autonomy Workspace",
+    "role": "window"
+  },
+  "anim_t": 0.0,
+  "animating": false,
+  "dark_system": true,
+  "elements": [
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-root",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root",
+      "rect": [
+        0.0,
+        0.0,
+        390.0,
+        844.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-stage",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage",
+      "rect": [
+        0.0,
+        0.0,
+        390.0,
+        844.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "topbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar",
+      "rect": [
+        0.0,
+        0.0,
+        390.0,
+        184.25
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0",
+      "rect": [
+        12.0,
+        12.0,
+        366.0,
+        160.25
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#0",
+      "rect": [
+        12.0,
+        12.0,
+        366.0,
+        52.25
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "open-menu",
+      "label": "Menu",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#0/open-menu",
+      "rect": [
+        12.0,
+        16.13,
+        58.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#0/open-menu/#0",
+      "rect": [
+        22.0,
+        26.13,
+        38.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Menu"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#0/#1",
+      "rect": [
+        82.0,
+        12.0,
+        165.0,
+        52.25
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0075deff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#0/#1/#0",
+      "rect": [
+        82.0,
+        12.0,
+        165.0,
+        13.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "DRONE PROJECTS / LOCAL LAB"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#0/#1/#1",
+      "rect": [
+        82.0,
+        31.75,
+        165.0,
+        32.5
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Development"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1",
+      "rect": [
+        12.0,
+        76.25,
+        366.0,
+        96.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "detect-tools",
+      "label": "Detect tools",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/detect-tools",
+      "rect": [
+        12.0,
+        76.25,
+        100.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/detect-tools/#0",
+      "rect": [
+        22.0,
+        86.25,
+        80.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Detect tools"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#fff0eeff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "stop-all",
+      "label": "Stop session",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/stop-all",
+      "rect": [
+        120.0,
+        76.25,
+        102.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#b42318ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/stop-all/#0",
+      "rect": [
+        130.0,
+        86.25,
+        82.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Stop session"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "toggle-inspector",
+      "label": "Hide details",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/toggle-inspector",
+      "rect": [
+        230.0,
+        76.25,
+        99.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/toggle-inspector/#0",
+      "rect": [
+        240.0,
+        86.25,
+        79.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Hide details"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "toggle-console",
+      "label": "Hide console",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/toggle-console",
+      "rect": [
+        12.0,
+        128.25,
+        105.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/topbar/#0/#1/toggle-console/#0",
+      "rect": [
+        22.0,
+        138.25,
+        85.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Hide console"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "main-scroll",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll",
+      "rect": [
+        0.0,
+        184.25,
+        390.0,
+        624.75
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "page-content",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content",
+      "rect": [
+        0.0,
+        184.25,
+        390.0,
+        2540.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "stats-grid",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid",
+      "rect": [
+        12.0,
+        196.25,
+        366.0,
+        608.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#0",
+      "rect": [
+        12.0,
+        196.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#0/#0",
+      "rect": [
+        12.0,
+        196.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#0/#0/#0",
+      "rect": [
+        32.0,
+        216.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "PROCESSES"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#0/#0/#1",
+      "rect": [
+        32.0,
+        245.25,
+        326.0,
+        45.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "00"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#0/#0/#2",
+      "rect": [
+        32.0,
+        304.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Managed by this application"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#1",
+      "rect": [
+        12.0,
+        351.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#1/#0",
+      "rect": [
+        12.0,
+        351.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#1/#0/#0",
+      "rect": [
+        32.0,
+        371.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "VEHICLE LINK"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#1/#0/#1",
+      "rect": [
+        32.0,
+        400.25,
+        326.0,
+        45.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Offline"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#1/#0/#2",
+      "rect": [
+        32.0,
+        459.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "MAVSDK · read only"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#2",
+      "rect": [
+        12.0,
+        506.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#2/#0",
+      "rect": [
+        12.0,
+        506.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#2/#0/#0",
+      "rect": [
+        32.0,
+        526.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "ALTITUDE"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#2/#0/#1",
+      "rect": [
+        32.0,
+        555.25,
+        326.0,
+        45.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "—"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#2/#0/#2",
+      "rect": [
+        32.0,
+        614.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Relative to takeoff"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#3",
+      "rect": [
+        12.0,
+        661.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#3/#0",
+      "rect": [
+        12.0,
+        661.25,
+        366.0,
+        143.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#3/#0/#0",
+      "rect": [
+        32.0,
+        681.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "FLIGHT MODE"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#3/#0/#1",
+      "rect": [
+        32.0,
+        710.25,
+        326.0,
+        45.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "—"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/stats-grid/#3/#0/#2",
+      "rect": [
+        32.0,
+        769.25,
+        326.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Reported by PX4"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "tool-search",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/tool-search",
+      "rect": [
+        12.0,
+        820.25,
+        366.0,
+        40.0
+      ],
+      "role": "textbox",
+      "scale": 1.0,
+      "text": ""
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2",
+      "rect": [
+        12.0,
+        876.25,
+        366.0,
+        1495.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0",
+      "rect": [
+        12.0,
+        876.25,
+        366.0,
+        795.5
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#0",
+      "rect": [
+        12.0,
+        876.25,
+        366.0,
+        263.5
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0075deff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#0/#0",
+      "rect": [
+        36.0,
+        900.25,
+        318.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "LOCAL TOOLCHAIN"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#0/#1",
+      "rect": [
+        36.0,
+        929.25,
+        318.0,
+        120.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Build, run, and inspect autonomy software."
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#0/#2",
+      "rect": [
+        36.0,
+        1063.25,
+        318.0,
+        52.5
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Run MAVSDK clients, ROS nodes and the DDS agent with managed lifecycle and captured process output."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1",
+      "rect": [
+        12.0,
+        1155.75,
+        366.0,
+        250.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f2f9ffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "tool-telemetry",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry",
+      "rect": [
+        12.0,
+        1155.75,
+        366.0,
+        120.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0",
+      "rect": [
+        24.0,
+        1167.75,
+        342.0,
+        96.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#0",
+      "rect": [
+        24.0,
+        1167.75,
+        342.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#7d7873ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#0/#0",
+      "rect": [
+        24.0,
+        1183.75,
+        8.0,
+        8.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#0/#1",
+      "rect": [
+        44.0,
+        1167.75,
+        322.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#0/#1/#0",
+      "rect": [
+        44.0,
+        1167.75,
+        322.0,
+        18.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "MAVSDK telemetry"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#0/#1/#1",
+      "rect": [
+        44.0,
+        1191.5,
+        322.0,
+        16.25
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Read-only live vehicle data · uses UDP 14540"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#1",
+      "rect": [
+        24.0,
+        1219.75,
+        342.0,
+        44.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#1/#0",
+      "rect": [
+        24.0,
+        1229.25,
+        69.0,
+        25.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#1/#0/#0",
+      "rect": [
+        29.0,
+        1234.25,
+        59.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Unchecked"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "configure-telemetry",
+      "label": "Details",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#1/configure-telemetry",
+      "rect": [
+        101.0,
+        1219.75,
+        65.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#1/configure-telemetry/#0",
+      "rect": [
+        111.0,
+        1229.75,
+        45.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Details"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "start-telemetry",
+      "label": "Run",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#1/start-telemetry",
+      "rect": [
+        174.0,
+        1219.75,
+        47.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-telemetry/#0/#1/start-telemetry/#0",
+      "rect": [
+        184.0,
+        1229.75,
+        27.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Run"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "tool-ros2",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2",
+      "rect": [
+        12.0,
+        1285.75,
+        366.0,
+        120.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0",
+      "rect": [
+        24.0,
+        1297.75,
+        342.0,
+        96.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#0",
+      "rect": [
+        24.0,
+        1297.75,
+        342.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#7d7873ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#0/#0",
+      "rect": [
+        24.0,
+        1313.75,
+        8.0,
+        8.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#0/#1",
+      "rect": [
+        44.0,
+        1297.75,
+        322.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#0/#1/#0",
+      "rect": [
+        44.0,
+        1297.75,
+        322.0,
+        18.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "ROS 2 Jazzy"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#0/#1/#1",
+      "rect": [
+        44.0,
+        1321.5,
+        322.0,
+        16.25
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "ROS graph discovery · configure your node command"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#1",
+      "rect": [
+        24.0,
+        1349.75,
+        342.0,
+        44.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#1/#0",
+      "rect": [
+        24.0,
+        1359.25,
+        69.0,
+        25.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#1/#0/#0",
+      "rect": [
+        29.0,
+        1364.25,
+        59.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Unchecked"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "configure-ros2",
+      "label": "Details",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#1/configure-ros2",
+      "rect": [
+        101.0,
+        1349.75,
+        65.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#1/configure-ros2/#0",
+      "rect": [
+        111.0,
+        1359.75,
+        45.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Details"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "start-ros2",
+      "label": "Run",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#1/start-ros2",
+      "rect": [
+        174.0,
+        1349.75,
+        47.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#1/tool-ros2/#0/#1/start-ros2/#0",
+      "rect": [
+        184.0,
+        1359.75,
+        27.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Run"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2",
+      "rect": [
+        12.0,
+        1421.75,
+        366.0,
+        250.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "tool-relay",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay",
+      "rect": [
+        12.0,
+        1421.75,
+        366.0,
+        120.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0",
+      "rect": [
+        24.0,
+        1433.75,
+        342.0,
+        96.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#0",
+      "rect": [
+        24.0,
+        1433.75,
+        342.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#7d7873ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#0/#0",
+      "rect": [
+        24.0,
+        1449.75,
+        8.0,
+        8.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#0/#1",
+      "rect": [
+        44.0,
+        1433.75,
+        322.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#0/#1/#0",
+      "rect": [
+        44.0,
+        1433.75,
+        322.0,
+        18.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "WSL display relay"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#0/#1/#1",
+      "rect": [
+        44.0,
+        1457.5,
+        322.0,
+        16.25
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "SIH state → native Windows visualizer · UDP 19410"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#1",
+      "rect": [
+        24.0,
+        1485.75,
+        342.0,
+        44.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#1/#0",
+      "rect": [
+        24.0,
+        1495.25,
+        69.0,
+        25.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#1/#0/#0",
+      "rect": [
+        29.0,
+        1500.25,
+        59.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Unchecked"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "configure-relay",
+      "label": "Details",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#1/configure-relay",
+      "rect": [
+        101.0,
+        1485.75,
+        65.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#1/configure-relay/#0",
+      "rect": [
+        111.0,
+        1495.75,
+        45.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Details"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "start-relay",
+      "label": "Run",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#1/start-relay",
+      "rect": [
+        174.0,
+        1485.75,
+        47.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-relay/#0/#1/start-relay/#0",
+      "rect": [
+        184.0,
+        1495.75,
+        27.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Run"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "tool-dds",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds",
+      "rect": [
+        12.0,
+        1551.75,
+        366.0,
+        120.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0",
+      "rect": [
+        24.0,
+        1563.75,
+        342.0,
+        96.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#0",
+      "rect": [
+        24.0,
+        1563.75,
+        342.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#7d7873ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#0/#0",
+      "rect": [
+        24.0,
+        1579.75,
+        8.0,
+        8.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#0/#1",
+      "rect": [
+        44.0,
+        1563.75,
+        322.0,
+        40.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#0/#1/#0",
+      "rect": [
+        44.0,
+        1563.75,
+        322.0,
+        18.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Micro XRCE-DDS Agent"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#0/#1/#1",
+      "rect": [
+        44.0,
+        1587.5,
+        322.0,
+        16.25
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "PX4 ↔ ROS 2 transport · UDP 8888"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#1",
+      "rect": [
+        24.0,
+        1615.75,
+        342.0,
+        44.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#1/#0",
+      "rect": [
+        24.0,
+        1625.25,
+        69.0,
+        25.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#1/#0/#0",
+      "rect": [
+        29.0,
+        1630.25,
+        59.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Unchecked"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "configure-dds",
+      "label": "Details",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#1/configure-dds",
+      "rect": [
+        101.0,
+        1615.75,
+        65.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#1/configure-dds/#0",
+      "rect": [
+        111.0,
+        1625.75,
+        45.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Details"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "start-dds",
+      "label": "Run",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#1/start-dds",
+      "rect": [
+        174.0,
+        1615.75,
+        47.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/#0/#2/tool-dds/#0/#1/start-dds/#0",
+      "rect": [
+        184.0,
+        1625.75,
+        27.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Run"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "inspector",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector",
+      "rect": [
+        12.0,
+        1687.75,
+        366.0,
+        683.5
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#0",
+      "rect": [
+        32.0,
+        1707.75,
+        326.0,
+        44.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0075deff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#0/#0",
+      "rect": [
+        32.0,
+        1722.25,
+        139.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "INTEGRATION INSPECTOR"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "close-inspector",
+      "label": "Hide",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#0/close-inspector",
+      "rect": [
+        307.0,
+        1707.75,
+        51.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#0/close-inspector/#0",
+      "rect": [
+        317.0,
+        1717.75,
+        31.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Hide"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#1",
+      "rect": [
+        32.0,
+        1765.75,
+        326.0,
+        32.5
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "MAVSDK telemetry"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#2",
+      "rect": [
+        32.0,
+        1812.25,
+        326.0,
+        17.5
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Read-only live vehicle data · uses UDP 14540"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#e4e3e1ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#3",
+      "rect": [
+        32.0,
+        1843.75,
+        326.0,
+        1.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#4",
+      "rect": [
+        32.0,
+        1858.75,
+        326.0,
+        13.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "COMMAND"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#242321ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#5",
+      "rect": [
+        32.0,
+        1886.5,
+        326.0,
+        89.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#f6f5f4ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#5/#0",
+      "rect": [
+        44.0,
+        1898.5,
+        302.0,
+        65.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "wsl '/mnt/c/Users/HP/Desktop/DroneProjects/px4-mavsdk-starter/.venv/bin/python' -u \"$DRONE_DECK_SCRIPTS/telemetry.py\""
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#6",
+      "rect": [
+        32.0,
+        1989.5,
+        326.0,
+        13.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "WORKING DIRECTORY"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#7",
+      "rect": [
+        32.0,
+        2017.25,
+        326.0,
+        16.25
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "C:\\Users\\HP\\Desktop\\DroneProjects\\px4-mavsdk-starter"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#8",
+      "rect": [
+        32.0,
+        2047.5,
+        326.0,
+        44.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "copy-command",
+      "label": "Copy command",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#8/copy-command",
+      "rect": [
+        32.0,
+        2047.5,
+        123.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#8/copy-command/#0",
+      "rect": [
+        42.0,
+        2057.5,
+        103.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Copy command"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "open-project",
+      "label": "Open folder",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#8/open-project",
+      "rect": [
+        163.0,
+        2047.5,
+        99.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#8/open-project/#0",
+      "rect": [
+        173.0,
+        2057.5,
+        79.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Open folder"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/#9",
+      "rect": [
+        32.0,
+        2105.5,
+        326.0,
+        13.75
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "SETUP OPTIONS"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "detect-inspector",
+      "label": "1   Detect installation",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/detect-inspector",
+      "rect": [
+        32.0,
+        2133.25,
+        326.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/detect-inspector/#0",
+      "rect": [
+        42.0,
+        2143.25,
+        141.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "1   Detect installation"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "docs",
+      "label": "2   Guided setup / docs",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/docs",
+      "rect": [
+        32.0,
+        2191.25,
+        326.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/docs/#0",
+      "rect": [
+        42.0,
+        2201.25,
+        152.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "2   Guided setup / docs"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "manual-config",
+      "label": "3   Configure manually",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/manual-config",
+      "rect": [
+        32.0,
+        2249.25,
+        326.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/manual-config/#0",
+      "rect": [
+        42.0,
+        2259.25,
+        150.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "3   Configure manually"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "download",
+      "label": "Download configured package",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/download",
+      "rect": [
+        32.0,
+        2307.25,
+        326.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/#2/inspector/download/#0",
+      "rect": [
+        42.0,
+        2317.25,
+        202.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Download configured package"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "log-panel",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel",
+      "rect": [
+        12.0,
+        2387.25,
+        366.0,
+        325.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0",
+      "rect": [
+        32.0,
+        2407.25,
+        326.0,
+        81.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#0",
+      "rect": [
+        32.0,
+        2407.25,
+        326.0,
+        25.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#0/#0",
+      "rect": [
+        32.0,
+        2407.25,
+        148.0,
+        25.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Process console"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#e8faf0ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#0/#1",
+      "rect": [
+        190.0,
+        2407.25,
+        70.0,
+        25.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#137a2cff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#0/#1/#0",
+      "rect": [
+        195.0,
+        2412.25,
+        60.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Live output"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#1",
+      "rect": [
+        32.0,
+        2444.25,
+        326.0,
+        44.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "filter-logs",
+      "label": "All tools",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/filter-logs",
+      "rect": [
+        32.0,
+        2444.25,
+        75.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/filter-logs/#0",
+      "rect": [
+        42.0,
+        2454.25,
+        55.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "All tools"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "export-logs",
+      "label": "Export",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/export-logs",
+      "rect": [
+        115.0,
+        2444.25,
+        64.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/export-logs/#0",
+      "rect": [
+        125.0,
+        2454.25,
+        44.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Export"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "clear-logs",
+      "label": "Clear",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/clear-logs",
+      "rect": [
+        187.0,
+        2444.25,
+        54.0,
+        44.0
+      ],
+      "role": "button",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/clear-logs/#0",
+      "rect": [
+        197.0,
+        2454.25,
+        34.0,
+        24.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Clear"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#242321ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "log-scroll",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/log-scroll",
+      "rect": [
+        32.0,
+        2502.25,
+        326.0,
+        190.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/log-scroll/#0",
+      "rect": [
+        48.0,
+        2518.25,
+        294.0,
+        32.5
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#bebab5ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/main-scroll/page-content/log-panel/log-scroll/#0/#0",
+      "rect": [
+        48.0,
+        2518.25,
+        294.0,
+        32.5
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "No matching process output yet.\nStart a session or run a configured tool."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "statusbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/statusbar",
+      "rect": [
+        0.0,
+        809.0,
+        390.0,
+        35.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "app-root/app-stage/statusbar/#0",
+      "rect": [
+        10.0,
+        819.0,
+        370.0,
+        15.0
+      ],
+      "role": "text",
+      "scale": 1.0,
+      "text": "Headless preview · external processes disabled"
+    }
+  ],
+  "reduced_motion": false,
+  "scale": 1.0,
+  "t": 0.0,
+  "time_scale": 1.0,
+  "title": "Drone Deck · Autonomy Workspace",
+  "viewport": [
+    390.0,
+    844.0
+  ],
+  "warnings": []
+}

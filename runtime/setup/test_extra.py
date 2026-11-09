@@ -1,0 +1,33 @@
+"""Exercise reviewed recipe planning without apt, pip, git, network or installs."""
+import importlib.util
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import Mock, patch
+import extra_tools
+spec=importlib.util.spec_from_file_location('linux_tools',Path(__file__).with_name('linux-tools.py'))
+tools=importlib.util.module_from_spec(spec);spec.loader.exec_module(tools)
+
+class ExtraTests(unittest.TestCase):
+ def test_cpu_install_uses_owned_environment_and_pinned_cpu_index(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   path=Path(directory);base=Mock();base.owned_target.return_value=path;base.output.return_value='fixture==1'
+   with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):extra_tools.install(base,'torch')
+   calls=[call.args[0] for call in base.run.call_args_list]
+   self.assertIn([str(path/'bin/python'),'-m','pip','install','torch==2.7.1','--index-url','https://download.pytorch.org/whl/cpu'],calls)
+   base.owned_target.assert_called_once_with('torch');self.assertTrue((path/'environment.txt').is_file())
+ def test_addon_verification_uses_the_managed_location(self):
+  for tool,folder in [('torch','torch'),('onnx','onnx'),('ros-workspace','px4_ros_ws'),('jmavsim','jMAVSim'),('ardupilot','ardupilot')]:
+   with patch.object(extra_tools,'probe',return_value={}) as probe:tools.verify(tool)
+   self.assertEqual(probe.call_args.args[1:],(tool,str(tools.ROOT/folder)))
+ def test_custom_gazebo_probe_uses_the_requested_executable(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   path=Path(directory)/'custom gz';path.touch();base=Mock(ROOT=Path(directory));base.output.return_value='8.9.0'
+   result=extra_tools.probe(base,'gazebo',str(path));self.assertTrue(result['compatible'])
+   base.output.assert_called_once_with([str(path),'sim','--versions'])
+ def test_changed_managed_checkout_is_not_reset(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   path=Path(directory);(path/'.git').mkdir();base=Mock();base.output.return_value='different-tag'
+   with self.assertRaisesRegex(RuntimeError,'changed'):extra_tools.clone(base,path,'https://example.invalid/repo','pinned-tag')
+   base.run.assert_not_called()
+if __name__=='__main__':unittest.main()

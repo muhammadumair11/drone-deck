@@ -1,0 +1,1 @@
+- Drone Deck 0.6 repairs WSL launch argument handling, SIH process input and bounded output, setup discovery/retry/cancellation guards, and adds workflow checklists with plain command configuration and reviewed post-install configuration.

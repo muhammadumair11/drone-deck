@@ -1,0 +1,2551 @@
+{
+  "accessibility": {
+    "bounds": [
+      0.0,
+      0.0,
+      390.0,
+      844.0
+    ],
+    "children": [
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          390.0,
+          844.0
+        ],
+        "children": [
+          {
+            "bounds": [
+              0.0,
+              0.0,
+              390.0,
+              844.0
+            ],
+            "children": [
+              {
+                "bounds": [
+                  0.0,
+                  0.0,
+                  390.0,
+                  844.0
+                ],
+                "children": [
+                  {
+                    "actions": [
+                      "scroll-up",
+                      "scroll-down",
+                      "set-scroll-offset"
+                    ],
+                    "bounds": [
+                      0.0,
+                      0.0,
+                      390.0,
+                      112.4
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          10.2,
+                          13.7,
+                          49.3,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              18.7,
+                              22.2,
+                              32.3,
+                              20.4
+                            ],
+                            "name": "Menu",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "open-menu",
+                        "name": "Menu",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          69.7,
+                          10.2,
+                          130.1,
+                          11.7
+                        ],
+                        "name": "DRONE PROJECTS / LOCAL LAB",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          69.7,
+                          27.0,
+                          130.1,
+                          27.6
+                        ],
+                        "name": "Settings",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          10.2,
+                          64.8,
+                          85.0,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              18.7,
+                              73.3,
+                              68.0,
+                              20.4
+                            ],
+                            "name": "Detect tools",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "detect-tools",
+                        "name": "Detect tools",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          102.0,
+                          64.8,
+                          86.7,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              110.5,
+                              73.3,
+                              69.7,
+                              20.4
+                            ],
+                            "name": "Stop session",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "stop-all",
+                        "name": "Stop session",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          195.5,
+                          64.8,
+                          62.9,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              204.0,
+                              73.3,
+                              45.9,
+                              20.4
+                            ],
+                            "name": "Settings",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "open-settings",
+                        "name": "Settings",
+                        "role": "button"
+                      }
+                    ],
+                    "key": "topbar",
+                    "role": "scroll-view",
+                    "scroll": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    "states": [
+                      "clips"
+                    ]
+                  },
+                  {
+                    "actions": [
+                      "scroll-up",
+                      "scroll-down",
+                      "set-scroll-offset"
+                    ],
+                    "bounds": [
+                      0.0,
+                      112.4,
+                      390.0,
+                      697.6
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          0.0,
+                          112.4,
+                          390.0,
+                          717.0
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              143.0,
+                              328.8,
+                              31.9
+                            ],
+                            "name": "Settings",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              186.8,
+                              328.8,
+                              14.9
+                            ],
+                            "name": "Application display and tool configuration.",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              13.6,
+                              232.3,
+                              362.8,
+                              290.7
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  249.3,
+                                  127.5,
+                                  21.3
+                                ],
+                                "name": "Display & zoom",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  259.1,
+                                  254.1,
+                                  100.3,
+                                  11.7
+                                ],
+                                "name": "SAVED AUTOMATICALLY",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  282.4,
+                                  328.8,
+                                  34.0
+                                ],
+                                "name": "85%",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  328.3,
+                                  328.8,
+                                  44.6
+                                ],
+                                "name": "Zoom changes the entire interface and reflows the layout to fit your window. The compact default is 85%; the supported range is 50–150%.",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  384.8,
+                                  72.3,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      39.1,
+                                      393.3,
+                                      55.3,
+                                      20.4
+                                    ],
+                                    "name": "Zoom out",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "settings-zoom-out",
+                                "name": "Zoom out",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  109.7,
+                                  384.8,
+                                  63.8,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      118.2,
+                                      393.3,
+                                      46.8,
+                                      20.4
+                                    ],
+                                    "name": "Zoom in",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "settings-zoom-in",
+                                "name": "Zoom in",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  180.2,
+                                  384.8,
+                                  81.6,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      188.7,
+                                      393.3,
+                                      64.6,
+                                      20.4
+                                    ],
+                                    "name": "Reset 100%",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "settings-zoom-reset",
+                                "name": "Reset 100%",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  429.0,
+                                  94.4,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      39.1,
+                                      437.5,
+                                      77.4,
+                                      20.4
+                                    ],
+                                    "name": "Compact 85%",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "settings-zoom-compact",
+                                "name": "Compact 85%",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  478.3,
+                                  328.8,
+                                  27.6
+                                ],
+                                "name": "Keyboard: Ctrl+− to zoom out · Ctrl++ (or Ctrl+=) to zoom in · Ctrl+0 to reset · Ctrl+, for Settings.",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "display-settings",
+                            "role": "group"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              553.6,
+                              144.5,
+                              21.3
+                            ],
+                            "name": "Workspace panels",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              325.4,
+                              558.3,
+                              34.0,
+                              11.7
+                            ],
+                            "name": "LAYOUT",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              586.7,
+                              164.9,
+                              37.4
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  39.1,
+                                  595.2,
+                                  147.9,
+                                  20.4
+                                ],
+                                "name": "Hide integration inspector",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "settings-inspector",
+                            "name": "Hide integration inspector",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              202.3,
+                              586.7,
+                              135.2,
+                              37.4
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  210.8,
+                                  595.2,
+                                  118.2,
+                                  20.4
+                                ],
+                                "name": "Hide process console",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "settings-console",
+                            "name": "Hide process console",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              671.7,
+                              102.0,
+                              21.3
+                            ],
+                            "name": "Tool settings",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              215.8,
+                              676.5,
+                              143.7,
+                              11.7
+                            ],
+                            "name": "SIMULATORS / ROS / MAVSDK / AI",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              704.9,
+                              328.8,
+                              44.6
+                            ],
+                            "name": "For installation paths, commands and Ubuntu configuration, open Integrations, select a tool's Details, then choose Configure manually.",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              761.4,
+                              328.8,
+                              37.4
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  39.1,
+                                  769.9,
+                                  143.7,
+                                  20.4
+                                ],
+                                "name": "Open integration settings",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "settings-integrations",
+                            "name": "Open integration settings",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "page-content",
+                        "role": "group"
+                      }
+                    ],
+                    "key": "main-scroll",
+                    "role": "scroll-view",
+                    "scroll": [
+                      0.0,
+                      0.0,
+                      22.8
+                    ],
+                    "states": [
+                      "clips"
+                    ]
+                  },
+                  {
+                    "bounds": [
+                      0.0,
+                      810.0,
+                      390.0,
+                      34.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          5.1,
+                          820.6,
+                          299.9,
+                          12.8
+                        ],
+                        "name": "Headless preview · external processes disabled",
+                        "role": "label"
+                      },
+                      {
+                        "bounds": [
+                          311.8,
+                          815.1,
+                          73.1,
+                          23.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              311.8,
+                              815.1,
+                              17.9,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  316.9,
+                                  820.2,
+                                  7.7,
+                                  13.6
+                                ],
+                                "name": "−",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-out",
+                            "name": "Zoom out (Ctrl+−)",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              333.1,
+                              815.1,
+                              30.6,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  338.2,
+                                  820.2,
+                                  20.4,
+                                  13.6
+                                ],
+                                "name": "85%",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-reset",
+                            "name": "Reset zoom to 100% (Ctrl+0)",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              367.1,
+                              815.1,
+                              17.9,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  372.2,
+                                  820.2,
+                                  7.7,
+                                  13.6
+                                ],
+                                "name": "+",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-in",
+                            "name": "Zoom in (Ctrl++)",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "zoom-controls",
+                        "role": "group"
+                      }
+                    ],
+                    "key": "statusbar",
+                    "role": "group"
+                  }
+                ],
+                "key": "app-stage",
+                "role": "group"
+              }
+            ],
+            "key": "app-root",
+            "role": "group"
+          }
+        ],
+        "key": "window-frame",
+        "role": "group"
+      }
+    ],
+    "name": "Drone Deck · Autonomy Workspace",
+    "role": "window"
+  },
+  "anim_t": 0.0,
+  "animating": false,
+  "dark_system": true,
+  "elements": [
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "window-frame",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame",
+      "rect": [
+        0.0,
+        0.0,
+        390.0,
+        844.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-root",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root",
+      "rect": [
+        0.0,
+        0.0,
+        390.0,
+        844.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        458.82,
+        992.94
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-stage",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage",
+      "rect": [
+        0.0,
+        0.0,
+        390.0,
+        844.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        458.82,
+        992.94
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "topbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar",
+      "rect": [
+        0.0,
+        0.0,
+        390.0,
+        112.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        458.82,
+        132.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0",
+      "rect": [
+        10.2,
+        10.2,
+        369.59,
+        92.02
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        12.0,
+        434.82,
+        108.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0",
+      "rect": [
+        10.2,
+        10.2,
+        369.59,
+        44.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        12.0,
+        434.82,
+        52.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "open-menu",
+      "label": "Menu",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/open-menu",
+      "rect": [
+        10.2,
+        13.7,
+        49.3,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        16.13,
+        58.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/open-menu/#0",
+      "rect": [
+        18.7,
+        22.2,
+        32.3,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        22.0,
+        26.13,
+        38.0,
+        24.0
+      ],
+      "text": "Menu"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#1",
+      "rect": [
+        69.7,
+        10.2,
+        130.05,
+        44.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        82.0,
+        12.0,
+        153.0,
+        52.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0075deff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#1/#0",
+      "rect": [
+        69.7,
+        10.2,
+        130.05,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        82.0,
+        12.0,
+        153.0,
+        13.75
+      ],
+      "text": "DRONE PROJECTS / LOCAL LAB"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#1/#1",
+      "rect": [
+        69.7,
+        26.98,
+        130.05,
+        27.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        82.0,
+        31.75,
+        153.0,
+        32.5
+      ],
+      "text": "Settings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1",
+      "rect": [
+        10.2,
+        64.81,
+        369.59,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        76.25,
+        434.82,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "detect-tools",
+      "label": "Detect tools",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/detect-tools",
+      "rect": [
+        10.2,
+        64.81,
+        85.0,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        76.25,
+        100.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/detect-tools/#0",
+      "rect": [
+        18.7,
+        73.31,
+        68.0,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        22.0,
+        86.25,
+        80.0,
+        24.0
+      ],
+      "text": "Detect tools"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#fff0eeff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "stop-all",
+      "label": "Stop session",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/stop-all",
+      "rect": [
+        102.0,
+        64.81,
+        86.7,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        120.0,
+        76.25,
+        102.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#b42318ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/stop-all/#0",
+      "rect": [
+        110.5,
+        73.31,
+        69.7,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        130.0,
+        86.25,
+        82.0,
+        24.0
+      ],
+      "text": "Stop session"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "open-settings",
+      "label": "Settings",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/open-settings",
+      "rect": [
+        195.5,
+        64.81,
+        62.91,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        230.0,
+        76.25,
+        74.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/open-settings/#0",
+      "rect": [
+        204.0,
+        73.31,
+        45.91,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        240.0,
+        86.25,
+        54.0,
+        24.0
+      ],
+      "text": "Settings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "main-scroll",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll",
+      "rect": [
+        0.0,
+        112.41,
+        390.0,
+        697.59
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        132.25,
+        458.82,
+        820.69
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "page-content",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content",
+      "rect": [
+        0.0,
+        112.41,
+        390.0,
+        716.98
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        132.25,
+        458.82,
+        843.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0",
+      "rect": [
+        13.59,
+        126.02,
+        362.81,
+        689.77
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        148.25,
+        426.82,
+        811.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0",
+      "rect": [
+        13.59,
+        126.02,
+        362.81,
+        689.77
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        148.25,
+        426.82,
+        811.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0",
+      "rect": [
+        13.59,
+        126.02,
+        362.81,
+        92.64
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        148.25,
+        426.82,
+        109.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#0",
+      "rect": [
+        30.59,
+        143.02,
+        328.81,
+        31.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        168.25,
+        386.82,
+        37.5
+      ],
+      "text": "Settings"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#1",
+      "rect": [
+        30.59,
+        186.78,
+        328.81,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        219.75,
+        386.82,
+        17.5
+      ],
+      "text": "Application display and tool configuration."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "display-settings",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings",
+      "rect": [
+        13.59,
+        232.27,
+        362.81,
+        290.7
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        273.25,
+        426.82,
+        342.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#0",
+      "rect": [
+        30.59,
+        249.27,
+        328.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        293.25,
+        386.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#0/#0",
+      "rect": [
+        30.59,
+        249.27,
+        127.5,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        293.25,
+        150.0,
+        25.0
+      ],
+      "text": "Display & zoom"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#0/#1",
+      "rect": [
+        259.11,
+        254.05,
+        100.3,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        304.82,
+        298.88,
+        118.0,
+        13.75
+      ],
+      "text": "SAVED AUTOMATICALLY"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#1",
+      "rect": [
+        30.59,
+        282.41,
+        328.81,
+        34.0
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        332.25,
+        386.82,
+        40.0
+      ],
+      "text": "85%"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#2",
+      "rect": [
+        30.59,
+        328.31,
+        328.81,
+        44.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        386.25,
+        386.82,
+        52.5
+      ],
+      "text": "Zoom changes the entire interface and reflows the layout to fit your window. The compact default is 85%; the supported range is 50–150%."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3",
+      "rect": [
+        30.59,
+        384.84,
+        328.81,
+        81.59
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        452.75,
+        386.82,
+        96.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "settings-zoom-out",
+      "label": "Zoom out",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-out",
+      "rect": [
+        30.59,
+        384.84,
+        72.25,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        452.75,
+        85.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-out/#0",
+      "rect": [
+        39.09,
+        393.34,
+        55.25,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        462.75,
+        65.0,
+        24.0
+      ],
+      "text": "Zoom out"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "settings-zoom-in",
+      "label": "Zoom in",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-in",
+      "rect": [
+        109.66,
+        384.84,
+        63.75,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        129.0,
+        452.75,
+        75.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-in/#0",
+      "rect": [
+        118.16,
+        393.34,
+        46.75,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        139.0,
+        462.75,
+        55.0,
+        24.0
+      ],
+      "text": "Zoom in"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "settings-zoom-reset",
+      "label": "Reset 100%",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-reset",
+      "rect": [
+        180.2,
+        384.84,
+        81.59,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        212.0,
+        452.75,
+        96.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-reset/#0",
+      "rect": [
+        188.7,
+        393.34,
+        64.59,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        222.0,
+        462.75,
+        76.0,
+        24.0
+      ],
+      "text": "Reset 100%"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "settings-zoom-compact",
+      "label": "Compact 85%",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-compact",
+      "rect": [
+        30.59,
+        429.03,
+        94.36,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        504.75,
+        111.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#3/settings-zoom-compact/#0",
+      "rect": [
+        39.09,
+        437.53,
+        77.36,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        514.75,
+        91.0,
+        24.0
+      ],
+      "text": "Compact 85%"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/display-settings/#4",
+      "rect": [
+        30.59,
+        478.34,
+        328.81,
+        27.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        562.75,
+        386.82,
+        32.5
+      ],
+      "text": "Keyboard: Ctrl+− to zoom out · Ctrl++ (or Ctrl+=) to zoom in · Ctrl+0 to reset · Ctrl+, for Settings."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2",
+      "rect": [
+        13.59,
+        536.56,
+        362.81,
+        104.55
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        631.25,
+        426.82,
+        123.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#0",
+      "rect": [
+        30.59,
+        553.56,
+        328.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        651.25,
+        386.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#0/#0",
+      "rect": [
+        30.59,
+        553.56,
+        144.5,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        651.25,
+        170.0,
+        25.0
+      ],
+      "text": "Workspace panels"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#0/#1",
+      "rect": [
+        325.41,
+        558.34,
+        34.0,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        382.82,
+        656.88,
+        40.0,
+        13.75
+      ],
+      "text": "LAYOUT"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#1",
+      "rect": [
+        30.59,
+        586.72,
+        328.81,
+        37.39
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        690.25,
+        386.82,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "settings-inspector",
+      "label": "Hide integration inspector",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#1/settings-inspector",
+      "rect": [
+        30.59,
+        586.72,
+        164.91,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        690.25,
+        194.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#1/settings-inspector/#0",
+      "rect": [
+        39.09,
+        595.22,
+        147.91,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        700.25,
+        174.0,
+        24.0
+      ],
+      "text": "Hide integration inspector"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "settings-console",
+      "label": "Hide process console",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#1/settings-console",
+      "rect": [
+        202.3,
+        586.72,
+        135.16,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        238.0,
+        690.25,
+        159.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#2/#1/settings-console/#0",
+      "rect": [
+        210.8,
+        595.22,
+        118.16,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        248.0,
+        700.25,
+        139.0,
+        24.0
+      ],
+      "text": "Hide process console"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#3",
+      "rect": [
+        13.59,
+        654.72,
+        362.81,
+        161.06
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        770.25,
+        426.82,
+        189.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#3/#0",
+      "rect": [
+        30.59,
+        671.72,
+        328.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        790.25,
+        386.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#3/#0/#0",
+      "rect": [
+        30.59,
+        671.72,
+        102.0,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        790.25,
+        120.0,
+        25.0
+      ],
+      "text": "Tool settings"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#3/#0/#1",
+      "rect": [
+        215.75,
+        676.5,
+        143.66,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        253.82,
+        795.88,
+        169.0,
+        13.75
+      ],
+      "text": "SIMULATORS / ROS / MAVSDK / AI"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#3/#1",
+      "rect": [
+        30.59,
+        704.86,
+        328.81,
+        44.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        829.25,
+        386.82,
+        52.5
+      ],
+      "text": "For installation paths, commands and Ubuntu configuration, open Integrations, select a tool's Details, then choose Configure manually."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "settings-integrations",
+      "label": "Open integration settings",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#3/settings-integrations",
+      "rect": [
+        30.59,
+        761.39,
+        328.81,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        895.75,
+        386.82,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#3/settings-integrations/#0",
+      "rect": [
+        39.09,
+        769.89,
+        143.66,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        905.75,
+        169.0,
+        24.0
+      ],
+      "text": "Open integration settings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "statusbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar",
+      "rect": [
+        0.0,
+        810.0,
+        390.0,
+        34.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        952.94,
+        458.82,
+        40.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0",
+      "rect": [
+        5.09,
+        815.09,
+        379.81,
+        23.8
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        6.0,
+        958.94,
+        446.82,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "help": "Headless preview · external processes disabled",
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/#0",
+      "rect": [
+        5.09,
+        820.63,
+        299.91,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        6.0,
+        965.44,
+        352.82,
+        15.0
+      ],
+      "text": "Headless preview · external processes disabled"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "zoom-controls",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls",
+      "rect": [
+        311.8,
+        815.09,
+        73.11,
+        23.8
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        366.82,
+        958.94,
+        86.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Zoom out (Ctrl+−)",
+      "inert": false,
+      "key": "zoom-out",
+      "label": "Zoom out (Ctrl+−)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-out",
+      "rect": [
+        311.8,
+        815.09,
+        17.86,
+        23.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        366.82,
+        958.94,
+        21.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-out/#0",
+      "rect": [
+        316.91,
+        820.2,
+        7.64,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        372.82,
+        964.94,
+        9.0,
+        16.0
+      ],
+      "text": "−"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Reset zoom to 100% (Ctrl+0)",
+      "inert": false,
+      "key": "zoom-reset",
+      "label": "Reset zoom to 100% (Ctrl+0)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-reset",
+      "rect": [
+        333.05,
+        815.09,
+        30.61,
+        23.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        391.82,
+        958.94,
+        36.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-reset/#0",
+      "rect": [
+        338.16,
+        820.2,
+        20.39,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        397.82,
+        964.94,
+        24.0,
+        16.0
+      ],
+      "text": "85%"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Zoom in (Ctrl++)",
+      "inert": false,
+      "key": "zoom-in",
+      "label": "Zoom in (Ctrl++)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-in",
+      "rect": [
+        367.05,
+        815.09,
+        17.86,
+        23.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        431.82,
+        958.94,
+        21.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-in/#0",
+      "rect": [
+        372.16,
+        820.2,
+        7.64,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        437.82,
+        964.94,
+        9.0,
+        16.0
+      ],
+      "text": "+"
+    }
+  ],
+  "reduced_motion": false,
+  "scale": 1.0,
+  "t": 0.0,
+  "time_scale": 1.0,
+  "title": "Drone Deck · Autonomy Workspace",
+  "viewport": [
+    390.0,
+    844.0
+  ],
+  "warnings": []
+}

@@ -1,0 +1,6871 @@
+{
+  "accessibility": {
+    "bounds": [
+      0.0,
+      0.0,
+      1216.0,
+      800.0
+    ],
+    "children": [
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          1216.0,
+          800.0
+        ],
+        "children": [
+          {
+            "bounds": [
+              0.0,
+              0.0,
+              1216.0,
+              800.0
+            ],
+            "children": [
+              {
+                "bounds": [
+                  0.0,
+                  0.0,
+                  217.6,
+                  800.0
+                ],
+                "children": [
+                  {
+                    "bounds": [
+                      13.6,
+                      14.3,
+                      34.0,
+                      34.0
+                    ],
+                    "key": "app-logo",
+                    "name": "Drone Deck logo",
+                    "role": "group"
+                  },
+                  {
+                    "bounds": [
+                      57.8,
+                      13.6,
+                      146.2,
+                      21.3
+                    ],
+                    "name": "Drone Deck",
+                    "role": "label"
+                  },
+                  {
+                    "bounds": [
+                      57.8,
+                      38.3,
+                      146.2,
+                      10.6
+                    ],
+                    "name": "AUTONOMY WORKSPACE",
+                    "role": "label"
+                  },
+                  {
+                    "actions": [
+                      "scroll-up",
+                      "scroll-down",
+                      "set-scroll-offset"
+                    ],
+                    "bounds": [
+                      13.6,
+                      69.3,
+                      190.4,
+                      564.8
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          69.3,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              79.5,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "01",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              79.5,
+                              59.5,
+                              20.4
+                            ],
+                            "name": "Workspace",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-0",
+                        "name": "Workspace",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          113.5,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              123.7,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "02",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              123.7,
+                              57.8,
+                              20.4
+                            ],
+                            "name": "Simulators",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-1",
+                        "name": "Simulators",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          157.7,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              167.9,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "03",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              167.9,
+                              91.8,
+                              20.4
+                            ],
+                            "name": "Flight operations",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-2",
+                        "name": "Flight operations",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          201.9,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              212.1,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "04",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              212.1,
+                              73.1,
+                              20.4
+                            ],
+                            "name": "Development",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-3",
+                        "name": "Development",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          246.1,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              256.3,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "05",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              256.3,
+                              51.0,
+                              20.4
+                            ],
+                            "name": "AI & data",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-4",
+                        "name": "AI & data",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          290.3,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              300.5,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "06",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              300.5,
+                              65.5,
+                              20.4
+                            ],
+                            "name": "Integrations",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-5",
+                        "name": "Integrations",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          334.5,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              344.7,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "07",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              344.7,
+                              44.2,
+                              20.4
+                            ],
+                            "name": "Settings",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-6",
+                        "name": "Settings",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          378.7,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              388.9,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "08",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              388.9,
+                              60.4,
+                              20.4
+                            ],
+                            "name": "Recordings",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-7",
+                        "name": "Recordings",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          13.6,
+                          422.9,
+                          190.4,
+                          40.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              23.8,
+                              433.1,
+                              11.1,
+                              20.4
+                            ],
+                            "name": "09",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              45.1,
+                              433.1,
+                              31.5,
+                              20.4
+                            ],
+                            "name": "Setup",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "nav-8",
+                        "name": "Setup",
+                        "role": "button"
+                      }
+                    ],
+                    "role": "scroll-view",
+                    "scroll": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    "states": [
+                      "clips"
+                    ]
+                  },
+                  {
+                    "bounds": [
+                      25.5,
+                      666.3,
+                      166.6,
+                      11.7
+                    ],
+                    "name": "LOCAL ENVIRONMENT",
+                    "role": "label"
+                  },
+                  {
+                    "bounds": [
+                      25.5,
+                      685.7,
+                      166.6,
+                      14.9
+                    ],
+                    "name": "Windows + WSL",
+                    "role": "label"
+                  },
+                  {
+                    "bounds": [
+                      25.5,
+                      708.2,
+                      166.6,
+                      13.8
+                    ],
+                    "name": "Ubuntu-24.04",
+                    "role": "label"
+                  },
+                  {
+                    "bounds": [
+                      25.5,
+                      729.7,
+                      166.6,
+                      12.8
+                    ],
+                    "name": "Environment setup / check required",
+                    "role": "label"
+                  },
+                  {
+                    "bounds": [
+                      13.6,
+                      774.7,
+                      190.4,
+                      11.7
+                    ],
+                    "name": "RUNE NATIVE / v0.5",
+                    "role": "label"
+                  }
+                ],
+                "key": "sidebar",
+                "role": "group"
+              },
+              {
+                "bounds": [
+                  217.6,
+                  0.0,
+                  998.4,
+                  800.0
+                ],
+                "children": [
+                  {
+                    "actions": [
+                      "scroll-up",
+                      "scroll-down",
+                      "set-scroll-offset"
+                    ],
+                    "bounds": [
+                      217.6,
+                      0.0,
+                      998.4,
+                      86.9
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          234.6,
+                          17.0,
+                          130.1,
+                          11.7
+                        ],
+                        "name": "DRONE PROJECTS / LOCAL LAB",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          234.6,
+                          33.8,
+                          130.1,
+                          36.1
+                        ],
+                        "name": "Setup",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          950.8,
+                          24.8,
+                          85.0,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              959.3,
+                              33.3,
+                              68.0,
+                              20.4
+                            ],
+                            "name": "Detect tools",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "detect-tools",
+                        "name": "Detect tools",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          1042.6,
+                          24.8,
+                          86.7,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              1051.1,
+                              33.3,
+                              69.7,
+                              20.4
+                            ],
+                            "name": "Stop session",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "stop-all",
+                        "name": "Stop session",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          1136.1,
+                          24.8,
+                          62.9,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              1144.6,
+                              33.3,
+                              45.9,
+                              20.4
+                            ],
+                            "name": "Settings",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "open-settings",
+                        "name": "Settings",
+                        "role": "button"
+                      }
+                    ],
+                    "key": "topbar",
+                    "role": "scroll-view",
+                    "scroll": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    "states": [
+                      "clips"
+                    ]
+                  },
+                  {
+                    "actions": [
+                      "scroll-up",
+                      "scroll-down",
+                      "set-scroll-offset"
+                    ],
+                    "bounds": [
+                      217.6,
+                      86.9,
+                      998.4,
+                      679.1
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          217.6,
+                          -316.2,
+                          998.4,
+                          1220.6
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              261.3,
+                              -272.5,
+                              167.5,
+                              21.3
+                            ],
+                            "name": "Set up this computer",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              987.8,
+                              -267.7,
+                              184.5,
+                              11.7
+                            ],
+                            "name": "WINDOWS DESKTOP / LINUX TOOLS IN WSL",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              261.3,
+                              -239.3,
+                              910.9,
+                              14.9
+                            ],
+                            "name": "Preview: no Linux environment installed. Setup actions are disabled.",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              261.3,
+                              -212.6,
+                              910.9,
+                              37.4
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  269.8,
+                                  -204.1,
+                                  133.5,
+                                  20.4
+                                ],
+                                "name": "Scan Windows and WSL",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "scan-host",
+                            "name": "Scan Windows and WSL",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              244.3,
+                              -144.6,
+                              465.7,
+                              217.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  -127.6,
+                                  159.8,
+                                  21.3
+                                ],
+                                "name": "Computer readiness",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  613.1,
+                                  -122.8,
+                                  79.9,
+                                  11.7
+                                ],
+                                "name": "WINDOWS / WSL 2",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  -94.4,
+                                  431.7,
+                                  14.9
+                                ],
+                                "name": "Windows 11 · preview fixture · build 26100 · 64-bit",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  265.6,
+                                  -63.4,
+                                  168.3,
+                                  12.8
+                                ],
+                                "name": "Windows supports guided WSL setup",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  -34.5,
+                                  431.7,
+                                  13.8
+                                ],
+                                "name": "Virtualization: Available",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  -8.8,
+                                  431.7,
+                                  13.8
+                                ],
+                                "name": "RAM: 16.0 GiB · Graphics: Example GPU",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  16.9,
+                                  431.7,
+                                  12.8
+                                ],
+                                "name": "Windows user-drive free: 120.0 GiB. WSL data may be located on another drive.",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  41.6,
+                                  431.7,
+                                  13.8
+                                ],
+                                "name": "WSL is not detected. Install WSL first, then select a Linux distribution.",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "host-checks",
+                            "role": "group"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              244.3,
+                              86.0,
+                              465.7,
+                              306.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  103.0,
+                                  151.3,
+                                  21.3
+                                ],
+                                "name": "Linux environment",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  615.7,
+                                  107.8,
+                                  77.3,
+                                  11.7
+                                ],
+                                "name": "EXISTING OR NEW",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  136.1,
+                                  431.7,
+                                  12.8
+                                ],
+                                "name": "Selected distribution identifier",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  160.8,
+                                  431.7,
+                                  34.0
+                                ],
+                                "key": "setup-distro",
+                                "role": "text-input",
+                                "selection": [
+                                  1,
+                                  12,
+                                  1,
+                                  12
+                                ],
+                                "value": "Ubuntu-24.04"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  206.7,
+                                  163.2,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      269.8,
+                                      215.2,
+                                      146.2,
+                                      20.4
+                                    ],
+                                    "name": "Use installed environment",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "use-installed-distro",
+                                "name": "Use installed environment",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  431.3,
+                                  206.7,
+                                  125.8,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      439.8,
+                                      215.2,
+                                      108.8,
+                                      20.4
+                                    ],
+                                    "name": "Initialize Linux user",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "initialize-distro",
+                                "name": "Initialize Linux user",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  250.9,
+                                  142.8,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      269.8,
+                                      259.4,
+                                      125.8,
+                                      20.4
+                                    ],
+                                    "name": "Available distributions",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "load-distro-catalog",
+                                "name": "Available distributions",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  300.2,
+                                  79.1,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      269.8,
+                                      308.7,
+                                      62.1,
+                                      20.4
+                                    ],
+                                    "name": "Install WSL",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "review-wsl",
+                                "name": "Install WSL",
+                                "role": "button",
+                                "states": [
+                                  "focused"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  347.2,
+                                  300.2,
+                                  169.2,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      355.7,
+                                      308.7,
+                                      152.2,
+                                      20.4
+                                    ],
+                                    "name": "Install selected distribution",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "review-distro",
+                                "name": "Install selected distribution",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  349.5,
+                                  431.7,
+                                  25.5
+                                ],
+                                "name": "Distribution installation may need Windows approval or a restart. First launch may ask you to create a Linux user. Existing distributions are retained.",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "distribution-setup",
+                            "role": "group"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              723.6,
+                              -144.6,
+                              465.7,
+                              927.6
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  -127.6,
+                                  170.8,
+                                  21.3
+                                ],
+                                "name": "Tools and integration",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  1040.5,
+                                  -122.8,
+                                  131.8,
+                                  11.7
+                                ],
+                                "name": "DISCOVER / INSTALL / MANUAL",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view",
+                                  "scroll-up",
+                                  "scroll-down",
+                                  "set-scroll-offset"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  -94.4,
+                                  431.7,
+                                  255.0
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      -94.4,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          -84.2,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "ROS 2 Jazzy + rosbag2 / MCAP",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          -65.1,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "Jazzy / Ubuntu 24.04 · WSL · Managed recipe",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-ros2",
+                                    "name": "ROS 2 Jazzy + rosbag2 / MCAP",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      -37.1,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          -26.8,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "MAVSDK Python environment",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          -7.7,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "4.1.0 · WSL · Managed recipe",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-mavsdk",
+                                    "name": "MAVSDK Python environment",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      20.3,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          30.5,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "PX4 SIH toolchain",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          49.7,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "v1.17.0 · WSL · Managed recipe",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-px4",
+                                    "name": "PX4 SIH toolchain",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      77.7,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          87.9,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "Micro XRCE-DDS Agent",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          107.0,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "2.4.3 (DDS v2 client) · WSL · Managed recipe",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-dds",
+                                    "name": "Micro XRCE-DDS Agent",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      135.1,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          145.3,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "QGroundControl",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          164.4,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "v5.1.5 · Windows · Managed recipe",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-qgc",
+                                    "name": "QGroundControl",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      192.4,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          202.7,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "ArduPilot SITL",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          221.8,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "Official guided setup · WSL · Detection + guided setup",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-ardupilot",
+                                    "name": "ArduPilot SITL",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      249.8,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          260.0,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "jMAVSim visualizer",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          279.2,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "Existing native Java integration · Windows · Detection + guided setup",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-jmavsim",
+                                    "name": "jMAVSim visualizer",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      740.6,
+                                      307.2,
+                                      431.7,
+                                      52.3
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          317.4,
+                                          411.3,
+                                          14.9
+                                        ],
+                                        "name": "Gazebo Harmonic",
+                                        "role": "label"
+                                      },
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          750.8,
+                                          336.5,
+                                          411.3,
+                                          12.8
+                                        ],
+                                        "name": "Harmonic · WSL · Detection + guided setup",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "setup-tool-gazebo",
+                                    "name": "Gazebo Harmonic",
+                                    "role": "button"
+                                  }
+                                ],
+                                "role": "scroll-view",
+                                "scroll": [
+                                  0.0,
+                                  0.0,
+                                  234.0
+                                ],
+                                "states": [
+                                  "clips"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  172.5,
+                                  431.7,
+                                  22.3
+                                ],
+                                "name": "Windows Subsystem for Linux 2",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  206.7,
+                                  431.7,
+                                  27.6
+                                ],
+                                "name": "Enable WSL without installing a distribution. Windows elevation and a restart may be required.",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  246.2,
+                                  431.7,
+                                  25.5
+                                ],
+                                "name": "Optional existing location: Linux path for WSL tools; full Windows executable/JAR path for Windows tools",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  283.6,
+                                  431.7,
+                                  34.0
+                                ],
+                                "key": "setup-existing-location",
+                                "role": "text-input",
+                                "value": ""
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  329.5,
+                                  127.5,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      749.1,
+                                      338.0,
+                                      110.5,
+                                      20.4
+                                    ],
+                                    "name": "Detect existing tool",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "detect-selected-tool",
+                                "name": "Detect existing tool",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  874.9,
+                                  329.5,
+                                  151.3,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      883.4,
+                                      338.0,
+                                      134.3,
+                                      20.4
+                                    ],
+                                    "name": "Review automatic setup",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "review-installation",
+                                "name": "Review automatic setup",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  1033.0,
+                                  329.5,
+                                  127.5,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      1041.5,
+                                      338.0,
+                                      110.5,
+                                      20.4
+                                    ],
+                                    "name": "Configure manually",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "setup-configure-manually",
+                                "name": "Configure manually",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  373.7,
+                                  159.8,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      749.1,
+                                      382.2,
+                                      142.8,
+                                      20.4
+                                    ],
+                                    "name": "Official setup / download",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "setup-official-docs",
+                                "name": "Official setup / download",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  740.6,
+                                  423.0,
+                                  431.7,
+                                  343.0
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      440.0,
+                                      151.3,
+                                      21.3
+                                    ],
+                                    "name": "Review installation",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      1047.3,
+                                      444.8,
+                                      108.0,
+                                      11.7
+                                    ],
+                                    "name": "EXPLICIT INSTALL ACTION",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      473.2,
+                                      397.7,
+                                      21.3
+                                    ],
+                                    "name": "Windows Subsystem for Linux 2",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      506.3,
+                                      397.7,
+                                      13.8
+                                    ],
+                                    "name": "Version: Microsoft managed · Target: Windows · Distribution: Ubuntu-24.04",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      532.0,
+                                      397.7,
+                                      27.6
+                                    ],
+                                    "name": "Enable WSL without installing a distribution. Windows elevation and a restart may be required.",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      571.6,
+                                      397.7,
+                                      13.8
+                                    ],
+                                    "name": "1. Check Windows eligibility",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      597.3,
+                                      397.7,
+                                      13.8
+                                    ],
+                                    "name": "2. Enable/install WSL",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      623.0,
+                                      397.7,
+                                      13.8
+                                    ],
+                                    "name": "3. Check restart and WSL status",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      648.7,
+                                      397.7,
+                                      51.0
+                                    ],
+                                    "name": "Review the source and target above. Existing compatible tools are offered for reuse. Shared Linux prerequisites may be installed. Space/download sizes are shown when known; source builds have no reliable fixed estimate. Jobs keep their logs and continue across app closure.",
+                                    "role": "label"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      757.6,
+                                      711.6,
+                                      130.9,
+                                      37.4
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          766.1,
+                                          720.1,
+                                          113.9,
+                                          20.4
+                                        ],
+                                        "name": "Install reviewed tool",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "confirm-managed-install",
+                                    "name": "Install reviewed tool",
+                                    "role": "button"
+                                  },
+                                  {
+                                    "actions": [
+                                      "click",
+                                      "focus",
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      895.3,
+                                      711.6,
+                                      44.2,
+                                      37.4
+                                    ],
+                                    "children": [
+                                      {
+                                        "actions": [
+                                          "scroll-into-view"
+                                        ],
+                                        "bounds": [
+                                          903.8,
+                                          720.1,
+                                          27.2,
+                                          20.4
+                                        ],
+                                        "name": "Back",
+                                        "role": "label"
+                                      }
+                                    ],
+                                    "key": "cancel-install-review",
+                                    "name": "Back",
+                                    "role": "button"
+                                  }
+                                ],
+                                "key": "installation-review",
+                                "role": "group"
+                              }
+                            ],
+                            "key": "setup-tool-catalog",
+                            "role": "group"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              244.3,
+                              796.6,
+                              944.9,
+                              81.0
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  813.6,
+                                  128.4,
+                                  21.3
+                                ],
+                                "name": "Installation jobs",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  1057.5,
+                                  818.4,
+                                  114.8,
+                                  11.7
+                                ],
+                                "name": "PERSISTENT STATUS / LOGS",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  261.3,
+                                  846.8,
+                                  910.9,
+                                  13.8
+                                ],
+                                "name": "No managed installations started. Detection does not install or update anything.",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "setup-jobs",
+                            "role": "group"
+                          }
+                        ],
+                        "key": "page-content",
+                        "role": "group"
+                      }
+                    ],
+                    "key": "main-scroll",
+                    "role": "scroll-view",
+                    "scroll": [
+                      0.0,
+                      474.3,
+                      637.0
+                    ],
+                    "states": [
+                      "clips"
+                    ]
+                  },
+                  {
+                    "bounds": [
+                      217.6,
+                      766.0,
+                      998.4,
+                      34.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          222.7,
+                          776.6,
+                          908.3,
+                          12.8
+                        ],
+                        "name": "Headless preview · external processes disabled",
+                        "role": "label"
+                      },
+                      {
+                        "bounds": [
+                          1137.8,
+                          771.1,
+                          73.1,
+                          23.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              1137.8,
+                              771.1,
+                              17.8,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  1142.9,
+                                  776.2,
+                                  7.7,
+                                  13.6
+                                ],
+                                "name": "−",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-out",
+                            "name": "Zoom out (Ctrl+−)",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              1159.1,
+                              771.1,
+                              30.6,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  1164.2,
+                                  776.2,
+                                  20.4,
+                                  13.6
+                                ],
+                                "name": "85%",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-reset",
+                            "name": "Reset zoom to 100% (Ctrl+0)",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              1193.1,
+                              771.1,
+                              17.8,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  1198.2,
+                                  776.2,
+                                  7.7,
+                                  13.6
+                                ],
+                                "name": "+",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-in",
+                            "name": "Zoom in (Ctrl++)",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "zoom-controls",
+                        "role": "group"
+                      }
+                    ],
+                    "key": "statusbar",
+                    "role": "group"
+                  }
+                ],
+                "key": "app-stage",
+                "role": "group"
+              }
+            ],
+            "key": "app-root",
+            "role": "group"
+          }
+        ],
+        "key": "window-frame",
+        "role": "group"
+      }
+    ],
+    "name": "Drone Deck · Autonomy Workspace",
+    "role": "window"
+  },
+  "anim_t": 1.4,
+  "animating": false,
+  "dark_system": true,
+  "elements": [
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "window-frame",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame",
+      "rect": [
+        0.0,
+        0.0,
+        1216.0,
+        800.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-root",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root",
+      "rect": [
+        0.0,
+        0.0,
+        1216.0,
+        800.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        1430.59,
+        941.18
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "sidebar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar",
+      "rect": [
+        0.0,
+        0.0,
+        217.59,
+        800.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        256.0,
+        941.18
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#0",
+      "rect": [
+        13.59,
+        13.59,
+        190.41,
+        35.28
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        16.0,
+        224.0,
+        41.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-logo",
+      "label": "Drone Deck logo",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#0/app-logo",
+      "rect": [
+        13.59,
+        14.23,
+        34.0,
+        34.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        16.75,
+        40.0,
+        40.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#111111ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#0/app-logo/#0",
+      "rect": [
+        14.66,
+        15.3,
+        31.88,
+        31.88
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        17.25,
+        18.0,
+        37.5,
+        37.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#0/app-logo/#1",
+      "rect": [
+        13.59,
+        14.23,
+        34.0,
+        34.0
+      ],
+      "role": "icon",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        16.75,
+        40.0,
+        40.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#0/#1",
+      "rect": [
+        57.8,
+        13.59,
+        146.2,
+        35.28
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        68.0,
+        16.0,
+        172.0,
+        41.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#0/#1/#0",
+      "rect": [
+        57.8,
+        13.59,
+        146.2,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        68.0,
+        16.0,
+        172.0,
+        25.0
+      ],
+      "text": "Drone Deck"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#0/#1/#1",
+      "rect": [
+        57.8,
+        38.25,
+        146.2,
+        10.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        68.0,
+        45.0,
+        172.0,
+        12.5
+      ],
+      "text": "AUTONOMY WORKSPACE"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1",
+      "rect": [
+        13.59,
+        69.28,
+        190.41,
+        564.75
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        81.5,
+        224.0,
+        664.43
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0",
+      "rect": [
+        13.59,
+        69.28,
+        190.41,
+        394.39
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        81.5,
+        224.0,
+        464.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-0",
+      "label": "Workspace",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-0",
+      "rect": [
+        13.59,
+        69.28,
+        190.41,
+        40.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        81.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-0/#0",
+      "rect": [
+        23.8,
+        79.47,
+        11.05,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        93.5,
+        13.0,
+        24.0
+      ],
+      "text": "01"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-0/#1",
+      "rect": [
+        45.05,
+        79.47,
+        59.5,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        93.5,
+        70.0,
+        24.0
+      ],
+      "text": "Workspace"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-1",
+      "label": "Simulators",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-1",
+      "rect": [
+        13.59,
+        113.47,
+        190.41,
+        40.81
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        133.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-1/#0",
+      "rect": [
+        23.8,
+        123.67,
+        11.05,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        145.5,
+        13.0,
+        24.0
+      ],
+      "text": "02"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-1/#1",
+      "rect": [
+        45.05,
+        123.67,
+        57.8,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        145.5,
+        68.0,
+        24.0
+      ],
+      "text": "Simulators"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-2",
+      "label": "Flight operations",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-2",
+      "rect": [
+        13.59,
+        157.67,
+        190.41,
+        40.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        185.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-2/#0",
+      "rect": [
+        23.8,
+        167.88,
+        11.05,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        197.5,
+        13.0,
+        24.0
+      ],
+      "text": "03"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-2/#1",
+      "rect": [
+        45.05,
+        167.88,
+        91.8,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        197.5,
+        108.0,
+        24.0
+      ],
+      "text": "Flight operations"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-3",
+      "label": "Development",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-3",
+      "rect": [
+        13.59,
+        201.88,
+        190.41,
+        40.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        237.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-3/#0",
+      "rect": [
+        23.8,
+        212.08,
+        11.05,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        249.5,
+        13.0,
+        24.0
+      ],
+      "text": "04"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-3/#1",
+      "rect": [
+        45.05,
+        212.08,
+        73.11,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        249.5,
+        86.0,
+        24.0
+      ],
+      "text": "Development"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-4",
+      "label": "AI & data",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-4",
+      "rect": [
+        13.59,
+        246.08,
+        190.41,
+        40.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        289.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-4/#0",
+      "rect": [
+        23.8,
+        256.28,
+        11.05,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        301.5,
+        13.0,
+        24.0
+      ],
+      "text": "05"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-4/#1",
+      "rect": [
+        45.05,
+        256.28,
+        51.0,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        301.5,
+        60.0,
+        24.0
+      ],
+      "text": "AI & data"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-5",
+      "label": "Integrations",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-5",
+      "rect": [
+        13.59,
+        290.28,
+        190.41,
+        40.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        341.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-5/#0",
+      "rect": [
+        23.8,
+        300.47,
+        11.05,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        353.5,
+        13.0,
+        24.0
+      ],
+      "text": "06"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-5/#1",
+      "rect": [
+        45.05,
+        300.47,
+        65.45,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        353.5,
+        77.0,
+        24.0
+      ],
+      "text": "Integrations"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-6",
+      "label": "Settings",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-6",
+      "rect": [
+        13.59,
+        334.47,
+        190.41,
+        40.81
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        393.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-6/#0",
+      "rect": [
+        23.8,
+        344.67,
+        11.05,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        405.5,
+        13.0,
+        24.0
+      ],
+      "text": "07"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-6/#1",
+      "rect": [
+        45.05,
+        344.67,
+        44.2,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        405.5,
+        52.0,
+        24.0
+      ],
+      "text": "Settings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-7",
+      "label": "Recordings",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-7",
+      "rect": [
+        13.59,
+        378.67,
+        190.41,
+        40.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        445.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-7/#0",
+      "rect": [
+        23.8,
+        388.88,
+        11.05,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        457.5,
+        13.0,
+        24.0
+      ],
+      "text": "08"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-7/#1",
+      "rect": [
+        45.05,
+        388.88,
+        60.36,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        457.5,
+        71.0,
+        24.0
+      ],
+      "text": "Recordings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0d0d0dff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "nav-8",
+      "label": "Setup",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-8",
+      "rect": [
+        13.59,
+        422.88,
+        190.41,
+        40.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        497.5,
+        224.0,
+        48.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-8/#0",
+      "rect": [
+        23.8,
+        433.08,
+        11.05,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        28.0,
+        509.5,
+        13.0,
+        24.0
+      ],
+      "text": "09"
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#1/#0/nav-8/#1",
+      "rect": [
+        45.05,
+        433.08,
+        31.45,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        53.0,
+        509.5,
+        37.0,
+        24.0
+      ],
+      "text": "Setup"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#2",
+      "rect": [
+        13.59,
+        654.44,
+        190.41,
+        99.88
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        769.93,
+        224.0,
+        117.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#2/#0",
+      "rect": [
+        25.5,
+        666.33,
+        166.59,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        30.0,
+        783.93,
+        196.0,
+        13.75
+      ],
+      "text": "LOCAL ENVIRONMENT"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#2/#1",
+      "rect": [
+        25.5,
+        685.67,
+        166.59,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        30.0,
+        806.68,
+        196.0,
+        17.5
+      ],
+      "text": "Windows + WSL"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#2/#2",
+      "rect": [
+        25.5,
+        708.2,
+        166.59,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        30.0,
+        833.18,
+        196.0,
+        16.25
+      ],
+      "text": "Ubuntu-24.04"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#2/#3",
+      "rect": [
+        25.5,
+        729.66,
+        166.59,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        30.0,
+        858.43,
+        196.0,
+        15.0
+      ],
+      "text": "Environment setup / check required"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/sidebar/#3",
+      "rect": [
+        13.59,
+        774.7,
+        190.41,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        911.43,
+        224.0,
+        13.75
+      ],
+      "text": "RUNE NATIVE / v0.5"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-stage",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage",
+      "rect": [
+        217.59,
+        0.0,
+        998.41,
+        800.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        256.0,
+        0.0,
+        1174.59,
+        941.18
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "topbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar",
+      "rect": [
+        217.59,
+        0.0,
+        998.41,
+        86.91
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        256.0,
+        0.0,
+        1174.59,
+        102.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0",
+      "rect": [
+        234.59,
+        17.0,
+        964.41,
+        52.91
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        276.0,
+        20.0,
+        1134.59,
+        62.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0",
+      "rect": [
+        234.59,
+        17.0,
+        702.61,
+        52.91
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        276.0,
+        20.0,
+        826.59,
+        62.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#0",
+      "rect": [
+        234.59,
+        17.0,
+        130.06,
+        52.91
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        276.0,
+        20.0,
+        153.0,
+        62.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0075deff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#0/#0",
+      "rect": [
+        234.59,
+        17.0,
+        130.06,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        276.0,
+        20.0,
+        153.0,
+        13.75
+      ],
+      "text": "DRONE PROJECTS / LOCAL LAB"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#0/#1",
+      "rect": [
+        234.59,
+        33.78,
+        130.06,
+        36.13
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        276.0,
+        39.75,
+        153.0,
+        42.5
+      ],
+      "text": "Setup"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1",
+      "rect": [
+        950.81,
+        24.75,
+        248.19,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        1118.59,
+        29.13,
+        292.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "detect-tools",
+      "label": "Detect tools",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/detect-tools",
+      "rect": [
+        950.81,
+        24.75,
+        85.0,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1118.59,
+        29.13,
+        100.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/detect-tools/#0",
+      "rect": [
+        959.31,
+        33.25,
+        68.0,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1128.59,
+        39.13,
+        80.0,
+        24.0
+      ],
+      "text": "Detect tools"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#fff0eeff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "stop-all",
+      "label": "Stop session",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/stop-all",
+      "rect": [
+        1042.61,
+        24.75,
+        86.7,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1226.59,
+        29.13,
+        102.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#b42318ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/stop-all/#0",
+      "rect": [
+        1051.11,
+        33.25,
+        69.7,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1236.59,
+        39.13,
+        82.0,
+        24.0
+      ],
+      "text": "Stop session"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "open-settings",
+      "label": "Settings",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/open-settings",
+      "rect": [
+        1136.11,
+        24.75,
+        62.89,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1336.59,
+        29.13,
+        74.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/open-settings/#0",
+      "rect": [
+        1144.61,
+        33.25,
+        45.89,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1346.59,
+        39.13,
+        54.0,
+        24.0
+      ],
+      "text": "Settings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "main-scroll",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll",
+      "rect": [
+        217.59,
+        86.91,
+        998.41,
+        679.09
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        256.0,
+        102.25,
+        1174.59,
+        798.93
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "page-content",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content",
+      "rect": [
+        217.59,
+        -316.23,
+        998.41,
+        1220.56
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        256.0,
+        102.25,
+        1174.59,
+        1435.95
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0",
+      "rect": [
+        244.34,
+        -289.48,
+        944.91,
+        1167.05
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        133.72,
+        1111.64,
+        1373.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0",
+      "rect": [
+        244.34,
+        -289.48,
+        944.91,
+        1167.05
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        133.72,
+        1111.64,
+        1373.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0",
+      "rect": [
+        244.34,
+        -289.48,
+        944.91,
+        131.31
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        133.72,
+        1111.64,
+        154.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#0",
+      "rect": [
+        261.34,
+        -272.48,
+        910.91,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        153.72,
+        1071.64,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#0/#0",
+      "rect": [
+        261.34,
+        -272.48,
+        167.45,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        153.72,
+        197.0,
+        25.0
+      ],
+      "text": "Set up this computer"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#0/#1",
+      "rect": [
+        987.8,
+        -267.7,
+        184.45,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1162.12,
+        159.35,
+        217.0,
+        13.75
+      ],
+      "text": "WINDOWS DESKTOP / LINUX TOOLS IN WSL"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#1",
+      "rect": [
+        261.34,
+        -239.34,
+        910.91,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        192.72,
+        1071.64,
+        17.5
+      ],
+      "text": "Preview: no Linux environment installed. Setup actions are disabled."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "scan-host",
+      "label": "Scan Windows and WSL",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/scan-host",
+      "rect": [
+        261.34,
+        -212.56,
+        910.91,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        224.22,
+        1071.64,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/scan-host/#0",
+      "rect": [
+        269.84,
+        -204.06,
+        133.45,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        317.47,
+        234.22,
+        157.0,
+        24.0
+      ],
+      "text": "Scan Windows and WSL"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1",
+      "rect": [
+        244.34,
+        -144.56,
+        944.91,
+        927.56
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        304.22,
+        1111.64,
+        1091.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0",
+      "rect": [
+        244.34,
+        -144.56,
+        465.66,
+        536.56
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        304.22,
+        547.82,
+        631.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "host-checks",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks",
+      "rect": [
+        244.34,
+        -144.56,
+        465.66,
+        216.95
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        304.22,
+        547.82,
+        255.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#0",
+      "rect": [
+        261.34,
+        -127.56,
+        431.66,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        324.22,
+        507.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#0/#0",
+      "rect": [
+        261.34,
+        -127.56,
+        159.81,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        324.22,
+        188.0,
+        25.0
+      ],
+      "text": "Computer readiness"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#0/#1",
+      "rect": [
+        613.11,
+        -122.78,
+        79.89,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        721.29,
+        329.85,
+        94.0,
+        13.75
+      ],
+      "text": "WINDOWS / WSL 2"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#1",
+      "rect": [
+        261.34,
+        -94.42,
+        431.66,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        363.22,
+        507.82,
+        17.5
+      ],
+      "text": "Windows 11 · preview fixture · build 26100 · 64-bit"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#e8faf0ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#2",
+      "rect": [
+        261.34,
+        -67.64,
+        431.66,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        394.72,
+        507.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#137a2cff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#2/#0",
+      "rect": [
+        265.59,
+        -63.39,
+        168.31,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        312.47,
+        399.72,
+        198.0,
+        15.0
+      ],
+      "text": "Windows supports guided WSL setup"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#3",
+      "rect": [
+        261.34,
+        -34.48,
+        431.66,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        433.72,
+        507.82,
+        16.25
+      ],
+      "text": "Virtualization: Available"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#4",
+      "rect": [
+        261.34,
+        -8.78,
+        431.66,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        463.97,
+        507.82,
+        16.25
+      ],
+      "text": "RAM: 16.0 GiB · Graphics: Example GPU"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#5",
+      "rect": [
+        261.34,
+        16.94,
+        431.66,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        494.22,
+        507.82,
+        15.0
+      ],
+      "text": "Windows user-drive free: 120.0 GiB. WSL data may be located on another drive."
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/host-checks/#6",
+      "rect": [
+        261.34,
+        41.58,
+        431.66,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        523.22,
+        507.82,
+        16.25
+      ],
+      "text": "WSL is not detected. Install WSL first, then select a Linux distribution."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "distribution-setup",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup",
+      "rect": [
+        244.34,
+        86.0,
+        465.66,
+        306.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        575.47,
+        547.82,
+        360.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#0",
+      "rect": [
+        261.34,
+        103.0,
+        431.66,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        595.47,
+        507.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#0/#0",
+      "rect": [
+        261.34,
+        103.0,
+        151.31,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        595.47,
+        178.0,
+        25.0
+      ],
+      "text": "Linux environment"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#0/#1",
+      "rect": [
+        615.66,
+        107.78,
+        77.34,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        724.29,
+        601.1,
+        91.0,
+        13.75
+      ],
+      "text": "EXISTING OR NEW"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#1",
+      "rect": [
+        261.34,
+        136.14,
+        431.66,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        634.47,
+        507.82,
+        15.0
+      ],
+      "text": "Selected distribution identifier"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-distro",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/setup-distro",
+      "rect": [
+        261.34,
+        160.8,
+        431.66,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        663.47,
+        507.82,
+        40.0
+      ],
+      "text": "Ubuntu-24.04"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#3",
+      "rect": [
+        261.34,
+        206.7,
+        431.66,
+        81.59
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        717.47,
+        507.82,
+        96.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "use-installed-distro",
+      "label": "Use installed environment",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#3/use-installed-distro",
+      "rect": [
+        261.34,
+        206.7,
+        163.2,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        717.47,
+        192.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#3/use-installed-distro/#0",
+      "rect": [
+        269.84,
+        215.2,
+        146.2,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        317.47,
+        727.47,
+        172.0,
+        24.0
+      ],
+      "text": "Use installed environment"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "initialize-distro",
+      "label": "Initialize Linux user",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#3/initialize-distro",
+      "rect": [
+        431.34,
+        206.7,
+        125.81,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        507.47,
+        717.47,
+        148.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#3/initialize-distro/#0",
+      "rect": [
+        439.84,
+        215.2,
+        108.81,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        517.47,
+        727.47,
+        128.0,
+        24.0
+      ],
+      "text": "Initialize Linux user"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "load-distro-catalog",
+      "label": "Available distributions",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#3/load-distro-catalog",
+      "rect": [
+        261.34,
+        250.89,
+        142.81,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        769.47,
+        168.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#3/load-distro-catalog/#0",
+      "rect": [
+        269.84,
+        259.39,
+        125.81,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        317.47,
+        779.47,
+        148.0,
+        24.0
+      ],
+      "text": "Available distributions"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#4",
+      "rect": [
+        261.34,
+        300.2,
+        431.66,
+        37.39
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        827.47,
+        507.82,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": true,
+      "inert": false,
+      "key": "review-wsl",
+      "label": "Install WSL",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#4/review-wsl",
+      "rect": [
+        261.34,
+        300.2,
+        79.06,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        827.47,
+        93.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#4/review-wsl/#0",
+      "rect": [
+        269.84,
+        308.7,
+        62.06,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        317.47,
+        837.47,
+        73.0,
+        24.0
+      ],
+      "text": "Install WSL"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "review-distro",
+      "label": "Install selected distribution",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#4/review-distro",
+      "rect": [
+        347.2,
+        300.2,
+        169.14,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        408.47,
+        827.47,
+        199.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#4/review-distro/#0",
+      "rect": [
+        355.7,
+        308.7,
+        152.14,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        418.47,
+        837.47,
+        179.0,
+        24.0
+      ],
+      "text": "Install selected distribution"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#0/distribution-setup/#5",
+      "rect": [
+        261.34,
+        349.5,
+        431.66,
+        25.5
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        885.47,
+        507.82,
+        30.0
+      ],
+      "text": "Distribution installation may need Windows approval or a restart. First launch may ask you to create a Linux user. Existing distributions are retained."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1",
+      "rect": [
+        723.61,
+        -144.56,
+        465.64,
+        927.56
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        851.29,
+        304.22,
+        547.82,
+        1091.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-catalog",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog",
+      "rect": [
+        723.61,
+        -144.56,
+        465.64,
+        927.56
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        851.29,
+        304.22,
+        547.82,
+        1091.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#0",
+      "rect": [
+        740.61,
+        -127.56,
+        431.64,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        324.22,
+        507.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#0/#0",
+      "rect": [
+        740.61,
+        -127.56,
+        170.84,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        324.22,
+        201.0,
+        25.0
+      ],
+      "text": "Tools and integration"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#0/#1",
+      "rect": [
+        1040.5,
+        -122.78,
+        131.75,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1224.12,
+        329.85,
+        155.0,
+        13.75
+      ],
+      "text": "DISCOVER / INSTALL / MANUAL"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1",
+      "rect": [
+        740.61,
+        -94.42,
+        431.64,
+        255.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        363.22,
+        507.82,
+        300.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0",
+      "rect": [
+        740.61,
+        -94.42,
+        431.64,
+        453.91
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        363.22,
+        507.82,
+        534.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-ros2",
+      "label": "ROS 2 Jazzy + rosbag2 / MCAP",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-ros2",
+      "rect": [
+        740.61,
+        -94.42,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        363.22,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-ros2/#0",
+      "rect": [
+        750.8,
+        -84.22,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        375.22,
+        483.82,
+        17.5
+      ],
+      "text": "ROS 2 Jazzy + rosbag2 / MCAP"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-ros2/#1",
+      "rect": [
+        750.8,
+        -65.09,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        397.72,
+        483.82,
+        15.0
+      ],
+      "text": "Jazzy / Ubuntu 24.04 · WSL · Managed recipe"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-mavsdk",
+      "label": "MAVSDK Python environment",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-mavsdk",
+      "rect": [
+        740.61,
+        -37.05,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        430.72,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-mavsdk/#0",
+      "rect": [
+        750.8,
+        -26.84,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        442.72,
+        483.82,
+        17.5
+      ],
+      "text": "MAVSDK Python environment"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-mavsdk/#1",
+      "rect": [
+        750.8,
+        -7.72,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        465.22,
+        483.82,
+        15.0
+      ],
+      "text": "4.1.0 · WSL · Managed recipe"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-px4",
+      "label": "PX4 SIH toolchain",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-px4",
+      "rect": [
+        740.61,
+        20.33,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        498.22,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-px4/#0",
+      "rect": [
+        750.8,
+        30.53,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        510.22,
+        483.82,
+        17.5
+      ],
+      "text": "PX4 SIH toolchain"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-px4/#1",
+      "rect": [
+        750.8,
+        49.66,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        532.72,
+        483.82,
+        15.0
+      ],
+      "text": "v1.17.0 · WSL · Managed recipe"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-dds",
+      "label": "Micro XRCE-DDS Agent",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-dds",
+      "rect": [
+        740.61,
+        77.7,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        565.72,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-dds/#0",
+      "rect": [
+        750.8,
+        87.91,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        577.72,
+        483.82,
+        17.5
+      ],
+      "text": "Micro XRCE-DDS Agent"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-dds/#1",
+      "rect": [
+        750.8,
+        107.03,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        600.22,
+        483.82,
+        15.0
+      ],
+      "text": "2.4.3 (DDS v2 client) · WSL · Managed recipe"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-qgc",
+      "label": "QGroundControl",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-qgc",
+      "rect": [
+        740.61,
+        135.08,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        633.22,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-qgc/#0",
+      "rect": [
+        750.8,
+        145.28,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        645.22,
+        483.82,
+        17.5
+      ],
+      "text": "QGroundControl"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-qgc/#1",
+      "rect": [
+        750.8,
+        164.41,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        667.72,
+        483.82,
+        15.0
+      ],
+      "text": "v5.1.5 · Windows · Managed recipe"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-ardupilot",
+      "label": "ArduPilot SITL",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-ardupilot",
+      "rect": [
+        740.61,
+        192.45,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        700.72,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-ardupilot/#0",
+      "rect": [
+        750.8,
+        202.66,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        712.72,
+        483.82,
+        17.5
+      ],
+      "text": "ArduPilot SITL"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-ardupilot/#1",
+      "rect": [
+        750.8,
+        221.78,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        735.22,
+        483.82,
+        15.0
+      ],
+      "text": "Official guided setup · WSL · Detection + guided setup"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-jmavsim",
+      "label": "jMAVSim visualizer",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-jmavsim",
+      "rect": [
+        740.61,
+        249.83,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        768.22,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-jmavsim/#0",
+      "rect": [
+        750.8,
+        260.03,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        780.22,
+        483.82,
+        17.5
+      ],
+      "text": "jMAVSim visualizer"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-jmavsim/#1",
+      "rect": [
+        750.8,
+        279.16,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        802.72,
+        483.82,
+        15.0
+      ],
+      "text": "Existing native Java integration · Windows · Detection + guided setup"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-tool-gazebo",
+      "label": "Gazebo Harmonic",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-gazebo",
+      "rect": [
+        740.61,
+        307.2,
+        431.64,
+        52.28
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        835.72,
+        507.82,
+        61.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-gazebo/#0",
+      "rect": [
+        750.8,
+        317.41,
+        411.25,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        847.72,
+        483.82,
+        17.5
+      ],
+      "text": "Gazebo Harmonic"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#1/#0/setup-tool-gazebo/#1",
+      "rect": [
+        750.8,
+        336.53,
+        411.25,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        883.29,
+        870.22,
+        483.82,
+        15.0
+      ],
+      "text": "Harmonic · WSL · Detection + guided setup"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#2",
+      "rect": [
+        740.61,
+        172.48,
+        431.64,
+        22.31
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        677.22,
+        507.82,
+        26.25
+      ],
+      "text": "Windows Subsystem for Linux 2"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#3",
+      "rect": [
+        740.61,
+        206.7,
+        431.64,
+        27.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        717.47,
+        507.82,
+        32.5
+      ],
+      "text": "Enable WSL without installing a distribution. Windows elevation and a restart may be required."
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#4",
+      "rect": [
+        740.61,
+        246.22,
+        431.64,
+        25.5
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        763.97,
+        507.82,
+        30.0
+      ],
+      "text": "Optional existing location: Linux path for WSL tools; full Windows executable/JAR path for Windows tools"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-existing-location",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/setup-existing-location",
+      "rect": [
+        740.61,
+        283.63,
+        431.64,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        807.97,
+        507.82,
+        40.0
+      ],
+      "text": ""
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6",
+      "rect": [
+        740.61,
+        329.52,
+        431.64,
+        81.61
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        861.97,
+        507.82,
+        96.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "detect-selected-tool",
+      "label": "Detect existing tool",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/detect-selected-tool",
+      "rect": [
+        740.61,
+        329.52,
+        127.5,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        861.97,
+        150.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/detect-selected-tool/#0",
+      "rect": [
+        749.11,
+        338.02,
+        110.5,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        881.29,
+        871.97,
+        130.0,
+        24.0
+      ],
+      "text": "Detect existing tool"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "review-installation",
+      "label": "Review automatic setup",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/review-installation",
+      "rect": [
+        874.91,
+        329.52,
+        151.3,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1029.29,
+        861.97,
+        178.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/review-installation/#0",
+      "rect": [
+        883.41,
+        338.02,
+        134.3,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1039.29,
+        871.97,
+        158.0,
+        24.0
+      ],
+      "text": "Review automatic setup"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-configure-manually",
+      "label": "Configure manually",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/setup-configure-manually",
+      "rect": [
+        1033.0,
+        329.52,
+        127.5,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1215.29,
+        861.97,
+        150.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/setup-configure-manually/#0",
+      "rect": [
+        1041.5,
+        338.02,
+        110.5,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1225.29,
+        871.97,
+        130.0,
+        24.0
+      ],
+      "text": "Configure manually"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "setup-official-docs",
+      "label": "Official setup / download",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/setup-official-docs",
+      "rect": [
+        740.61,
+        373.72,
+        159.8,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        913.97,
+        188.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/#6/setup-official-docs/#0",
+      "rect": [
+        749.11,
+        382.22,
+        142.8,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        881.29,
+        923.97,
+        168.0,
+        24.0
+      ],
+      "text": "Official setup / download"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f2f9ffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "installation-review",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review",
+      "rect": [
+        740.61,
+        423.02,
+        431.64,
+        342.98
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        871.29,
+        971.97,
+        507.82,
+        403.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#0",
+      "rect": [
+        757.61,
+        440.02,
+        397.64,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        991.97,
+        467.82,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#0/#0",
+      "rect": [
+        757.61,
+        440.02,
+        151.3,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        991.97,
+        178.0,
+        25.0
+      ],
+      "text": "Review installation"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#0/#1",
+      "rect": [
+        1047.3,
+        444.8,
+        107.95,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1232.12,
+        997.6,
+        127.0,
+        13.75
+      ],
+      "text": "EXPLICIT INSTALL ACTION"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#1",
+      "rect": [
+        757.61,
+        473.17,
+        397.64,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1030.97,
+        467.82,
+        25.0
+      ],
+      "text": "Windows Subsystem for Linux 2"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#2",
+      "rect": [
+        757.61,
+        506.33,
+        397.64,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1069.97,
+        467.82,
+        16.25
+      ],
+      "text": "Version: Microsoft managed · Target: Windows · Distribution: Ubuntu-24.04"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#3",
+      "rect": [
+        757.61,
+        532.03,
+        397.64,
+        27.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1100.22,
+        467.82,
+        32.5
+      ],
+      "text": "Enable WSL without installing a distribution. Windows elevation and a restart may be required."
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#4",
+      "rect": [
+        757.61,
+        571.56,
+        397.64,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1146.72,
+        467.82,
+        16.25
+      ],
+      "text": "1. Check Windows eligibility"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#5",
+      "rect": [
+        757.61,
+        597.27,
+        397.64,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1176.97,
+        467.82,
+        16.25
+      ],
+      "text": "2. Enable/install WSL"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#6",
+      "rect": [
+        757.61,
+        622.98,
+        397.64,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1207.22,
+        467.82,
+        16.25
+      ],
+      "text": "3. Check restart and WSL status"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#7",
+      "rect": [
+        757.61,
+        648.7,
+        397.64,
+        51.0
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1237.47,
+        467.82,
+        60.0
+      ],
+      "text": "Review the source and target above. Existing compatible tools are offered for reuse. Shared Linux prerequisites may be installed. Space/download sizes are shown when known; source builds have no reliable fixed estimate. Jobs keep their logs and continue across app closure."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#8",
+      "rect": [
+        757.61,
+        711.59,
+        397.64,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1311.47,
+        467.82,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "confirm-managed-install",
+      "label": "Install reviewed tool",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#8/confirm-managed-install",
+      "rect": [
+        757.61,
+        711.59,
+        130.89,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        891.29,
+        1311.47,
+        154.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#8/confirm-managed-install/#0",
+      "rect": [
+        766.11,
+        720.09,
+        113.89,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        901.29,
+        1321.47,
+        134.0,
+        24.0
+      ],
+      "text": "Install reviewed tool"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "cancel-install-review",
+      "label": "Back",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#8/cancel-install-review",
+      "rect": [
+        895.3,
+        711.59,
+        44.2,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1053.29,
+        1311.47,
+        52.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/#1/setup-tool-catalog/installation-review/#8/cancel-install-review/#0",
+      "rect": [
+        903.8,
+        720.09,
+        27.2,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1063.29,
+        1321.47,
+        32.0,
+        24.0
+      ],
+      "text": "Back"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "setup-jobs",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/setup-jobs",
+      "rect": [
+        244.34,
+        796.59,
+        944.91,
+        80.97
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        287.47,
+        1411.47,
+        1111.64,
+        95.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/setup-jobs/#0",
+      "rect": [
+        261.34,
+        813.59,
+        910.91,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        1431.47,
+        1071.64,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/setup-jobs/#0/#0",
+      "rect": [
+        261.34,
+        813.59,
+        128.36,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        1431.47,
+        151.0,
+        25.0
+      ],
+      "text": "Installation jobs"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/setup-jobs/#0/#1",
+      "rect": [
+        1057.5,
+        818.38,
+        114.75,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1244.12,
+        1437.1,
+        135.0,
+        13.75
+      ],
+      "text": "PERSISTENT STATUS / LOGS"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/setup-jobs/#1",
+      "rect": [
+        261.34,
+        846.75,
+        910.91,
+        13.81
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        307.47,
+        1470.47,
+        1071.64,
+        16.25
+      ],
+      "text": "No managed installations started. Detection does not install or update anything."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "statusbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar",
+      "rect": [
+        217.59,
+        766.0,
+        998.41,
+        34.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        256.0,
+        901.18,
+        1174.59,
+        40.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0",
+      "rect": [
+        222.7,
+        771.09,
+        988.2,
+        23.8
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        262.0,
+        907.18,
+        1162.59,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "help": "Headless preview · external processes disabled",
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/#0",
+      "rect": [
+        222.7,
+        776.63,
+        908.3,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        262.0,
+        913.68,
+        1068.59,
+        15.0
+      ],
+      "text": "Headless preview · external processes disabled"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "zoom-controls",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls",
+      "rect": [
+        1137.81,
+        771.09,
+        73.09,
+        23.8
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        1338.59,
+        907.18,
+        86.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Zoom out (Ctrl+−)",
+      "inert": false,
+      "key": "zoom-out",
+      "label": "Zoom out (Ctrl+−)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-out",
+      "rect": [
+        1137.81,
+        771.09,
+        17.84,
+        23.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1338.59,
+        907.18,
+        21.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-out/#0",
+      "rect": [
+        1142.91,
+        776.2,
+        7.66,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1344.59,
+        913.18,
+        9.0,
+        16.0
+      ],
+      "text": "−"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Reset zoom to 100% (Ctrl+0)",
+      "inert": false,
+      "key": "zoom-reset",
+      "label": "Reset zoom to 100% (Ctrl+0)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-reset",
+      "rect": [
+        1159.06,
+        771.09,
+        30.59,
+        23.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1363.59,
+        907.18,
+        36.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-reset/#0",
+      "rect": [
+        1164.16,
+        776.2,
+        20.41,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1369.59,
+        913.18,
+        24.0,
+        16.0
+      ],
+      "text": "85%"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Zoom in (Ctrl++)",
+      "inert": false,
+      "key": "zoom-in",
+      "label": "Zoom in (Ctrl++)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-in",
+      "rect": [
+        1193.06,
+        771.09,
+        17.84,
+        23.8
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        1403.59,
+        907.18,
+        21.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-in/#0",
+      "rect": [
+        1198.16,
+        776.2,
+        7.66,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        1409.59,
+        913.18,
+        9.0,
+        16.0
+      ],
+      "text": "+"
+    }
+  ],
+  "reduced_motion": false,
+  "scale": 1.0,
+  "t": 1.4,
+  "time_scale": 1.0,
+  "title": "Drone Deck · Autonomy Workspace",
+  "viewport": [
+    1216.0,
+    800.0
+  ],
+  "warnings": []
+}

@@ -1,0 +1,1 @@
+- Fix QGroundControl GPU-safe startup by selecting Qt Quick's CPU renderer for `-swrast` launches, clearing child-only RHI conflicts, and matching the installation working directory while preserving explicit user choices and other tools.

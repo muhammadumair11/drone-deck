@@ -1,0 +1,4484 @@
+{
+  "accessibility": {
+    "bounds": [
+      0.0,
+      0.0,
+      360.0,
+      320.0
+    ],
+    "children": [
+      {
+        "bounds": [
+          0.0,
+          0.0,
+          360.0,
+          320.0
+        ],
+        "children": [
+          {
+            "bounds": [
+              0.0,
+              0.0,
+              360.0,
+              320.0
+            ],
+            "children": [
+              {
+                "bounds": [
+                  0.0,
+                  0.0,
+                  360.0,
+                  320.0
+                ],
+                "children": [
+                  {
+                    "actions": [
+                      "scroll-up",
+                      "scroll-down",
+                      "set-scroll-offset"
+                    ],
+                    "bounds": [
+                      0.0,
+                      0.0,
+                      360.0,
+                      112.4
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          10.2,
+                          13.7,
+                          49.3,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              18.7,
+                              22.2,
+                              32.3,
+                              20.4
+                            ],
+                            "name": "Menu",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "open-menu",
+                        "name": "Menu",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          69.7,
+                          10.2,
+                          130.1,
+                          11.7
+                        ],
+                        "name": "DRONE PROJECTS / LOCAL LAB",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          69.7,
+                          27.0,
+                          130.1,
+                          27.6
+                        ],
+                        "name": "Recordings",
+                        "role": "label"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          10.2,
+                          64.8,
+                          85.0,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              18.7,
+                              73.3,
+                              68.0,
+                              20.4
+                            ],
+                            "name": "Detect tools",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "detect-tools",
+                        "name": "Detect tools",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          102.0,
+                          64.8,
+                          86.7,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              110.5,
+                              73.3,
+                              69.7,
+                              20.4
+                            ],
+                            "name": "Stop session",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "stop-all",
+                        "name": "Stop session",
+                        "role": "button"
+                      },
+                      {
+                        "actions": [
+                          "click",
+                          "focus",
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          195.5,
+                          64.8,
+                          62.9,
+                          37.4
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              204.0,
+                              73.3,
+                              45.9,
+                              20.4
+                            ],
+                            "name": "Settings",
+                            "role": "label"
+                          }
+                        ],
+                        "key": "open-settings",
+                        "name": "Settings",
+                        "role": "button"
+                      }
+                    ],
+                    "key": "topbar",
+                    "role": "scroll-view",
+                    "scroll": [
+                      0.0,
+                      0.0,
+                      0.0
+                    ],
+                    "states": [
+                      "clips"
+                    ]
+                  },
+                  {
+                    "actions": [
+                      "scroll-up",
+                      "scroll-down",
+                      "set-scroll-offset"
+                    ],
+                    "bounds": [
+                      0.0,
+                      112.4,
+                      360.0,
+                      173.6
+                    ],
+                    "children": [
+                      {
+                        "actions": [
+                          "scroll-into-view"
+                        ],
+                        "bounds": [
+                          0.0,
+                          112.4,
+                          360.0,
+                          1573.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              143.0,
+                              89.3,
+                              21.3
+                            ],
+                            "name": "Recordings",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              208.7,
+                              147.8,
+                              120.7,
+                              11.7
+                            ],
+                            "name": "SENSOR DATA / ROS 2 JAZZY",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              176.2,
+                              298.8,
+                              14.9
+                            ],
+                            "name": "Check dependencies, then discover or enter ROS topics.",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              34.8,
+                              207.2,
+                              57.0,
+                              28.9
+                            ],
+                            "name": "Not checked",
+                            "role": "label"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              102.8,
+                              202.9,
+                              130.9,
+                              37.4
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  111.3,
+                                  211.4,
+                                  113.9,
+                                  20.4
+                                ],
+                                "name": "Check dependencies",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "check-recording-tools",
+                            "name": "Check dependencies",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus",
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              30.6,
+                              247.2,
+                              109.7,
+                              37.4
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  39.1,
+                                  255.7,
+                                  92.7,
+                                  20.4
+                                ],
+                                "name": "Recording guide",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "recording-guide",
+                            "name": "Recording guide",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              13.6,
+                              315.2,
+                              332.8,
+                              558.5
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  332.2,
+                                  187.0,
+                                  21.3
+                                ],
+                                "name": "Capture sensor streams",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  254.6,
+                                  336.9,
+                                  74.8,
+                                  11.7
+                                ],
+                                "name": "ROSBAG2 / MCAP",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  365.3,
+                                  298.8,
+                                  12.8
+                                ],
+                                "name": "Session name (letters, numbers, hyphens, underscores)",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  383.2,
+                                  298.8,
+                                  34.0
+                                ],
+                                "key": "recording-name",
+                                "role": "text-input",
+                                "selection": [
+                                  1,
+                                  6,
+                                  1,
+                                  6
+                                ],
+                                "value": "flight"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  429.0,
+                                  298.8,
+                                  12.8
+                                ],
+                                "name": "Vehicle / source note",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  446.9,
+                                  298.8,
+                                  34.0
+                                ],
+                                "key": "recording-source",
+                                "role": "text-input",
+                                "selection": [
+                                  1,
+                                  10,
+                                  1,
+                                  10
+                                ],
+                                "value": "Simulation"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  492.8,
+                                  298.8,
+                                  12.8
+                                ],
+                                "name": "Capture ROS_DOMAIN_ID (0–232)",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  510.7,
+                                  298.8,
+                                  34.0
+                                ],
+                                "key": "capture-domain",
+                                "role": "text-input",
+                                "selection": [
+                                  1,
+                                  1,
+                                  1,
+                                  1
+                                ],
+                                "value": "0"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  556.5,
+                                  102.0,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      39.1,
+                                      565.0,
+                                      85.0,
+                                      20.4
+                                    ],
+                                    "name": "Discover topics",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "discover-topics",
+                                "name": "Discover topics",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  139.4,
+                                  556.5,
+                                  122.4,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      147.9,
+                                      565.0,
+                                      105.4,
+                                      20.4
+                                    ],
+                                    "name": "Clock: system time",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "clock-mode",
+                                "name": "Clock: system time",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  605.8,
+                                  298.8,
+                                  25.5
+                                ],
+                                "name": "Use ROS /clock only when your simulator publishes it; capture waits for the first clock message.",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  643.3,
+                                  298.8,
+                                  38.3
+                                ],
+                                "name": "PX4 sensor capture needs a running PX4 → ROS 2 bridge and matching message packages. SIH/MAVSDK alone do not publish ROS topics.",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view",
+                                  "scroll-up",
+                                  "scroll-down",
+                                  "set-scroll-offset"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  693.4,
+                                  298.8,
+                                  0.0
+                                ],
+                                "role": "scroll-view",
+                                "scroll": [
+                                  0.0,
+                                  0.0,
+                                  0.0
+                                ],
+                                "states": [
+                                  "clips"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  705.3,
+                                  298.8,
+                                  12.8
+                                ],
+                                "name": "Topics to record (spaces or commas; absolute names)",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  723.2,
+                                  298.8,
+                                  34.0
+                                ],
+                                "key": "capture-topics",
+                                "role": "text-input",
+                                "value": ""
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  769.0,
+                                  139.4,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      39.1,
+                                      777.5,
+                                      122.4,
+                                      20.4
+                                    ],
+                                    "name": "Start MCAP recording",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "start-recording",
+                                "name": "Start MCAP recording",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  176.8,
+                                  769.0,
+                                  100.3,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      185.3,
+                                      777.5,
+                                      83.3,
+                                      20.4
+                                    ],
+                                    "name": "Stop & finalize",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "stop-recording",
+                                "name": "Stop & finalize",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  818.3,
+                                  298.8,
+                                  38.3
+                                ],
+                                "name": "Files split at 1 GiB. Stop & finalize flushes MCAP and rosbag metadata. A running process does not guarantee that selected topics are publishing.",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "capture-panel",
+                            "role": "group"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              13.6,
+                              887.2,
+                              332.8,
+                              182.8
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  904.2,
+                                  139.4,
+                                  21.3
+                                ],
+                                "name": "Recording library",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  275.0,
+                                  909.0,
+                                  54.4,
+                                  11.7
+                                ],
+                                "name": "LOCAL / WSL",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  937.3,
+                                  298.8,
+                                  12.8
+                                ],
+                                "name": "~/.local/share/drone-deck/recordings (inside selected Ubuntu)",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  962.0,
+                                  298.8,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      39.1,
+                                      970.5,
+                                      82.5,
+                                      20.4
+                                    ],
+                                    "name": "Refresh library",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "refresh-recordings",
+                                "name": "Refresh library",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1011.3,
+                                  298.8,
+                                  29.8
+                                ],
+                                "name": "No recordings listed yet. Refresh the library after your first capture.",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view",
+                                  "scroll-up",
+                                  "scroll-down",
+                                  "set-scroll-offset"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1052.9,
+                                  298.8,
+                                  0.0
+                                ],
+                                "role": "scroll-view",
+                                "scroll": [
+                                  0.0,
+                                  0.0,
+                                  0.0
+                                ],
+                                "states": [
+                                  "clips"
+                                ]
+                              }
+                            ],
+                            "key": "recording-library",
+                            "role": "group"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              13.6,
+                              1083.5,
+                              332.8,
+                              299.2
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1100.5,
+                                  109.7,
+                                  21.3
+                                ],
+                                "name": "Offline replay",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  228.3,
+                                  1105.3,
+                                  101.2,
+                                  11.7
+                                ],
+                                "name": "SEPARATE ROS DOMAIN",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1133.7,
+                                  298.8,
+                                  55.3
+                                ],
+                                "name": "Select a finalized recording above. Replay is local-only on a different ROS domain; known flight-input topics are excluded. Analysis nodes must use the replay domain. Keep this graph separate from live vehicle bridges.",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1200.8,
+                                  298.8,
+                                  12.8
+                                ],
+                                "name": "Replay ROS_DOMAIN_ID (default 77)",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1218.7,
+                                  298.8,
+                                  34.0
+                                ],
+                                "key": "replay-domain",
+                                "role": "text-input",
+                                "selection": [
+                                  1,
+                                  2,
+                                  1,
+                                  2
+                                ],
+                                "value": "77"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1264.6,
+                                  298.8,
+                                  12.8
+                                ],
+                                "name": "Playback speed (0.1–4.0)",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "set-value",
+                                  "replace-selected-text",
+                                  "set-text-selection",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1282.4,
+                                  298.8,
+                                  34.0
+                                ],
+                                "key": "replay-rate",
+                                "role": "text-input",
+                                "selection": [
+                                  1,
+                                  3,
+                                  1,
+                                  3
+                                ],
+                                "value": "1.0"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1328.3,
+                                  161.5,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      39.1,
+                                      1336.8,
+                                      144.5,
+                                      20.4
+                                    ],
+                                    "name": "Replay selected recording",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "start-replay",
+                                "name": "Replay selected recording",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  198.9,
+                                  1328.3,
+                                  80.8,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      207.4,
+                                      1336.8,
+                                      63.8,
+                                      20.4
+                                    ],
+                                    "name": "Stop replay",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "stop-replay",
+                                "name": "Stop replay",
+                                "role": "button",
+                                "states": [
+                                  "disabled"
+                                ]
+                              }
+                            ],
+                            "key": "replay-panel",
+                            "role": "group"
+                          },
+                          {
+                            "actions": [
+                              "scroll-into-view"
+                            ],
+                            "bounds": [
+                              13.6,
+                              1396.3,
+                              332.8,
+                              276.3
+                            ],
+                            "children": [
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1413.3,
+                                  125.8,
+                                  21.3
+                                ],
+                                "name": "Process console",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  169.2,
+                                  1417.6,
+                                  51.0,
+                                  12.8
+                                ],
+                                "name": "Live output",
+                                "role": "label"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1444.8,
+                                  63.8,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      39.1,
+                                      1453.3,
+                                      46.8,
+                                      20.4
+                                    ],
+                                    "name": "All tools",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "filter-logs",
+                                "name": "All tools",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  101.2,
+                                  1444.8,
+                                  54.4,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      109.7,
+                                      1453.3,
+                                      37.4,
+                                      20.4
+                                    ],
+                                    "name": "Export",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "export-logs",
+                                "name": "Export",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "click",
+                                  "focus",
+                                  "scroll-into-view"
+                                ],
+                                "bounds": [
+                                  162.3,
+                                  1444.8,
+                                  45.9,
+                                  37.4
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      170.8,
+                                      1453.3,
+                                      28.9,
+                                      20.4
+                                    ],
+                                    "name": "Clear",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "clear-logs",
+                                "name": "Clear",
+                                "role": "button"
+                              },
+                              {
+                                "actions": [
+                                  "scroll-into-view",
+                                  "scroll-up",
+                                  "scroll-down",
+                                  "set-scroll-offset"
+                                ],
+                                "bounds": [
+                                  30.6,
+                                  1494.1,
+                                  298.8,
+                                  161.5
+                                ],
+                                "children": [
+                                  {
+                                    "actions": [
+                                      "scroll-into-view"
+                                    ],
+                                    "bounds": [
+                                      44.2,
+                                      1507.7,
+                                      271.6,
+                                      27.6
+                                    ],
+                                    "name": "No matching process output yet.\nStart a session or run a configured tool.",
+                                    "role": "label"
+                                  }
+                                ],
+                                "key": "log-scroll",
+                                "role": "scroll-view",
+                                "scroll": [
+                                  0.0,
+                                  0.0,
+                                  0.0
+                                ],
+                                "states": [
+                                  "clips"
+                                ]
+                              }
+                            ],
+                            "key": "log-panel",
+                            "role": "group"
+                          }
+                        ],
+                        "key": "page-content",
+                        "role": "group"
+                      }
+                    ],
+                    "key": "main-scroll",
+                    "role": "scroll-view",
+                    "scroll": [
+                      0.0,
+                      0.0,
+                      1647.3
+                    ],
+                    "states": [
+                      "clips"
+                    ]
+                  },
+                  {
+                    "bounds": [
+                      0.0,
+                      286.0,
+                      360.0,
+                      34.0
+                    ],
+                    "children": [
+                      {
+                        "bounds": [
+                          5.1,
+                          296.6,
+                          269.9,
+                          12.8
+                        ],
+                        "name": "Headless preview · external processes disabled",
+                        "role": "label"
+                      },
+                      {
+                        "bounds": [
+                          281.8,
+                          291.1,
+                          73.1,
+                          23.8
+                        ],
+                        "children": [
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              281.8,
+                              291.1,
+                              17.9,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  286.9,
+                                  296.2,
+                                  7.7,
+                                  13.6
+                                ],
+                                "name": "−",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-out",
+                            "name": "Zoom out (Ctrl+−)",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              303.1,
+                              291.1,
+                              30.6,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  308.2,
+                                  296.2,
+                                  20.4,
+                                  13.6
+                                ],
+                                "name": "85%",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-reset",
+                            "name": "Reset zoom to 100% (Ctrl+0)",
+                            "role": "button"
+                          },
+                          {
+                            "actions": [
+                              "click",
+                              "focus"
+                            ],
+                            "bounds": [
+                              337.1,
+                              291.1,
+                              17.9,
+                              23.8
+                            ],
+                            "children": [
+                              {
+                                "bounds": [
+                                  342.2,
+                                  296.2,
+                                  7.7,
+                                  13.6
+                                ],
+                                "name": "+",
+                                "role": "label"
+                              }
+                            ],
+                            "key": "zoom-in",
+                            "name": "Zoom in (Ctrl++)",
+                            "role": "button"
+                          }
+                        ],
+                        "key": "zoom-controls",
+                        "role": "group"
+                      }
+                    ],
+                    "key": "statusbar",
+                    "role": "group"
+                  }
+                ],
+                "key": "app-stage",
+                "role": "group"
+              }
+            ],
+            "key": "app-root",
+            "role": "group"
+          }
+        ],
+        "key": "window-frame",
+        "role": "group"
+      }
+    ],
+    "name": "Drone Deck · Autonomy Workspace",
+    "role": "window"
+  },
+  "anim_t": 0.0,
+  "animating": false,
+  "dark_system": true,
+  "elements": [
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "window-frame",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame",
+      "rect": [
+        0.0,
+        0.0,
+        360.0,
+        320.0
+      ],
+      "role": "group",
+      "scale": 1.0
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-root",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root",
+      "rect": [
+        0.0,
+        0.0,
+        360.0,
+        320.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        423.53,
+        376.47
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "app-stage",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage",
+      "rect": [
+        0.0,
+        0.0,
+        360.0,
+        320.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        423.53,
+        376.47
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "topbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar",
+      "rect": [
+        0.0,
+        0.0,
+        360.0,
+        112.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        0.0,
+        423.53,
+        132.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0",
+      "rect": [
+        10.2,
+        10.2,
+        339.59,
+        92.02
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        12.0,
+        399.53,
+        108.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0",
+      "rect": [
+        10.2,
+        10.2,
+        339.59,
+        44.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        12.0,
+        399.53,
+        52.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "open-menu",
+      "label": "Menu",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/open-menu",
+      "rect": [
+        10.2,
+        13.7,
+        49.3,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        16.13,
+        58.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/open-menu/#0",
+      "rect": [
+        18.7,
+        22.2,
+        32.3,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        22.0,
+        26.13,
+        38.0,
+        24.0
+      ],
+      "text": "Menu"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#1",
+      "rect": [
+        69.7,
+        10.2,
+        130.05,
+        44.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        82.0,
+        12.0,
+        153.0,
+        52.25
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0075deff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#1/#0",
+      "rect": [
+        69.7,
+        10.2,
+        130.05,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        82.0,
+        12.0,
+        153.0,
+        13.75
+      ],
+      "text": "DRONE PROJECTS / LOCAL LAB"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#0/#1/#1",
+      "rect": [
+        69.7,
+        26.98,
+        130.05,
+        27.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        82.0,
+        31.75,
+        153.0,
+        32.5
+      ],
+      "text": "Recordings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1",
+      "rect": [
+        10.2,
+        64.81,
+        339.59,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        76.25,
+        399.53,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "detect-tools",
+      "label": "Detect tools",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/detect-tools",
+      "rect": [
+        10.2,
+        64.81,
+        85.0,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        12.0,
+        76.25,
+        100.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/detect-tools/#0",
+      "rect": [
+        18.7,
+        73.31,
+        68.0,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        22.0,
+        86.25,
+        80.0,
+        24.0
+      ],
+      "text": "Detect tools"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#fff0eeff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "stop-all",
+      "label": "Stop session",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/stop-all",
+      "rect": [
+        102.0,
+        64.81,
+        86.7,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        120.0,
+        76.25,
+        102.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#b42318ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/stop-all/#0",
+      "rect": [
+        110.5,
+        73.31,
+        69.7,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        130.0,
+        86.25,
+        82.0,
+        24.0
+      ],
+      "text": "Stop session"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "open-settings",
+      "label": "Settings",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/open-settings",
+      "rect": [
+        195.5,
+        64.81,
+        62.91,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        230.0,
+        76.25,
+        74.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/topbar/#0/#1/open-settings/#0",
+      "rect": [
+        204.0,
+        73.31,
+        45.91,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        240.0,
+        86.25,
+        54.0,
+        24.0
+      ],
+      "text": "Settings"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "main-scroll",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll",
+      "rect": [
+        0.0,
+        112.41,
+        360.0,
+        173.59
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        132.25,
+        423.53,
+        204.22
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "page-content",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content",
+      "rect": [
+        0.0,
+        112.41,
+        360.0,
+        1573.78
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        132.25,
+        423.53,
+        1851.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0",
+      "rect": [
+        13.59,
+        126.02,
+        332.81,
+        1256.72
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        148.25,
+        391.53,
+        1478.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0",
+      "rect": [
+        13.59,
+        126.02,
+        332.81,
+        1256.72
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        148.25,
+        391.53,
+        1478.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0",
+      "rect": [
+        13.59,
+        126.02,
+        332.81,
+        175.52
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        148.25,
+        391.53,
+        206.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#0",
+      "rect": [
+        30.59,
+        143.02,
+        298.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        168.25,
+        351.53,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#0/#0",
+      "rect": [
+        30.59,
+        143.02,
+        89.25,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        168.25,
+        105.0,
+        25.0
+      ],
+      "text": "Recordings"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#0/#1",
+      "rect": [
+        208.7,
+        147.8,
+        120.7,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        245.53,
+        173.88,
+        142.0,
+        13.75
+      ],
+      "text": "SENSOR DATA / ROS 2 JAZZY"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#1",
+      "rect": [
+        30.59,
+        176.16,
+        298.81,
+        14.88
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        207.25,
+        351.53,
+        17.5
+      ],
+      "text": "Check dependencies, then discover or enter ROS topics."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#2",
+      "rect": [
+        30.59,
+        202.94,
+        298.81,
+        81.59
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        238.75,
+        351.53,
+        96.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#2/#0",
+      "rect": [
+        30.59,
+        202.94,
+        65.45,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        238.75,
+        77.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#2/#0/#0",
+      "rect": [
+        34.84,
+        207.19,
+        56.95,
+        28.91
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        41.0,
+        243.75,
+        67.0,
+        34.0
+      ],
+      "text": "Not checked"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "check-recording-tools",
+      "label": "Check dependencies",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#2/check-recording-tools",
+      "rect": [
+        102.84,
+        202.94,
+        130.91,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        121.0,
+        238.75,
+        154.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#2/check-recording-tools/#0",
+      "rect": [
+        111.34,
+        211.44,
+        113.91,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        131.0,
+        248.75,
+        134.0,
+        24.0
+      ],
+      "text": "Check dependencies"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "recording-guide",
+      "label": "Recording guide",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#2/recording-guide",
+      "rect": [
+        30.59,
+        247.14,
+        109.66,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        290.75,
+        129.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#0/#2/recording-guide/#0",
+      "rect": [
+        39.09,
+        255.64,
+        92.66,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        300.75,
+        109.0,
+        24.0
+      ],
+      "text": "Recording guide"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1",
+      "rect": [
+        13.59,
+        315.14,
+        332.81,
+        1067.59
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        370.75,
+        391.53,
+        1256.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "capture-panel",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel",
+      "rect": [
+        13.59,
+        315.14,
+        332.81,
+        558.45
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        370.75,
+        391.53,
+        657.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#0",
+      "rect": [
+        30.59,
+        332.14,
+        298.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        390.75,
+        351.53,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#0/#0",
+      "rect": [
+        30.59,
+        332.14,
+        187.0,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        390.75,
+        220.0,
+        25.0
+      ],
+      "text": "Capture sensor streams"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#0/#1",
+      "rect": [
+        254.61,
+        336.92,
+        74.8,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        299.53,
+        396.38,
+        88.0,
+        13.75
+      ],
+      "text": "ROSBAG2 / MCAP"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#1",
+      "rect": [
+        30.59,
+        365.28,
+        298.81,
+        51.86
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        429.75,
+        351.53,
+        61.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#1/#0",
+      "rect": [
+        30.59,
+        365.28,
+        298.81,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        429.75,
+        351.53,
+        15.0
+      ],
+      "text": "Session name (letters, numbers, hyphens, underscores)"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "recording-name",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#1/recording-name",
+      "rect": [
+        30.59,
+        383.14,
+        298.81,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        450.75,
+        351.53,
+        40.0
+      ],
+      "text": "flight"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#2",
+      "rect": [
+        30.59,
+        429.03,
+        298.81,
+        51.86
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        504.75,
+        351.53,
+        61.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#2/#0",
+      "rect": [
+        30.59,
+        429.03,
+        298.81,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        504.75,
+        351.53,
+        15.0
+      ],
+      "text": "Vehicle / source note"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "recording-source",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#2/recording-source",
+      "rect": [
+        30.59,
+        446.89,
+        298.81,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        525.75,
+        351.53,
+        40.0
+      ],
+      "text": "Simulation"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#3",
+      "rect": [
+        30.59,
+        492.78,
+        298.81,
+        51.86
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        579.75,
+        351.53,
+        61.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#3/#0",
+      "rect": [
+        30.59,
+        492.78,
+        298.81,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        579.75,
+        351.53,
+        15.0
+      ],
+      "text": "Capture ROS_DOMAIN_ID (0–232)"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "capture-domain",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#3/capture-domain",
+      "rect": [
+        30.59,
+        510.64,
+        298.81,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        600.75,
+        351.53,
+        40.0
+      ],
+      "text": "0"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#4",
+      "rect": [
+        30.59,
+        556.53,
+        298.81,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        654.75,
+        351.53,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "discover-topics",
+      "label": "Discover topics",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#4/discover-topics",
+      "rect": [
+        30.59,
+        556.53,
+        102.0,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        654.75,
+        120.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#4/discover-topics/#0",
+      "rect": [
+        39.09,
+        565.03,
+        85.0,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        664.75,
+        100.0,
+        24.0
+      ],
+      "text": "Discover topics"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "clock-mode",
+      "label": "Clock: system time",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#4/clock-mode",
+      "rect": [
+        139.41,
+        556.53,
+        122.39,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        164.0,
+        654.75,
+        144.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#4/clock-mode/#0",
+      "rect": [
+        147.91,
+        565.03,
+        105.39,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        174.0,
+        664.75,
+        124.0,
+        24.0
+      ],
+      "text": "Clock: system time"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#5",
+      "rect": [
+        30.59,
+        605.84,
+        298.81,
+        25.5
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        712.75,
+        351.53,
+        30.0
+      ],
+      "text": "Use ROS /clock only when your simulator publishes it; capture waits for the first clock message."
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#6",
+      "rect": [
+        30.59,
+        643.23,
+        298.81,
+        38.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        756.75,
+        351.53,
+        45.0
+      ],
+      "text": "PX4 sensor capture needs a running PX4 → ROS 2 bridge and matching message packages. SIH/MAVSDK alone do not publish ROS topics."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#7",
+      "rect": [
+        30.59,
+        693.39,
+        298.81,
+        0.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        815.75,
+        351.53,
+        0.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#7/#0",
+      "rect": [
+        30.59,
+        693.39,
+        298.81,
+        0.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        815.75,
+        351.53,
+        0.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#8",
+      "rect": [
+        30.59,
+        705.28,
+        298.81,
+        51.86
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        829.75,
+        351.53,
+        61.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#8/#0",
+      "rect": [
+        30.59,
+        705.28,
+        298.81,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        829.75,
+        351.53,
+        15.0
+      ],
+      "text": "Topics to record (spaces or commas; absolute names)"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "capture-topics",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#8/capture-topics",
+      "rect": [
+        30.59,
+        723.14,
+        298.81,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        850.75,
+        351.53,
+        40.0
+      ],
+      "text": ""
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#9",
+      "rect": [
+        30.59,
+        769.03,
+        298.81,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        904.75,
+        351.53,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "start-recording",
+      "label": "Start MCAP recording",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#9/start-recording",
+      "rect": [
+        30.59,
+        769.03,
+        139.41,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        904.75,
+        164.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#9/start-recording/#0",
+      "rect": [
+        39.09,
+        777.53,
+        122.41,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        914.75,
+        144.0,
+        24.0
+      ],
+      "text": "Start MCAP recording"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "stop-recording",
+      "label": "Stop & finalize",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#9/stop-recording",
+      "rect": [
+        176.8,
+        769.03,
+        100.3,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        208.0,
+        904.75,
+        118.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#9/stop-recording/#0",
+      "rect": [
+        185.3,
+        777.53,
+        83.3,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        218.0,
+        914.75,
+        98.0,
+        24.0
+      ],
+      "text": "Stop & finalize"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/capture-panel/#10",
+      "rect": [
+        30.59,
+        818.34,
+        298.81,
+        38.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        962.75,
+        351.53,
+        45.0
+      ],
+      "text": "Files split at 1 GiB. Stop & finalize flushes MCAP and rosbag metadata. A running process does not guarantee that selected topics are publishing."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "recording-library",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library",
+      "rect": [
+        13.59,
+        887.19,
+        332.81,
+        182.75
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        1043.75,
+        391.53,
+        215.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/#0",
+      "rect": [
+        30.59,
+        904.19,
+        298.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1063.75,
+        351.53,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/#0/#0",
+      "rect": [
+        30.59,
+        904.19,
+        139.41,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1063.75,
+        164.0,
+        25.0
+      ],
+      "text": "Recording library"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/#0/#1",
+      "rect": [
+        275.0,
+        908.97,
+        54.41,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        323.53,
+        1069.38,
+        64.0,
+        13.75
+      ],
+      "text": "LOCAL / WSL"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/#1",
+      "rect": [
+        30.59,
+        937.34,
+        298.81,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1102.75,
+        351.53,
+        15.0
+      ],
+      "text": "~/.local/share/drone-deck/recordings (inside selected Ubuntu)"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "refresh-recordings",
+      "label": "Refresh library",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/refresh-recordings",
+      "rect": [
+        30.59,
+        961.98,
+        298.81,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1131.75,
+        351.53,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/refresh-recordings/#0",
+      "rect": [
+        39.09,
+        970.48,
+        82.45,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        1141.75,
+        97.0,
+        24.0
+      ],
+      "text": "Refresh library"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/#3",
+      "rect": [
+        30.59,
+        1011.28,
+        298.81,
+        29.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1189.75,
+        351.53,
+        35.0
+      ],
+      "text": "No recordings listed yet. Refresh the library after your first capture."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/#4",
+      "rect": [
+        30.59,
+        1052.94,
+        298.81,
+        0.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1238.75,
+        351.53,
+        0.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/recording-library/#4/#0",
+      "rect": [
+        30.59,
+        1052.94,
+        298.81,
+        0.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1238.75,
+        351.53,
+        0.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "replay-panel",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel",
+      "rect": [
+        13.59,
+        1083.53,
+        332.81,
+        299.2
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        1274.75,
+        391.53,
+        352.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#0",
+      "rect": [
+        30.59,
+        1100.53,
+        298.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1294.75,
+        351.53,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#0/#0",
+      "rect": [
+        30.59,
+        1100.53,
+        109.66,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1294.75,
+        129.0,
+        25.0
+      ],
+      "text": "Offline replay"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#0/#1",
+      "rect": [
+        228.25,
+        1105.31,
+        101.16,
+        11.69
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        268.53,
+        1300.38,
+        119.0,
+        13.75
+      ],
+      "text": "SEPARATE ROS DOMAIN"
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#1",
+      "rect": [
+        30.59,
+        1133.69,
+        298.81,
+        55.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1333.75,
+        351.53,
+        65.0
+      ],
+      "text": "Select a finalized recording above. Replay is local-only on a different ROS domain; known flight-input topics are excluded. Analysis nodes must use the replay domain. Keep this graph separate from live vehicle bridges."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#2",
+      "rect": [
+        30.59,
+        1200.84,
+        298.81,
+        51.84
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1412.75,
+        351.53,
+        61.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#2/#0",
+      "rect": [
+        30.59,
+        1200.84,
+        298.81,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1412.75,
+        351.53,
+        15.0
+      ],
+      "text": "Replay ROS_DOMAIN_ID (default 77)"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "replay-domain",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#2/replay-domain",
+      "rect": [
+        30.59,
+        1218.69,
+        298.81,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1433.75,
+        351.53,
+        40.0
+      ],
+      "text": "77"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#3",
+      "rect": [
+        30.59,
+        1264.59,
+        298.81,
+        51.84
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1487.75,
+        351.53,
+        61.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#3/#0",
+      "rect": [
+        30.59,
+        1264.59,
+        298.81,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1487.75,
+        351.53,
+        15.0
+      ],
+      "text": "Playback speed (0.1–4.0)"
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "replay-rate",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#3/replay-rate",
+      "rect": [
+        30.59,
+        1282.44,
+        298.81,
+        34.0
+      ],
+      "role": "textbox",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1508.75,
+        351.53,
+        40.0
+      ],
+      "text": "1.0"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#4",
+      "rect": [
+        30.59,
+        1328.34,
+        298.81,
+        37.39
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1562.75,
+        351.53,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#0075deff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "start-replay",
+      "label": "Replay selected recording",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#4/start-replay",
+      "rect": [
+        30.59,
+        1328.34,
+        161.5,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1562.75,
+        190.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#ffffffff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#4/start-replay/#0",
+      "rect": [
+        39.09,
+        1336.84,
+        144.5,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        1572.75,
+        170.0,
+        24.0
+      ],
+      "text": "Replay selected recording"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "stop-replay",
+      "label": "Stop replay",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#4/stop-replay",
+      "rect": [
+        198.91,
+        1328.34,
+        80.75,
+        37.39
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        234.0,
+        1562.75,
+        95.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/#0/#0/#1/replay-panel/#4/stop-replay/#0",
+      "rect": [
+        207.41,
+        1336.84,
+        63.75,
+        20.39
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        244.0,
+        1572.75,
+        75.0,
+        24.0
+      ],
+      "text": "Stop replay"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "log-panel",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel",
+      "rect": [
+        13.59,
+        1396.34,
+        332.81,
+        276.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        16.0,
+        1642.75,
+        391.53,
+        325.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0",
+      "rect": [
+        30.59,
+        1413.34,
+        298.81,
+        68.84
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1662.75,
+        351.53,
+        81.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#0",
+      "rect": [
+        30.59,
+        1413.34,
+        298.81,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1662.75,
+        351.53,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#0/#0",
+      "rect": [
+        30.59,
+        1413.34,
+        125.81,
+        21.25
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1662.75,
+        148.0,
+        25.0
+      ],
+      "text": "Process console"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#e8faf0ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#0/#1",
+      "rect": [
+        164.91,
+        1413.34,
+        59.5,
+        21.25
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        194.0,
+        1662.75,
+        70.0,
+        25.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#137a2cff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#0/#1/#0",
+      "rect": [
+        169.16,
+        1417.59,
+        51.0,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        199.0,
+        1667.75,
+        60.0,
+        15.0
+      ],
+      "text": "Live output"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#1",
+      "rect": [
+        30.59,
+        1444.78,
+        298.81,
+        37.41
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1699.75,
+        351.53,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "filter-logs",
+      "label": "All tools",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/filter-logs",
+      "rect": [
+        30.59,
+        1444.78,
+        63.75,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1699.75,
+        75.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/filter-logs/#0",
+      "rect": [
+        39.09,
+        1453.28,
+        46.75,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        46.0,
+        1709.75,
+        55.0,
+        24.0
+      ],
+      "text": "All tools"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "export-logs",
+      "label": "Export",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/export-logs",
+      "rect": [
+        101.16,
+        1444.78,
+        54.39,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        119.0,
+        1699.75,
+        64.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/export-logs/#0",
+      "rect": [
+        109.66,
+        1453.28,
+        37.39,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        129.0,
+        1709.75,
+        44.0,
+        24.0
+      ],
+      "text": "Export"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#eceae8ff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "inert": false,
+      "key": "clear-logs",
+      "label": "Clear",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/clear-logs",
+      "rect": [
+        162.34,
+        1444.78,
+        45.91,
+        37.41
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        191.0,
+        1699.75,
+        54.0,
+        44.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/#0/#1/clear-logs/#0",
+      "rect": [
+        170.84,
+        1453.28,
+        28.91,
+        20.41
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        201.0,
+        1709.75,
+        34.0,
+        24.0
+      ],
+      "text": "Clear"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#242321ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "log-scroll",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/log-scroll",
+      "rect": [
+        30.59,
+        1494.09,
+        298.81,
+        161.5
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        36.0,
+        1757.75,
+        351.53,
+        190.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/log-scroll/#0",
+      "rect": [
+        44.2,
+        1507.69,
+        271.59,
+        27.63
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        52.0,
+        1773.75,
+        319.53,
+        32.5
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#bebab5ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/main-scroll/page-content/log-panel/log-scroll/#0/#0",
+      "rect": [
+        44.2,
+        1507.69,
+        271.59,
+        27.63
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        52.0,
+        1773.75,
+        319.53,
+        32.5
+      ],
+      "text": "No matching process output yet.\nStart a session or run a configured tool."
+    },
+    {
+      "blur": 0.0,
+      "fill": "#f6f5f4ff",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "statusbar",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar",
+      "rect": [
+        0.0,
+        286.0,
+        360.0,
+        34.0
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        0.0,
+        336.47,
+        423.53,
+        40.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0",
+      "rect": [
+        5.09,
+        291.09,
+        349.81,
+        23.81
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        6.0,
+        342.47,
+        411.53,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#615d59ff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "help": "Headless preview · external processes disabled",
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/#0",
+      "rect": [
+        5.09,
+        296.63,
+        269.91,
+        12.75
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        6.0,
+        348.97,
+        317.53,
+        15.0
+      ],
+      "text": "Headless preview · external processes disabled"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "key": "zoom-controls",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls",
+      "rect": [
+        281.8,
+        291.09,
+        73.11,
+        23.81
+      ],
+      "role": "group",
+      "scale": 0.8500000238418579,
+      "target": [
+        331.53,
+        342.47,
+        86.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Zoom out (Ctrl+−)",
+      "inert": false,
+      "key": "zoom-out",
+      "label": "Zoom out (Ctrl+−)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-out",
+      "rect": [
+        281.8,
+        291.09,
+        17.86,
+        23.81
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        331.53,
+        342.47,
+        21.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-out/#0",
+      "rect": [
+        286.91,
+        296.2,
+        7.64,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        337.53,
+        348.47,
+        9.0,
+        16.0
+      ],
+      "text": "−"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Reset zoom to 100% (Ctrl+0)",
+      "inert": false,
+      "key": "zoom-reset",
+      "label": "Reset zoom to 100% (Ctrl+0)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-reset",
+      "rect": [
+        303.05,
+        291.09,
+        30.61,
+        23.81
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        356.53,
+        342.47,
+        36.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-reset/#0",
+      "rect": [
+        308.16,
+        296.2,
+        20.39,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        362.53,
+        348.47,
+        24.0,
+        16.0
+      ],
+      "text": "85%"
+    },
+    {
+      "blur": 0.0,
+      "fill": "#ffffffff",
+      "focusVisible": false,
+      "focusable": true,
+      "focused": false,
+      "help": "Zoom in (Ctrl++)",
+      "inert": false,
+      "key": "zoom-in",
+      "label": "Zoom in (Ctrl++)",
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-in",
+      "rect": [
+        337.05,
+        291.09,
+        17.86,
+        23.81
+      ],
+      "role": "button",
+      "scale": 0.8500000238418579,
+      "target": [
+        396.53,
+        342.47,
+        21.0,
+        28.0
+      ]
+    },
+    {
+      "blur": 0.0,
+      "color": "#0d0d0dff",
+      "fill": "#00000000",
+      "focusVisible": false,
+      "focusable": false,
+      "focused": false,
+      "inert": false,
+      "loopPhase": null,
+      "opacity": 1.0,
+      "path": "window-frame/app-root/app-stage/statusbar/#0/zoom-controls/zoom-in/#0",
+      "rect": [
+        342.16,
+        296.2,
+        7.64,
+        13.59
+      ],
+      "role": "text",
+      "scale": 0.8500000238418579,
+      "target": [
+        402.53,
+        348.47,
+        9.0,
+        16.0
+      ],
+      "text": "+"
+    }
+  ],
+  "reduced_motion": false,
+  "scale": 1.0,
+  "t": 0.0,
+  "time_scale": 1.0,
+  "title": "Drone Deck · Autonomy Workspace",
+  "viewport": [
+    360.0,
+    320.0
+  ],
+  "warnings": []
+}
