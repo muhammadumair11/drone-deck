@@ -1,530 +1,534 @@
+//! The management shell from `Design/drone-workspace.html`: a compact rail, a top bar with
+//! the active system, one scrolling page and a status bar. Guided setup has its own surface.
 use super::*;
-mod components;
+pub(crate) mod kit;
 mod pages;
 mod settings;
-pub(crate) use components::*;
-pub(crate) use settings::{restore as restore_preferences, shortcuts as zoom_shortcuts};
+pub(crate) mod theme;
+use kit::*;
+pub(crate) use settings::{restore as restore_preferences, set_zoom, shortcuts as zoom_shortcuts};
+use std::collections::HashSet;
+use theme::*;
 
-pub(super) struct UiState {
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Page {
+    System,
+    Tools,
+    Data,
+    Activity,
+    Settings,
+    Setup,
+}
+/// Rail order: key slug, number, label.
+pub(crate) const RAIL: [(Page, &str, &str, &str); 4] = [
+    (Page::System, "system", "01", "System"),
+    (Page::Tools, "tools", "02", "Tools & config"),
+    (Page::Data, "data", "03", "Data & models"),
+    (Page::Activity, "activity", "04", "Activity"),
+];
+
+pub(crate) struct UiState {
+    /// Compact layouts: the rail opens as a drawer.
     pub menu: bool,
-    pub inspector: Option<bool>,
-    pub console: Option<bool>,
+    /// The ACTIVE SYSTEM list is open.
+    pub system_menu: bool,
     pub search: TextEdit,
     pub reset_scroll: bool,
     pub zoom_percent: u16,
+    /// Open disclosures, by key.
+    pub open: HashSet<String>,
+    /// Tools & config: filter index and whether to list every registered tool.
+    pub tools_filter: usize,
+    pub tools_all: bool,
+    /// Tools & config: the expanded tool row (profile id).
+    pub expanded: Option<String>,
+    /// Data & models tab: 0 recordings, 1 models, 2 datasets & evaluation, 3 projects.
+    pub data_tab: usize,
 }
 impl Default for UiState {
     fn default() -> Self {
         Self {
             menu: false,
-            inspector: None,
-            console: None,
+            system_menu: false,
             search: TextEdit::new(""),
             reset_scroll: false,
             zoom_percent: settings::DEFAULT_ZOOM,
+            open: HashSet::new(),
+            tools_filter: 0,
+            tools_all: false,
+            expanded: None,
+            data_tab: 0,
         }
     }
 }
-const PAGES: [(&str, &str); 9] = [
-    ("01", "Workspace"),
-    ("02", "Simulators"),
-    ("03", "Flight operations"),
-    ("04", "Development"),
-    ("05", "AI & data"),
-    ("06", "Integrations"),
-    ("07", "Settings"),
-    ("08", "Recordings"),
-    ("09", "Setup"),
-];
-static LOGO: rune::Icon = rune::Icon {
-    name: "drone-deck-logo",
-    view: 256.,
-    body: include_str!("../../assets/monogram.svg"),
-};
-fn sidebar(s: &State, width: f32, drawer: bool, short: bool) -> El {
-    let brand = row()
-        .gap(12.)
-        .center_y()
-        .child(
-            el().size(40., 40.)
-                .key("app-logo")
-                .label("Drone Deck logo")
-                .child(
-                    el().size(37.5, 37.5)
-                        .absolute(1.25, 1.25)
-                        .radius(8.125)
-                        .fill(c(17, 17, 17)),
-                )
-                .child(
-                    rune::icon(&LOGO, 40.)
-                        .absolute(0., 0.)
-                        .color(c(255, 255, 255)),
-                ),
-        )
-        .child(
-            col()
-                .grow(1.)
-                .min_w(0.)
-                .gap(4.)
-                .child(title("Drone Deck", 20.))
-                .child(label("AUTONOMY WORKSPACE", 9., muted()).wrap()),
-        );
-    let mut nav = col()
-        .key("sidebar")
-        .w(width)
-        .h_full()
-        .min_h(0.)
-        .padding(16.)
-        .gap(24.)
-        .fill(surface())
-        .border(1., line())
-        .child(brand);
-    if drawer {
-        nav = nav.child(button("close-menu", "Close navigation", false, |s| {
-            s.ui.menu = false
-        }));
+
+fn owned_processes(s: &State) -> usize {
+    s.status
+        .values()
+        .filter(|v| v.as_str() == "Running" || v.as_str() == "Starting")
+        .count()
+}
+
+/// Owned processes plus recording or replay, which do not appear in `status`.
+fn session_label(s: &State, processes: usize) -> String {
+    let mut parts = Vec::new();
+    if processes > 0 {
+        parts.push(format!(
+            "{processes} owned process{}",
+            if processes == 1 { "" } else { "es" }
+        ));
     }
-    let mut items = col().w_full().gap(4.);
-    for (i, (num, name)) in PAGES.iter().enumerate() {
-        items = items.child(
+    if s.recorder.recording {
+        parts.push("recording".to_string());
+    }
+    if s.recorder.playing {
+        parts.push("replay".to_string());
+    }
+    if parts.is_empty() {
+        if s.session.is_some() {
+            "Workspace starting".into()
+        } else {
+            "No active session".into()
+        }
+    } else {
+        parts.join(" / ")
+    }
+}
+
+fn rail(s: &State, width: f32, drawer: bool, height: f32) -> El {
+    let mut nav = col().key("rail-nav").role("tablist").w_full().gap(6.);
+    for (page, slug, num, name) in RAIL {
+        let current = s.page == page;
+        nav = nav.child(
             row()
-                .key(format!("nav-{i}"))
-                .role("button")
-                .label(*name)
+                .key(format!("rail-{slug}"))
+                .role("tab")
+                .label(name)
                 .focusable(true)
+                .focus_selected(current)
+                .cursor(rune::Cursor::Pointer)
                 .w_full()
-                .min_h(48.)
-                .padding(12.)
-                .gap(12.)
-                .radius(8.)
-                .fill(if i == s.page { ink() } else { surface() })
-                .focus_ring(2., 1., accent())
+                .min_h(44.)
+                .px(8.)
+                .py(10.)
+                .gap(14.)
+                .center_y()
+                .fill(if current { soft() } else { Color::TRANSPARENT })
+                .hover(Color::TRANSPARENT)
+                .focus_ring(2., 2., fg())
                 .on_press_tx(move |s: &mut State, tx| {
-                    s.navigate(i);
+                    s.navigate(page);
                     s.ui.menu = false;
                     tx.scroll_to_instant("main-scroll", 0., 0.);
                 })
-                .child(label(*num, 11., if i == s.page { bg() } else { muted() }))
+                .child(meta(num))
                 .child(
-                    text(*name)
-                        .font(TextStyle::new(14., 600.))
-                        .color(if i == s.page { bg() } else { muted() })
+                    caps(name, 11., 500., 0.06, if current { fg() } else { muted() })
+                        .group_color(fg())
+                        .grow(1.)
                         .wrap(),
                 ),
         );
     }
-    let nav = nav.child(
-        col()
-            .grow(1.)
-            .min_h(0.)
-            .scroll(ScrollSpec {
-                stick_bottom: false,
-            })
-            .child(items),
-    );
-    if short {
-        return nav;
-    }
-    nav.child(
-        card()
-            .padding(14.)
-            .gap(9.)
-            .child(label("LOCAL ENVIRONMENT", 10., muted()))
-            .child(title("Windows + WSL", 14.))
-            .child(
-                label(
-                    &s.config.distro,
-                    13.,
-                    if s.wsl_ready() {
-                        c(19, 122, 44)
-                    } else {
-                        muted()
-                    },
-                )
-                .wrap(),
-            )
-            .child(
-                label(
-                    if s.wsl_ready() {
-                        "Configured WSL 2 environment"
-                    } else {
-                        "Environment setup / check required"
-                    },
-                    12.,
-                    muted(),
-                )
-                .wrap(),
-            ),
-    )
-    .child(label("RUNE NATIVE / v0.7", 10., muted()))
-}
-fn stats(s: &State, width: f32) -> El {
-    let count = s
-        .status
-        .values()
-        .filter(|v| v.as_str() == "Running")
-        .count();
-    let count = format!("{count:02}");
-    let data = [
-        ("PROCESSES", count.as_str(), "Managed by this application"),
-        (
-            "VEHICLE LINK",
-            s.metrics
-                .get("link")
-                .map(String::as_str)
-                .unwrap_or("Offline"),
-            "MAVSDK · read only",
-        ),
-        (
-            "ALTITUDE",
-            s.metrics.get("altitude").map(String::as_str).unwrap_or("—"),
-            "Relative to takeoff",
-        ),
-        (
-            "FLIGHT MODE",
-            s.metrics.get("mode").map(String::as_str).unwrap_or("—"),
-            "Reported by PX4",
-        ),
-    ];
-    let columns = if width < 420. {
-        1
-    } else if width < 900. {
-        2
+    let processes = owned_processes(s);
+    let active = crate::systems::active_work(s);
+    let env = if s.systems.active == systems::PHYSICAL {
+        "Windows native".to_string()
+    } else if s.wsl_ready() {
+        format!("{} / WSL 2", s.config.distro)
+    } else if s.setup.host.is_none() {
+        "Environment not checked".into()
     } else {
-        4
+        "WSL environment not ready".into()
     };
-    let mut stack = col().key("stats-grid").w_full().min_w(0.).gap(12.);
-    for group in data.chunks(columns) {
-        let mut band = row().w_full().min_w(0.).gap(12.);
-        for (k, v, sub) in group {
-            band = band.child(metric(k, v, sub));
-        }
-        stack = stack.child(band);
+    let mut foot = col()
+        .key("railfoot")
+        .w_full()
+        .gap(4.)
+        .pt(32.)
+        .child(meta_sized("Windows desktop", 9., muted()))
+        .child(meta_sized("Local first", 9., muted()))
+        .child(el().h(10.))
+        .child(meta_sized(env, 9., muted()).wrap())
+        .child(meta_sized(
+            session_label(s, processes),
+            9.,
+            if active { fg() } else { muted() },
+        ));
+    if active {
+        foot = foot.child(ghost("stop-all", "Stop session", true, |s| {
+            s.confirm = Some("stop".into())
+        }));
     }
-    stack
-}
-fn inspector(s: &State) -> El {
-    let p = &s.config.profiles[s.selected.min(s.config.profiles.len() - 1)];
-    card().key("inspector").child(row().gap(8.).justify_between().center_y().child(label("INTEGRATION INSPECTOR",11.,accent()).wrap()).child(button("close-inspector","Hide",false,|s|s.ui.inspector=Some(false))))
-        .child(title(&p.name,26.).wrap()).child(label(&p.description,14.,muted()).wrap())
-        .child(el().h(1.).w_full().fill(line())).child(label("COMMAND",10.,muted()))
-        .child(col().w_full().min_w(0.).padding(12.).radius(4.).fill(code_bg()).child(mono(format!("{} {}",p.program,p.args.join(" ")),13.,c(246,245,244)).wrap_anywhere()))
-        .child(label("WORKING DIRECTORY",10.,muted())).child(label(if !p.cwd.is_empty(){&p.cwd}else if p.program=="wsl"{"Selected WSL environment"}else if p.id=="qgc"{"QGroundControl installation directory"}else{"Application working directory"},13.,ink()).wrap_anywhere())
-        .child(row().gap(8.).flex_wrap().child(button("copy-command","Copy command",false,|_|{}).on_press_tx(|s:&mut State,tx|{let p=&s.config.profiles[s.selected];tx.copy(format!("{} {}",p.program,p.args.join(" ")));s.notice="Command copied.".into();}))
-            .child(button("open-project","Open folder",false,|s|{let p=&s.config.profiles[s.selected];s.open(if p.cwd.is_empty(){backend::root().to_string_lossy().into_owned()}else{p.cwd.clone()});})))
-        .child(label("SETUP OPTIONS",10.,muted()))
-        .child(button("detect-inspector","1   Detect installation",false,|s|s.send(Request::Detect(s.config.clone()))).w_full())
-        .child(button("docs","2   Guided setup / docs",false,|s|s.open(s.config.profiles[s.selected].docs.clone())).w_full())
-        .child(button("manual-config","3   Configure manually",false,profile_editor::open).w_full())
-        .child(button("download","Open setup / install options",false,|s|{
-            let id=s.config.profiles[s.selected].id.clone();
-            let tool=match id.as_str(){"sih"=>"px4","telemetry"=>"mavsdk",other=>other};
-            if let Some(index)=s.setup.recipes.iter().position(|r|r.id==tool){crate::setup::choose(s,index);s.navigate(8);}
-            else{s.notice="Custom profile: configure its command and use the publisher's setup instructions. Package downloads alone do not install a tool.".into();}
-        }).w_full())
-}
-fn console(s: &State, narrow: bool) -> El {
-    let mut lines = col().w_full().min_w(0.).gap(6.);
-    let selected = &s.config.profiles[s.selected].id;
-    let mut count = 0;
-    for line in s
-        .logs
-        .iter()
-        .filter(|l| !s.log_filter || l.starts_with(&format!("[{selected}]")))
-        .rev()
-        .take(100)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-    {
-        lines = lines.child(
-            mono(
-                line,
-                12.,
-                if line.contains("ERROR") || line.contains("Failed") {
-                    c(255, 170, 160)
-                } else {
-                    c(246, 245, 244)
-                },
-            )
-            .wrap_anywhere(),
-        );
-        count += 1;
-    }
-    if count == 0 {
-        lines = lines.child(
-            label(
-                "No matching process output yet.\nStart a session or run a configured tool.",
-                13.,
-                c(190, 186, 181),
-            )
-            .wrap(),
-        );
-    }
-    let actions = row()
-        .gap(8.)
-        .flex_wrap()
-        .child(button(
-            "filter-logs",
-            if s.log_filter {
-                "Selected tool"
-            } else {
-                "All tools"
-            },
-            false,
-            |s| s.log_filter = !s.log_filter,
-        ))
-        .child(button("export-logs", "Export", false, |s| {
-            if !s.headless {
-                let path = backend::root().join("session.log");
-                match std::fs::write(&path, s.logs.iter().cloned().collect::<Vec<_>>().join("\n")) {
-                    Ok(_) => s.notice = format!("Exported {}", path.display()),
-                    Err(e) => s.notice = e.to_string(),
-                }
-            }
+    foot = foot
+        .child(ghost("open-settings", "Settings", true, |s| {
+            s.ui.menu = false;
+            s.navigate(Page::Settings)
         }))
-        .child(button("clear-logs", "Clear", false, |s| s.logs.clear()));
-    let name = row()
-        .gap(10.)
+        .child(meta_sized("Drone Deck v0.8", 9., muted()));
+    let logo = row()
+        .key("app-logo")
+        .role("button")
+        .label("Drone Deck")
+        .focusable(true)
+        .cursor(rune::Cursor::Pointer)
+        .min_h(44.)
+        .center_y()
+        .focus_ring(2., 2., fg())
+        .on_press(|s: &mut State| {
+            s.ui.menu = false;
+            s.navigate(Page::System)
+        })
+        .child(caps("Drone Deck", 19., 700., 0.12, fg()).wrap());
+    let mut top = col().w_full().gap(8.).child(logo);
+    if drawer {
+        top = top.child(ghost("close-menu", "Close navigation", true, |s| {
+            s.ui.menu = false
+        }));
+    }
+    let body = col()
+        .w_full()
+        .grow(1.)
+        .min_w(0.)
+        .gap(8.)
+        .child(top)
+        .child(el().h(24.))
+        .child(meta("Manage"))
+        .child(nav)
+        .child(
+            ghost("open-guided-setup", "Guided setup ↗", true, |s| {
+                s.ui.menu = false;
+                crate::guided::open(s)
+            })
+            .mt(20.),
+        )
+        .child(spacer())
+        .child(foot);
+    col()
+        .key("sidebar")
+        .w(width)
+        .h_full()
+        .min_h(0.)
+        .fill(bg())
+        .border_sides([0., 1., 0., 0.], soft())
+        .scroll(ScrollSpec {
+            stick_bottom: false,
+        })
+        .child(
+            col()
+                .w_full()
+                .min_h(height)
+                .px(if width < 180. { 16. } else { 22. })
+                .py(if drawer { 20. } else { 32. })
+                .child(body),
+        )
+}
+
+fn system_select(s: &State, compact: bool) -> El {
+    let kind = s.systems.active;
+    row()
+        .key("system-select")
+        .role("button")
+        .label("Active system")
+        .a11y_value(systems::KINDS[kind])
+        .expanded(s.ui.system_menu)
+        .focusable(true)
+        .cursor(rune::Cursor::Pointer)
+        .min_w(if compact { 0. } else { 200. })
+        .grow(if compact { 1. } else { 0. })
+        .min_h(44.)
+        .px(12.)
+        .py(10.)
+        .gap(12.)
+        .center_y()
+        .justify_between()
+        .fill(bg())
+        .border(1., rule())
+        .radius(4.)
+        .hover(soft())
+        .focus_ring(2., 0., fg())
+        .on_press(|s: &mut State| s.ui.system_menu = !s.ui.system_menu)
+        .child(caps(systems::KINDS[kind], 11., 500., 0.045, fg()).truncate())
+        .child(meta_sized(
+            if s.ui.system_menu { "▴" } else { "▾" },
+            11.,
+            muted(),
+        ))
+}
+
+fn system_menu(s: &State) -> El {
+    let mut list = col()
+        .key("system-list")
+        .role("listbox")
+        .label("Active system")
+        .anchored("system-select", rune::Side::Bottom, rune::Align::Start, 4.)
+        .modal(true, |s: &mut State| s.ui.system_menu = false)
+        .w(280.)
+        .fill(bg())
+        .border(1., rule())
+        .radius(4.)
+        .padding(4.)
+        .gap(2.);
+    for (i, kind) in systems::KINDS.iter().enumerate() {
+        let current = i == s.systems.active;
+        let saved = &s.systems.records[i];
+        let detail = match (saved.name.trim(), saved.prepared) {
+            ("", false) => "Preparation required".to_string(),
+            ("", true) => "Prepared".to_string(),
+            (n, true) => format!("{n} / prepared"),
+            (n, false) => format!("{n} / preparation required"),
+        };
+        list = list.child(
+            col()
+                .key(format!("system-option-{i}"))
+                .role("option")
+                .label(*kind)
+                .focusable(true)
+                .focus_selected(current)
+                .cursor(rune::Cursor::Pointer)
+                .w_full()
+                .px(12.)
+                .py(10.)
+                .gap(4.)
+                .radius(2.)
+                .fill(if current { soft() } else { Color::TRANSPARENT })
+                .hover(soft())
+                .focus_ring(2., 0., fg())
+                .on_press(move |s: &mut State| {
+                    s.select_system(i);
+                })
+                .child(caps(*kind, 11., 500., 0.045, fg()))
+                .child(meta_sized(detail, 9., muted())),
+        );
+    }
+    list
+}
+
+fn topbar(s: &State, vp: &Viewport) -> El {
+    let bar = row()
+        .key("topbar")
+        .w_full()
+        .min_w(0.)
+        .px(vp.gutter())
+        .fill(bg());
+    if vp.compact() {
+        // The drawer carries the logo, environment and settings; keep one row here.
+        return bar
+            .py(10.)
+            .gap(12.)
+            .center_y()
+            .child(ghost("open-menu", "Menu", true, |s| s.ui.menu = true))
+            .child(system_select(s, true));
+    }
+    let env = if s.systems.active == systems::PHYSICAL {
+        "Windows native / no WSL required".to_string()
+    } else {
+        format!(
+            "Windows + {} / WSL{}",
+            s.config.distro,
+            if s.wsl_ready() { " 2" } else { " / not ready" }
+        )
+    };
+    let context = row()
+        .key("system-context")
+        .gap(18.)
+        .center_y()
+        .child(caps("Active system", 9., 500., 0.08, muted()))
+        .child(system_select(s, false));
+    bar.py(22.)
+        .gaps(10., 24.)
         .center_y()
         .flex_wrap()
-        .child(title("Process console", 20.))
-        .child(badge("Live output", true));
-    let top = if narrow {
-        col().gap(12.).child(name).child(actions)
-    } else {
-        row()
-            .justify_between()
-            .gap(16.)
-            .center_y()
-            .flex_wrap()
-            .child(name)
-            .child(actions)
-    };
-    card().key("log-panel").child(top).child(
-        col()
-            .key("log-scroll")
-            .w_full()
-            .min_w(0.)
-            .h(190.)
-            .padding(16.)
-            .radius(8.)
-            .fill(code_bg())
-            .scroll(ScrollSpec { stick_bottom: true })
-            .child(lines),
-    )
+        .child(context)
+        .child(spacer())
+        .child(meta(env).key("environment").wrap())
 }
+
+fn statusbar(s: &State, vp: &Viewport) -> El {
+    row()
+        .key("statusbar")
+        .w_full()
+        .min_w(0.)
+        .px(if vp.compact() { 12. } else { vp.gutter() })
+        .py(6.)
+        .gap(12.)
+        .center_y()
+        .fill(bg())
+        .border_sides([1., 0., 0., 0.], soft())
+        .child(
+            meta_sized(s.notice.clone(), 10., fg())
+                .key("feedback")
+                .role("status")
+                .grow(1.)
+                .truncate()
+                .help(s.notice.clone()),
+        )
+        .child(settings::zoom_controls(s))
+}
+
+fn foot(vp: &Viewport) -> El {
+    let f = if vp.compact() {
+        col().gap(8.)
+    } else {
+        row().gap(24.).justify_between()
+    };
+    f.key("management-footer")
+        .w_full()
+        .min_w(0.)
+        .py(24.)
+        .child(meta_sized("Stop session is not a vehicle command", 9., muted()).wrap())
+        .child(meta_sized("Configuration ≠ connection ≠ data health", 9., muted()).wrap())
+}
+
+/// Confirms stopping owned processes (`s.confirm == Some("stop")`).
+fn confirm_dialog(w: f32, h: f32) -> [El; 2] {
+    let dw = (w - 32.).min(560.);
+    let dh = (h - 32.).min(280.);
+    [
+        el().key("confirm-scrim")
+            .absolute(0., 0.)
+            .w_full()
+            .h_full()
+            .fill(Color::BLACK.alpha(0.7)),
+        col()
+            .key("confirmation")
+            .role("dialog")
+            .label("Confirm action")
+            .absolute((w - dw) / 2., (h - dh) / 2.)
+            .w(dw)
+            .h(dh)
+            .min_h(0.)
+            .padding(24.)
+            .gap(16.)
+            .fill(bg())
+            .border(1., rule())
+            .radius(4.)
+            .modal(true, |s: &mut State| s.confirm = None)
+            .child(meta("Owned processes"))
+            .child(h2("Stop owned processes?", 22.))
+            .child(
+                col()
+                    .grow(1.)
+                    .min_h(0.)
+                    .w_full()
+                    .scroll(ScrollSpec {
+                        stick_bottom: false,
+                    })
+                    .child(p(
+                        "This closes managed tools, simulators, recordings and replay started by Drone Deck. It does not land or disarm a vehicle, and it does not cancel installation jobs.",
+                        12.,
+                    )),
+            )
+            .child(
+                row()
+                    .gap(12.)
+                    .flex_wrap()
+                    .child(pill("confirm-action", "Stop session", true, |s| {
+                        if s.confirm.take().as_deref() == Some("stop") {
+                            s.stop_all()
+                        }
+                    }))
+                    .child(ghost("cancel-action", "Cancel", true, |s| s.confirm = None)),
+            ),
+    ]
+}
+
 pub(super) fn view(s: &State, cx: &mut Cx<State>) -> El {
     let [physical_w, physical_h] = cx.layout_size("window-frame").unwrap_or([1280., 800.]);
     let zoom = s.ui.zoom_percent as f32 / 100.;
-    let (w, h) = (physical_w / zoom, physical_h / zoom);
-    let mobile = w < 900.;
-    let sidebar_width = if w > 1200. { 256. } else { 220. };
-    let padding = if w < 420. {
-        12.
-    } else {
-        (w * 0.022).clamp(16., 36.)
+    let vp = Viewport {
+        w: physical_w / zoom,
+        h: physical_h / zoom,
     };
-    let content_width = (w - if mobile { 0. } else { sidebar_width } - padding * 2.).max(280.);
-    let wide = w > 1200.;
-    let show_inspector = ![6, 7, 8].contains(&s.page) && s.ui.inspector.unwrap_or(true);
-    let show_console = s.ui.console.unwrap_or(true);
-    let mut actions = row()
-        .gap(8.)
-        .flex_wrap()
-        .child(button("detect-tools", "Detect tools", false, |s| {
-            s.send(Request::Detect(s.config.clone()));
-            s.notice = "Scanning Windows and Ubuntu tools…".into();
-        }))
-        .child(button("stop-all", "Stop session", false, |s| {
-            s.confirm = Some("stop".into())
-        }))
-        .child(button("open-settings", "Settings", false, |s| {
-            s.navigate(6)
-        }));
-    if ![6, 7, 8].contains(&s.page) {
-        actions = actions
-            .child(button(
-                "toggle-inspector",
-                if show_inspector {
-                    "Hide details"
-                } else {
-                    "Show details"
-                },
-                false,
-                move |s| s.ui.inspector = Some(!show_inspector),
-            ))
-            .child(button(
-                "toggle-console",
-                if show_console {
-                    "Hide console"
-                } else {
-                    "Show console"
-                },
-                false,
-                move |s| s.ui.console = Some(!show_console),
-            ));
-    }
-    let mut names = row().min_w(0.).grow(1.).gap(12.).center_y();
-    if mobile {
-        names = names.child(button("open-menu", "Menu", false, |s| s.ui.menu = true));
-    }
-    names = names.child(
-        col()
-            .min_w(0.)
-            .gap(6.)
-            .child(label("DRONE PROJECTS / LOCAL LAB", 10., accent()).wrap())
-            .child(title(PAGES[s.page].1, if mobile { 26. } else { 34. }).wrap()),
-    );
-    let header = if w < 1000. {
-        col().gap(12.).child(names).child(actions)
-    } else {
-        row()
-            .gap(16.)
-            .center_y()
-            .justify_between()
-            .flex_wrap()
-            .child(names)
-            .child(actions)
-    };
-    let page_width = if wide && show_inspector {
-        (content_width - 316.).max(280.)
-    } else {
-        content_width
-    };
-    let page = pages::page(s, page_width);
-    let page_with_inspector = if wide && show_inspector {
-        row()
-            .w_full()
-            .min_w(0.)
-            .gap(16.)
-            .items_start()
-            .child(col().grow(1.).min_w(0.).child(page))
-            .child(col().w(300.).child(inspector(s)))
-    } else {
-        let mut stack = col().w_full().min_w(0.).gap(16.).child(page);
-        if show_inspector {
-            stack = stack.child(inspector(s));
-        }
-        stack
-    };
-    let mut content = col()
-        .key("page-content")
-        .w_full()
-        .min_w(0.)
-        .padding(padding)
-        .gap(16.);
-    if ![6, 7, 8].contains(&s.page)
-        && !(s.page == 2 && s.hardware.mode != 0)
-        && !s.editing
-        && s.form.is_none()
-    {
-        content = content.child(stats(s, content_width));
-    }
-    if [1, 3, 4, 5].contains(&s.page) && !s.editing && s.form.is_none() {
-        content = content.child(
-            field(&s.ui.search, "tool-search")
-                .on_edit(|s: &mut State| &mut s.ui.search)
-                .placeholder("Filter tools by name or description…", muted()),
-        );
-    }
-    content = content.child(page_with_inspector);
-    if show_console && ![6, 8].contains(&s.page) {
-        content = content.child(console(s, content_width < 650.));
-    }
-    let stage = col()
-        .key("app-stage")
-        .grow(1.)
-        .min_w(0.)
-        .min_h(0.)
-        .h_full()
-        .child(
-            col()
-                .key("topbar")
-                .max_h((h * 0.4).max(60.))
-                .min_h(0.)
-                .scroll(ScrollSpec {
-                    stick_bottom: false,
-                })
-                .w_full()
-                .min_w(0.)
-                .padding(if mobile { 12. } else { 20. })
-                .fill(bg())
-                .border(1., line())
-                .child(header),
-        )
-        .child(
-            col()
-                .key("main-scroll")
-                .w_full()
-                .grow(1.)
-                .min_h(0.)
-                .min_w(0.)
-                .scroll(ScrollSpec {
-                    stick_bottom: false,
-                })
-                .child(content),
-        )
-        .child(
-            col()
-                .key("statusbar")
-                .w_full()
-                .min_w(0.)
-                .padding(6.)
-                .fill(surface())
-                .border(1., line())
-                .child(
-                    row()
-                        .w_full()
-                        .min_w(0.)
-                        .gap(8.)
-                        .center_y()
-                        .child(
-                            label(&s.notice, 11., muted())
-                                .grow(1.)
-                                .truncate()
-                                .help(s.notice.clone()),
-                        )
-                        .child(settings::zoom_controls(s)),
-                ),
-        );
+    let (w, h) = (vp.w, vp.h);
     let mut root = row()
         .key("app-root")
         .w(w)
         .h(h)
         .min_w(0.)
         .min_h(0.)
-        .fill(bg());
-    if !mobile {
-        root = root.child(sidebar(s, sidebar_width, false, h < 700.));
-    }
+        .fill(bg())
+        .hover_motion_within(rune::tok::motion::CSS_ENTER, rune::tok::motion::CSS_EXIT);
+    let stage = if s.page == Page::Setup {
+        col()
+            .key("app-stage")
+            .grow(1.)
+            .min_w(0.)
+            .min_h(0.)
+            .h_full()
+            .child(crate::guided::header(s, &vp))
+            .child(
+                col()
+                    .key("main-scroll")
+                    .w_full()
+                    .grow(1.)
+                    .min_h(0.)
+                    .min_w(0.)
+                    .scroll(ScrollSpec {
+                        stick_bottom: false,
+                    })
+                    .child(crate::guided::page(s, &vp)),
+            )
+            .child(statusbar(s, &vp))
+    } else {
+        if !vp.compact() {
+            root = root.child(rail(s, vp.rail_width(), false, h));
+        }
+        col()
+            .key("app-stage")
+            .grow(1.)
+            .min_w(0.)
+            .min_h(0.)
+            .h_full()
+            .child(topbar(s, &vp))
+            .child(
+                col()
+                    .key("main-scroll")
+                    .w_full()
+                    .grow(1.)
+                    .min_h(0.)
+                    .min_w(0.)
+                    .scroll(ScrollSpec {
+                        stick_bottom: false,
+                    })
+                    .child(
+                        col()
+                            .key("page-content")
+                            .w_full()
+                            .min_w(0.)
+                            .px(vp.gutter())
+                            .child(pages::page(s, &vp))
+                            .child(foot(&vp)),
+                    ),
+            )
+            .child(statusbar(s, &vp))
+    };
     root = root.child(stage);
-    if mobile && s.ui.menu {
+    if s.page != Page::Setup && vp.compact() && s.ui.menu {
         root = root
             .child(
                 el().key("menu-scrim")
                     .absolute(0., 0.)
                     .w_full()
                     .h_full()
-                    .fill(ink().alpha(0.35))
+                    .fill(Color::BLACK.alpha(0.6))
                     .on_press(|s: &mut State| s.ui.menu = false),
             )
             .child(
-                sidebar(s, (w * 0.86).min(320.), true, h < 700.)
+                rail(s, (w * 0.86).min(300.), true, h)
                     .key("nav-drawer")
                     .absolute(0., 0.)
+                    .h(h)
                     .modal(true, |s: &mut State| s.ui.menu = false),
             );
     }
-    if let Some(action) = &s.confirm {
-        let stop = action == "stop";
-        let dw = (w - 32.).min(560.);
-        let dh = (h - 32.).min(260.);
-        root=root.child(el().key("confirm-scrim").absolute(0.,0.).w_full().h_full().fill(ink().alpha(0.35)))
-            .child(card().key("confirmation").role("dialog").label("Confirm action").absolute((w-dw)/2.,(h-dh)/2.).w(dw).h(dh).min_h(0.).modal(true,|s:&mut State|s.confirm=None)
-            .child(title(if stop{"Stop owned processes?"}else{"Download this package?"},22.).wrap())
-            .child(col().grow(1.).min_h(0.).w_full().scroll(ScrollSpec{stick_bottom:false}).child(label(if stop{"This closes managed tools and simulators. It does not send a landing command."}else{action},13.,muted()).wrap_anywhere()))
-            .child(row().gap(8.).flex_wrap().child(button("confirm-action","Confirm",true,|s|{if let Some(a)=s.confirm.take(){if a=="stop"{s.stop_all();}else{s.send(Request::Download(a));s.notice="Downloading package; completion appears in the console.".into();}}})).child(button("cancel-action","Cancel",false,|s|s.confirm=None))));
+    if s.page != Page::Setup && s.ui.system_menu {
+        root = root.child(system_menu(s));
+    }
+    if s.confirm.as_deref() == Some("stop") {
+        for e in confirm_dialog(w, h) {
+            root = root.child(e);
+        }
     }
     el().key("window-frame").w_full().h_full().fill(bg()).child(
         root.absolute(0., 0.)

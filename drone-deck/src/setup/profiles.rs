@@ -41,14 +41,11 @@ pub(crate) fn adopt(s: &mut State) {
         other => other,
     };
     let mut config = s.config.clone();
-    if !config.profiles.iter().any(|p| p.id == id)
-        && ["ros-workspace", "onnx", "torch"].contains(&id)
-    {
+    if !config.profiles.iter().any(|p| p.id == id) && ["ros-workspace", "onnx"].contains(&id) {
         config.profiles.push(backend::Profile {
             id: id.into(),
             name: match id {
                 "onnx" => "ONNX CPU runtime",
-                "torch" => "PyTorch CPU training",
                 _ => "PX4 ROS 2 workspace",
             }
             .into(),
@@ -68,7 +65,8 @@ pub(crate) fn adopt(s: &mut State) {
         });
     }
     let Some(profile) = config.profiles.iter_mut().find(|p| p.id == id) else {
-        s.setup.message = "Add a matching tool profile in Integrations first.".into();
+        s.setup.message =
+            "Add a matching tool profile in Tools & config (Add a tool) first.".into();
         return;
     };
     let exe = quote(&candidate.executable);
@@ -115,13 +113,6 @@ pub(crate) fn adopt(s: &mut State) {
             )];
             profile.probe = format!("test -x {exe}");
         }
-        "torch" => {
-            profile.program = "wsl".into();
-            profile.args = vec![format!(
-                "{exe} -c 'import torch, numpy, onnx; print(torch.__version__)'"
-            )];
-            profile.probe = format!("test -x {exe}");
-        }
         "ardupilot" => {
             profile.program = "wsl".into();
             profile.args = vec![format!(
@@ -136,7 +127,8 @@ pub(crate) fn adopt(s: &mut State) {
         }
         "qgc" => {
             profile.program = candidate.executable.clone();
-            profile.args = vec!["-swrast".into()];
+            profile.args =
+                crate::qgc_launch::with_gpu_safe(&[], crate::qgc_launch::gpu_safe(profile));
             profile.probe = candidate.executable.clone();
             profile.cwd = String::new();
         }
@@ -210,9 +202,9 @@ pub(crate) fn use_job_result(s: &mut State) {
         s.setup.candidate = Some(candidate);
         adopt(s);
         if !s.headless && s.setup.last_applied.as_deref() == Some(&tool) {
-            if let Err(e) = std::fs::write(
-                root().join(job_id).join("configuration-applied"),
-                "Configuration applied explicitly or by reviewed setup option.\n",
+            if let Err(e) = crate::store::write(
+                &root().join(job_id).join("configuration-applied"),
+                b"Configuration applied explicitly or by reviewed setup option.\n",
             ) {
                 s.setup.message =
                     format!("Configuration saved, but setup completion could not be recorded: {e}");

@@ -1,15 +1,11 @@
 # Drone Deck
 
-Open **Drone Deck.exe** in this directory, or the **Drone Deck** shortcut in Desktop → Simulator Launchers.
+Open **Drone Deck.exe** (after building it with `drone-deck\Build.cmd`), or run `cargo run --manifest-path drone-deck/Cargo.toml` from the repository root.
 
-1. Close any session started by the old VBS launcher before starting a new managed session.
-2. Click **Detect tools**, then **Start SIH workspace**. PX4, the relay and jMAVSim run as one managed workspace; jMAVSim opens its own visualizer window.
-3. Run **MAVSDK telemetry** for read-only vehicle data, and **QGroundControl** for missions and flight controls.
-4. Choose a tool's **Details**, then **Configure manually**, to edit paths and commands through the settings form. **Integrations → Edit profiles** exposes the complete registry for adding more tools.
-5. Add command profiles for ROS nodes, AI inference, training, dataset recording, or other simulators. Tools that are not installed need setup; official guidance and optional confirmed package downloads are available in the inspector.
+1. **First time:** open **Guided setup** in the rail, choose what you want to try, name the system and let **Preparation** check this computer. Review the plan, tick the acknowledgement and apply it. Nothing installs from a check alone.
+2. **System** shows the active system. **Start workspace** starts its tools in order; QGroundControl is the flight-control window, MAVSDK telemetry is read-only.
+3. **Tools & config** holds every tool's command, paths, detection and installation review. **Data & models** holds recordings, models, datasets and projects. **Activity** keeps history, process output and installation jobs. **Settings** (Ctrl+,) holds the Linux environment, zoom, the Hugging Face token and the profile registry.
 
-**Stop session** stops owned processes. Normal app close also stops them. It is not a vehicle landing command.
+**Stop session** stops processes Drone Deck owns. It is not a vehicle landing command.
 
-See [application documentation](drone-deck/README.md), [planned capabilities](drone-deck/ROADMAP.md), and [verification results](verification/VERIFICATION.md).
-
-The current app provides process orchestration, logs, settings and a read-only MAVSDK adapter. Direct in-app flight commands, ROS graph visualization, integrated model/dataset registries, and automatic installation of every tool require further adapters. QGroundControl remains the flight-control interface.
+Read next: [user guide](docs/user-guide.md) · [troubleshooting](docs/troubleshooting.md) · [known issues](docs/known-issues.md) · [README](README.md)

@@ -292,7 +292,8 @@ pub(crate) fn shutdown(s: &mut State) {
     s.recorder.bridge = None;
 }
 pub(crate) fn preview(s: &mut State) {
-    s.navigate(7);
+    s.ui.data_tab = 0;
+    s.navigate(crate::ui::Page::Data);
     s.recorder.ready = true;
     s.recorder.message = "Headless preview · example recording · no external processes".into();
     s.recorder.discovered = vec![

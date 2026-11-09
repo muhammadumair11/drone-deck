@@ -10,7 +10,7 @@ def extra_base():
     return types.SimpleNamespace(ROOT=ROOT,run=run,output=output,probe=probe,require_noble=require_noble,owned_target=owned_target)
 
 ROOT = Path.home() / '.local/share/drone-deck/tools'
-TOOLS = {'ros2', 'mavsdk', 'px4', 'dds', 'ardupilot', 'gazebo','jmavsim','ros-workspace','onnx','torch'}
+TOOLS = {'ros2', 'mavsdk', 'px4', 'dds', 'ardupilot', 'gazebo','jmavsim','ros-workspace','onnx'}
 
 def run(args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
@@ -27,7 +27,7 @@ def ros_env():
     return dict(item.decode().split('=', 1) for item in process.stdout.split(b'\0') if b'=' in item)
 
 def probe(tool, location='', windows_candidate=''):
-    if tool in ('gazebo','ardupilot','jmavsim','ros-workspace','onnx','torch'):
+    if tool in ('gazebo','ardupilot','jmavsim','ros-workspace','onnx'):
         import extra_tools
         return extra_tools.probe(extra_base(),tool,location)
     if location == '@auto':
@@ -97,7 +97,7 @@ def require_noble():
         raise RuntimeError('Automatic Linux recipes currently support Ubuntu 24.04 only. Use existing/manual setup for other distributions.')
 
 def dependencies(tool):
-    if tool in ('gazebo','ardupilot','jmavsim','ros-workspace','onnx','torch'):
+    if tool in ('gazebo','ardupilot','jmavsim','ros-workspace','onnx'):
         import extra_tools
         return extra_tools.dependencies(extra_base(),tool)
     require_noble()
@@ -123,7 +123,7 @@ def owned_target(name):
     return path
 
 def install(tool):
-    if tool in ('gazebo','ardupilot','jmavsim','ros-workspace','onnx','torch'):
+    if tool in ('gazebo','ardupilot','jmavsim','ros-workspace','onnx'):
         import extra_tools
         return extra_tools.install(extra_base(),tool)
     require_noble()
@@ -163,17 +163,17 @@ def install(tool):
 
 def preflight(tool):
     require_noble()
-    minimum = {'mavsdk': 1, 'px4': 10, 'dds': 3,'gazebo':5,'ardupilot':8,'jmavsim':3,'ros-workspace':3,'onnx':2,'torch':3}.get(tool, 1)
+    minimum = {'mavsdk': 1, 'px4': 10, 'dds': 3,'gazebo':5,'ardupilot':8,'jmavsim':3,'ros-workspace':3,'onnx':2}.get(tool, 1)
     if shutil.disk_usage(Path.home()).free < minimum * 1024 ** 3:
         raise RuntimeError(f'This recipe needs at least {minimum} GiB free in the Linux filesystem; source builds may need more.')
-    names = {'mavsdk': ['mavsdk'], 'px4': ['PX4-Autopilot', 'px4-python'], 'dds': ['Micro-XRCE-DDS-Agent'],'ardupilot':['ardupilot','ardupilot-python'],'jmavsim':['jMAVSim'],'ros-workspace':['px4_ros_ws'],'onnx':['onnx'],'torch':['torch']}
+    names = {'mavsdk': ['mavsdk'], 'px4': ['PX4-Autopilot', 'px4-python'], 'dds': ['Micro-XRCE-DDS-Agent'],'ardupilot':['ardupilot','ardupilot-python'],'jmavsim':['jMAVSim'],'ros-workspace':['px4_ros_ws'],'onnx':['onnx']}
     for name in names.get(tool, []):
         if (ROOT / name).exists() and not (ROOT / ('.owned-' + name)).is_file():
             raise RuntimeError('Existing unowned target must be adopted manually: ' + str(ROOT / name))
 
 def verify(tool):
     managed = {'mavsdk': ROOT / 'mavsdk', 'px4': ROOT / 'PX4-Autopilot',
-               'dds': ROOT / 'Micro-XRCE-DDS-Agent','ardupilot':ROOT/'ardupilot','jmavsim':ROOT/'jMAVSim','ros-workspace':ROOT/'px4_ros_ws','onnx':ROOT/'onnx','torch':ROOT/'torch'}
+               'dds': ROOT / 'Micro-XRCE-DDS-Agent','ardupilot':ROOT/'ardupilot','jmavsim':ROOT/'jMAVSim','ros-workspace':ROOT/'px4_ros_ws','onnx':ROOT/'onnx'}
     return probe(tool, str(managed[tool]) if tool in managed else '')
 
 if __name__ == '__main__':

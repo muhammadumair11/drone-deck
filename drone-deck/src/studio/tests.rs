@@ -11,16 +11,19 @@ fn studio_and_credentials_are_reachable_in_headless_ui_without_network() {
             system_dark: false,
         },
     );
-    rt.update(|s, _| s.navigate(4));
+    rt.update(|s, _| {
+        s.ui.data_tab = 1;
+        s.navigate(crate::ui::Page::Data)
+    });
     rt.frame(0.1);
     assert!(rt.find("model-repo").is_some());
-    rt.update(|s, _| s.studio.tab = 1);
+    rt.update(|s, _| s.ui.data_tab = 2);
     rt.frame(0.1);
     assert!(rt.find("evaluation-csv").is_some());
-    rt.update(|s, _| s.studio.tab = 2);
+    rt.update(|s, _| s.ui.data_tab = 3);
     rt.frame(0.1);
     assert!(rt.find("create-project").is_some());
-    rt.update(|s, _| s.navigate(6));
+    rt.update(|s, _| s.navigate(crate::ui::Page::Settings));
     rt.frame(0.1);
     assert!(rt.find("hf-token").is_some());
     request(&mut rt.state, "start_model");
@@ -49,9 +52,13 @@ fn new_workspace_panels_fit_small_and_wide_windows() {
         rt.set_viewport((w, h), 1.);
         for variant in 0..5 {
             rt.update(|s, _| {
-                s.navigate(if variant == 4 { 2 } else { 4 });
-                s.studio.tab = variant.min(2);
-                s.hardware.mode = 1;
+                if variant == 4 {
+                    s.select_system(crate::systems::PHYSICAL);
+                    s.navigate(crate::ui::Page::System);
+                } else {
+                    s.ui.data_tab = variant;
+                    s.navigate(crate::ui::Page::Data);
+                }
             });
             for _ in 0..10 {
                 rt.frame(0.1);

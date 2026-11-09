@@ -1,10 +1,10 @@
-mod batch;
+pub(crate) mod batch;
 mod bridge;
-mod profiles;
+pub(crate) mod profiles;
 #[cfg(test)]
 mod tests;
 mod view;
-mod workflow;
+pub(crate) mod workflow;
 use crate::*;
 pub(crate) use bridge::process_alive as job_alive;
 use serde::Deserialize;
@@ -13,7 +13,7 @@ use std::{
     path::PathBuf,
     sync::mpsc::{self, Receiver, Sender},
 };
-pub(crate) use view::page;
+pub(crate) use view::{environment, install_review, job_log, jobs_panel, option_row};
 
 #[derive(Clone, Deserialize)]
 pub(crate) struct Recipe {
@@ -123,10 +123,36 @@ pub(crate) struct Setup {
     pub applied_jobs: std::collections::HashSet<String>,
     pub last_applied: Option<String>,
     pub batch: Option<batch::Batch>,
-    pub batch_review: bool,
     pub batch_message: String,
     pub checkpoint_loaded: bool,
     pub checkpoint_cache: String,
+    /// Existing tool locations given in guided setup, by recipe id; workflow checks use them.
+    pub overrides: HashMap<String, String>,
+}
+impl Setup {
+    /// A workflow queue or a live installation job owns the environment.
+    pub(crate) fn active(&self) -> bool {
+        self.batch.is_some() || self.jobs.iter().any(|j| j.alive)
+    }
+    pub(crate) fn recipe_index(&self, id: &str) -> Option<usize> {
+        self.recipes.iter().position(|r| r.id == id)
+    }
+    fn typed_distro(&self) -> Option<&Distro> {
+        let name = self.distro.text.trim();
+        self.host
+            .as_ref()?
+            .distros
+            .iter()
+            .find(|d| d.name.eq_ignore_ascii_case(name))
+    }
+    /// The typed distribution is installed as WSL 2.
+    pub(crate) fn can_use_distro(&self) -> bool {
+        self.typed_distro().is_some_and(|d| d.version == 2)
+    }
+    /// The typed distribution is installed and can open its first-run terminal.
+    pub(crate) fn can_initialize(&self) -> bool {
+        self.typed_distro().is_some()
+    }
 }
 impl Default for Setup {
     fn default() -> Self {
@@ -155,10 +181,10 @@ impl Default for Setup {
             applied_jobs: Default::default(),
             last_applied: None,
             batch: None,
-            batch_review: false,
             batch_message: String::new(),
             checkpoint_loaded: false,
             checkpoint_cache: String::new(),
+            overrides: HashMap::new(),
         }
     }
 }
@@ -292,9 +318,10 @@ fn apply_event(s: &mut State, value: Value) {
                 s.setup.host = Some(host);
                 if configured {
                     s.send(Request::Detect(s.config.clone()));
-                } else {
-                    s.navigate(8);
-                    s.notice="Choose or install a WSL environment in Setup. Windows-native tools remain available.".into();
+                } else if s.page == crate::ui::Page::System && !s.systems.any_prepared() {
+                    crate::guided::open(s);
+                } else if s.page != crate::ui::Page::Setup {
+                    s.notice = "No usable WSL 2 environment yet. Choose or install one in Settings → Environment; Windows-native tools remain available.".into();
                 }
             }
             Err(e) => s.setup.message = format!("Could not read host discovery: {e}"),
@@ -377,24 +404,11 @@ pub(crate) fn use_distro(s: &mut State) {
     s.metrics.clear();
     s.setup.message =
         "Workspace distribution saved. Detect/reuse tools to configure their actual paths.".into();
+    let distro = s.config.distro.clone();
+    activity::record(s, format!("Selected WSL environment {distro}"));
 }
 pub(crate) fn review(s: &mut State) {
     s.setup.review = true;
-}
-pub(crate) fn manual(s: &mut State) {
-    let tool = &s.setup.recipes[s.setup.selected].id;
-    let id = match tool.as_str() {
-        "px4" => "sih",
-        "mavsdk" => "telemetry",
-        other => other,
-    };
-    if let Some(index) = s.config.profiles.iter().position(|p| p.id == id) {
-        s.selected = index;
-        profile_editor::open(s);
-    } else {
-        s.navigate(5);
-        s.edit();
-    }
 }
 pub(crate) fn retry(s: &mut State) {
     let Some(id) = &s.setup.selected_job else {
@@ -420,7 +434,7 @@ fn restore_retry(s: &mut State, value: &Value) {
     }
 }
 pub(crate) fn preview(s: &mut State) {
-    s.navigate(8);
+    s.navigate(crate::ui::Page::Settings);
     s.setup.host = Some(Host {
         build: 26100,
         windows: "Windows 11 · preview fixture".into(),

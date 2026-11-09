@@ -9,13 +9,9 @@ use std::{
 pub(super) fn request(value: Value, tx: Sender<Result<Value, String>>) {
     thread::spawn(move || {
         let result = (|| -> Result<Value, String> {
-            let script = std::env::current_exe()
-                .map_err(|e| e.to_string())?
-                .parent()
-                .unwrap()
-                .join("runtime/setup/control.ps1");
+            let script = crate::backend::scripts().join("setup/control.ps1");
             if !script.exists() {
-                return Err("Setup helper is missing from runtime/setup. Rebuild/deploy the complete application.".into());
+                return Err("Setup helper scripts are missing. Rebuild with Build.cmd so runtime/ sits beside the app.".into());
             }
             let shell =
                 PathBuf::from(std::env::var_os("WINDIR").unwrap_or_else(|| "C:\\Windows".into()))
