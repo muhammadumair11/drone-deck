@@ -99,6 +99,8 @@ Tools & config lists the tools behind the active system, or every registered too
 - **Configure** expands the row in place: guidance, the exact command with **Copy command**, the working directory and the launch-profile form. The form is locked with "Stop this process before editing." while the tool runs. From the expanded row you can also **Detect** the installation, **Review installation** (the managed recipe, see below), open the **Official docs ↗** and **Open folder ↗**.
 - **Add a tool** creates a new profile for a ROS node, inference server, recorder, alternative simulator or any other command.
 
+**Remove a custom tool:** open its **Configure** form, choose **Remove tool** beside **Save profile**, then confirm. Stop the tool first if it is starting or running. Removal deletes only its saved launch profile; installed software, projects, recordings and logs remain. Built-in tools cannot be removed through this control.
+
 ### Launch profiles
 
 A profile is one launchable tool. Fields:

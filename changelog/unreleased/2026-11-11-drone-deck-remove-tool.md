@@ -1,0 +1,1 @@
+- **Drone Deck:** custom launch profiles can be removed beside Save profile in Tools & config with confirmation; running or staged tools and built-in profiles are protected, and installed software and saved data are kept.

@@ -2,12 +2,14 @@
 use super::*;
 use crate::ui::kit::*;
 use crate::ui::theme::*;
+mod removal;
 
 pub struct Form {
     pub fields: Vec<TextEdit>,
     pub creating: bool,
     /// Validation message shown beside the form.
     pub error: String,
+    confirm_remove: bool,
 }
 
 /// Tools & config filters, matching `systems::Component::filter` and `systems::filter_for`.
@@ -57,6 +59,7 @@ pub fn open(s: &mut State) {
     let id = p.id.clone();
     s.form = Some(Form {
         creating: false,
+        confirm_remove: false,
         error: String::new(),
         fields: [
             p.name.clone(),
@@ -109,6 +112,7 @@ pub fn create(s: &mut State, category: &str) {
     s.navigate(crate::ui::Page::Tools);
     s.form = Some(Form {
         creating: true,
+        confirm_remove: false,
         error: String::new(),
         fields: ["My tool", "wsl", "", "", "", &s.config.distro, category]
             .into_iter()
@@ -293,6 +297,8 @@ pub fn view(s: &State, compact: bool) -> El {
         "Launch profile"
     };
     let actions = row()
+        .key("profile-actions")
+        .min_w(0.)
         .gap(16.)
         .center_y()
         .flex_wrap()
@@ -306,6 +312,7 @@ pub fn view(s: &State, compact: bool) -> El {
             !locked,
             save,
         ))
+        .child(removal::button(s))
         .child(ghost("cancel-form", "Cancel", true, cancel));
     let head = if compact {
         col().gap(12.).items_start()
@@ -335,6 +342,7 @@ pub fn view(s: &State, compact: bool) -> El {
         .pt(8.)
         .child(head.w_full().min_w(0.).child(h3(title, 15.)).child(actions))
         .child(status)
+        .child(removal::view(s))
         .child(pair(input(s, 0, locked), input(s, 6, locked), compact))
         .child(pair(input(s, 1, locked), input(s, 5, locked), compact))
         .child(input(s, 2, locked))
