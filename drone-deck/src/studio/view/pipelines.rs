@@ -371,6 +371,13 @@ fn infer_form(s: &State, vp: &Viewport) -> El {
             field(&ps.model, "pipe-model", "/home/user/models/detector.onnx")
                 .on_edit(|s: &mut State| &mut s.studio.pipes.model),
         ))
+        .child(browse(
+            "pipe-model-browse",
+            "Choose an ONNX model",
+            &[("ONNX model", &["onnx"])],
+            true,
+            |s, path| s.studio.pipes.model = TextEdit::new(&path.display().to_string()),
+        ))
         .child(
             col()
                 .w_full()

@@ -267,6 +267,20 @@ pub(crate) fn poll(s: &mut State) -> bool {
                 .collect::<String>()
         };
         if fingerprint(&jobs) != fingerprint(&s.setup.jobs) {
+            // A toast for each known job whose status changed (not for jobs seen for the
+            // first time, such as those restored at start).
+            for job in &jobs {
+                let before = s.setup.jobs.iter().find(|j| j.id == job.id);
+                if before.is_some_and(|b| b.status != job.status) {
+                    let name = s
+                        .setup
+                        .recipes
+                        .iter()
+                        .find(|r| r.id == job.tool)
+                        .map_or(job.tool.as_str(), |r| r.name.as_str());
+                    crate::notify::job(&job.id, name, &job.status, &job.message);
+                }
+            }
             s.setup.jobs = jobs;
             changed = true;
         }

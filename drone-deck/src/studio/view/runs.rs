@@ -197,14 +197,28 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
         ))
         .child(meta("Run inputs"))
         .child(labeled(
-            "Linux ONNX model path",
+            "ONNX model path (Windows or Linux)",
             field(&r.model_file, "project-model-file", "/home/user/model.onnx")
                 .on_edit(|s: &mut State| &mut s.studio.model_file),
         ))
+        .child(browse(
+            "project-model-browse",
+            "Choose an ONNX model",
+            &[("ONNX model", &["onnx"])],
+            true,
+            |s, path| s.studio.model_file = TextEdit::new(&path.display().to_string()),
+        ))
         .child(labeled(
-            "NPZ inputs path",
+            "NPZ inputs path (Windows or Linux)",
             field(&r.inputs, "project-inputs", "/home/user/inputs.npz")
                 .on_edit(|s: &mut State| &mut s.studio.inputs),
+        ))
+        .child(browse(
+            "project-inputs-browse",
+            "Choose NPZ inputs",
+            &[("NumPy arrays", &["npz"])],
+            true,
+            |s, path| s.studio.inputs = TextEdit::new(&path.display().to_string()),
         ))
         .child(notice(
             "ONNX inference needs a model and correctly preprocessed NPZ tensors.",

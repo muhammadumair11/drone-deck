@@ -177,6 +177,8 @@ fn physical_tools_expose_no_write_control() {
         "Export .params",
         "Open exports folder ↗",
         "Compare later with this file",
+        // Picks a local .params file to compare with; nothing reaches the vehicle.
+        "Browse…",
         "Load and compare",
         "Loading…",
         "Clear comparison",

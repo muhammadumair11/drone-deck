@@ -94,8 +94,18 @@ fn display(s: &State, compact: bool) -> El {
             zoom != 100,
             |s| set_zoom(s, 100),
         ));
+    let theme_names: Vec<&str> = ThemeMode::ALL.iter().map(|m| m.label()).collect();
+    let theme_index = ThemeMode::ALL
+        .iter()
+        .position(|m| *m == s.ui.theme)
+        .unwrap_or(0);
+    let theme = tabs("settings-theme", &theme_names, theme_index, |s, i| {
+        set_theme(s, ThemeMode::ALL[i.min(ThemeMode::ALL.len() - 1)])
+    })
+    .my(0.);
     let mut keys = col().gap(6.);
     for (combo, effect) in [
+        ("Ctrl + 1–4", "System, Tools & config, Data & models, Activity"),
         ("Ctrl + −", "Smaller"),
         ("Ctrl + +", "Larger"),
         ("Ctrl + 0", "Reset to 100%"),
@@ -105,7 +115,7 @@ fn display(s: &State, compact: bool) -> El {
             row()
                 .gap(16.)
                 .center_y()
-                .child(meta_sized(combo, 10., fg()).w(72.))
+                .child(meta_sized(combo, 10., fg()).w(88.))
                 .child(meta(effect)),
         );
     }
@@ -121,6 +131,13 @@ fn display(s: &State, compact: bool) -> El {
                 "Interface zoom",
                 "Scales every page between 50% and 150%. Saved on this computer and restored at launch.",
                 controls,
+                compact,
+            ))
+            .child(setting(
+                "settings-theme-row",
+                "Theme",
+                "Follow Windows uses its app mode (Settings → Personalization → Colors). Saved on this computer.",
+                theme,
                 compact,
             ))
             .child(setting(

@@ -633,3 +633,58 @@ fn an_open_vehicle_link_is_session_work_the_rail_and_the_system_page_agree_on() 
         "a simulation's link arrives through the app's router"
     );
 }
+
+#[test]
+fn ctrl_number_keys_switch_pages_in_rail_order() {
+    let mut rt = runtime(State::new(), (1216., 700.));
+    let event = |c| rune::KeyEvent {
+        key: rune::Key::Command(c),
+        mods: rune::Mods {
+            ctrl: true,
+            cmd: true,
+            ..Default::default()
+        },
+    };
+    for (c, page) in [
+        ('2', Page::Tools),
+        ('3', Page::Data),
+        ('4', Page::Activity),
+        ('1', Page::System),
+    ] {
+        rt.update(|s, tx| assert!(ui::zoom_shortcuts(s, &event(c), tx)));
+        assert_eq!(rt.state.page, page, "Ctrl+{c}");
+    }
+    rt.update(|s, tx| assert!(!ui::zoom_shortcuts(s, &event('5'), tx)));
+}
+
+#[test]
+fn theme_follows_windows_unless_chosen_and_the_setting_switches_it() {
+    use ui::ThemeMode;
+    assert!(!ThemeMode::System.light(true));
+    assert!(ThemeMode::System.light(false));
+    assert!(ThemeMode::Light.light(true));
+    assert!(!ThemeMode::Dark.light(false));
+    let mut s = State::new();
+    s.page = Page::Settings;
+    let mut rt = runtime(s, (1216., 900.));
+    assert_eq!(rt.state.ui.theme, ThemeMode::System);
+    assert!(!ui::theme::light(), "tests run with Windows in dark mode");
+    tap(&mut rt, "settings-theme-2");
+    assert_eq!(rt.state.ui.theme, ThemeMode::Light);
+    settle(&mut rt);
+    assert!(ui::theme::light());
+    tap(&mut rt, "settings-theme-1");
+    assert_eq!(rt.state.ui.theme, ThemeMode::Dark);
+    settle(&mut rt);
+    assert!(!ui::theme::light());
+}
+
+#[test]
+fn mode_banner_shows_only_while_a_link_is_shown() {
+    let rt = runtime(State::new(), (1216., 700.));
+    assert!(rt.find("mode-banner").is_none(), "no link, no banner");
+    let mut s = State::new();
+    s.vehicle.preview = Some(Default::default());
+    let rt = runtime(s, (1216., 700.));
+    assert!(rt.find("mode-banner").is_some());
+}

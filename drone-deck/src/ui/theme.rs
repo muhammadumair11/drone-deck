@@ -1,6 +1,20 @@
 //! Design tokens from `Design/*.html`: black surfaces, one light ink, translucent rules,
 //! uppercase DIN type (Bahnschrift stands in for D-DIN on Windows) and mono metadata.
 use rune::{Color, El, Family, TextCase, TextStyle, text};
+use std::cell::Cell;
+
+thread_local! {
+    /// Whether this frame draws with the light palette; set once per frame by `ui::view`
+    /// from the theme preference and Windows' app mode.
+    static LIGHT: Cell<bool> = const { Cell::new(false) };
+}
+/// Selects the palette the colour functions below return for the rest of this frame.
+pub(crate) fn set_light(on: bool) {
+    LIGHT.with(|l| l.set(on));
+}
+pub(crate) fn light() -> bool {
+    LIGHT.with(Cell::get)
+}
 
 pub(crate) fn c(r: u8, g: u8, b: u8) -> Color {
     fn l(v: u8) -> f32 {
@@ -21,15 +35,15 @@ pub(crate) fn c(r: u8, g: u8, b: u8) -> Color {
 
 /// `--bg` / `--surface`.
 pub(crate) fn bg() -> Color {
-    c(0, 0, 0)
+    if light() { c(248, 248, 250) } else { c(0, 0, 0) }
 }
 /// `--fg` / `--accent`.
 pub(crate) fn fg() -> Color {
-    c(240, 240, 250)
+    if light() { c(20, 20, 28) } else { c(240, 240, 250) }
 }
 /// `--accent-hover`.
 pub(crate) fn fg_hover() -> Color {
-    c(255, 255, 255)
+    if light() { c(0, 0, 0) } else { c(255, 255, 255) }
 }
 /// `--muted`.
 pub(crate) fn muted() -> Color {
@@ -43,14 +57,15 @@ pub(crate) fn rule() -> Color {
 pub(crate) fn soft() -> Color {
     fg().alpha(0.1)
 }
+/// Status colours; the light palette uses darker shades that keep their contrast on white.
 pub(crate) fn success() -> Color {
-    c(0x16, 0xa3, 0x4a)
+    if light() { c(0x15, 0x80, 0x3d) } else { c(0x16, 0xa3, 0x4a) }
 }
 pub(crate) fn warn() -> Color {
-    c(0xea, 0xb3, 0x08)
+    if light() { c(0xb4, 0x53, 0x09) } else { c(0xea, 0xb3, 0x08) }
 }
 pub(crate) fn danger() -> Color {
-    c(0xdc, 0x26, 0x26)
+    if light() { c(0xb9, 0x1c, 0x1c) } else { c(0xdc, 0x26, 0x26) }
 }
 
 /// The design's `--font-display` / `--font-body` resolve to the app's sans family
@@ -102,7 +117,8 @@ pub(crate) fn h3(t: impl Into<String>, size: f32) -> El {
         .min_w(0.)
         .wrap()
 }
-/// Body copy: uppercase, `.045em`, muted, line-height 1.8.
+/// Body copy: sentence case, muted, line-height 1.55. Headings, tags and the rail stay in
+/// uppercase DIN; running text, gate reasons and errors are read, so they keep their case.
 pub(crate) fn p(t: impl Into<String>, size: f32) -> El {
     body(t, size, muted())
 }
@@ -111,10 +127,9 @@ pub(crate) fn body(t: impl Into<String>, size: f32, color: Color) -> El {
         .font(
             TextStyle::new(size, 400.)
                 .family(SANS)
-                .tracking(0.045 * size)
-                .lh(size * 1.8),
+                .tracking(0.01 * size)
+                .lh(size * 1.55),
         )
-        .text_case(TextCase::Uppercase)
         .color(color)
         .min_w(0.)
         .wrap()

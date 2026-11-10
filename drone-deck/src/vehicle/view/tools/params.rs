@@ -1,7 +1,7 @@
 //! Parameters: fetch (with progress), a searchable table, `.params` export, and a comparison
 //! with a loaded file. Nothing here writes a parameter.
 use super::{bar, blocked, mine, percent};
-use crate::State;
+use crate::{State, TextEdit};
 use crate::hardware::{self, Baseline};
 use crate::mavlink::{ParamSet, ParamValue};
 use crate::ui::{kit::*, theme::*};
@@ -311,6 +311,15 @@ fn compare(s: &State, vehicle: Option<&ParamSet>) -> El {
                 .gaps(4., 20.)
                 .center_y()
                 .flex_wrap()
+                .child(browse(
+                    "params-browse",
+                    "Compare with a .params file",
+                    &[("QGroundControl parameters", &["params"])],
+                    !loading,
+                    |s, path| {
+                        s.hardware.params_file = TextEdit::new(&path.display().to_string());
+                    },
+                ))
                 .child(ghost(
                     "params-load",
                     if loading {

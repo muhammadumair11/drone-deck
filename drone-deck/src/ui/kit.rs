@@ -59,6 +59,31 @@ pub(crate) fn pill_sized(
         .child(hover_ring(32.))
 }
 /// `.btn-ghost`: text only; underlines on hover.
+/// A **Browse…** button that opens Windows' Open dialog and hands the chosen file to `set`.
+/// `filters` are (name, extensions) pairs; "All files" is always added.
+pub(crate) fn browse(
+    key: impl Into<String>,
+    title: &'static str,
+    filters: &'static [(&'static str, &'static [&'static str])],
+    enabled: bool,
+    set: fn(&mut State, std::path::PathBuf),
+) -> El {
+    ghost(key, "Browse…", enabled, |_| {}).on_press_tx(move |_: &mut State, tx| {
+        let mut options = rune::file_dialog::FileDialogOptions {
+            title: title.into(),
+            ..Default::default()
+        };
+        for (name, extensions) in filters {
+            options = options.filter(*name, extensions);
+        }
+        options = options.filter("All files", &["*"]);
+        tx.open_file(options, move |s: &mut State, answer, _| match answer {
+            Ok(Some(path)) => set(s, path),
+            Ok(None) => {}
+            Err(e) => s.notice = format!("Could not open the file dialog: {e}. Type the path instead."),
+        });
+    })
+}
 pub(crate) fn ghost(
     key: impl Into<String>,
     name: &str,
@@ -447,7 +472,13 @@ pub(crate) fn station(
         .py(if large { 20. } else { 14. })
         .gap(8.)
         .child(meta(target).wrap())
-        .child(h3(name, if large { 24. } else { 20. }))
+        .child({
+            // A long single word ("QGroundControl") cannot wrap at a space: draw it smaller,
+            // and break it anywhere as a last resort rather than clipping it at the page edge.
+            let size = if large { 24. } else { 20. };
+            let size = if name.chars().count() > 12 { size * 0.8 } else { size };
+            h3(name, size).wrap_anywhere()
+        })
         .child(p(desc, 11.).max_w(420.))
         .child(
             row()

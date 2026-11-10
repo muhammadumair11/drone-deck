@@ -73,10 +73,23 @@ pub(super) fn run(s: &mut State, project: Value) {
                 s.studio.message = "Apply the verified ONNX runtime configuration first.".into();
                 return;
             };
+            // Paths chosen or typed on Windows map into the distribution, like Pipelines'.
+            let mount = s.agent.hello.as_ref().map(|h| h.automount_root.clone());
+            let linux = |p: &str| super::linux_model_path(p, &s.config.distro, mount.as_deref());
+            let (model, inputs) = match (
+                linux(s.studio.model_file.text.trim()),
+                linux(s.studio.inputs.text.trim()),
+            ) {
+                (Ok(m), Ok(i)) => (m, i),
+                (Err(e), _) | (_, Err(e)) => {
+                    s.studio.message = e;
+                    return;
+                }
+            };
             format!(
                 "{python} {script} --model {} --inputs {} --output {}",
-                quote(s.studio.model_file.text.trim()),
-                quote(s.studio.inputs.text.trim()),
+                quote(&model),
+                quote(&inputs),
                 quote(&format!("{path}/artifacts"))
             )
         }

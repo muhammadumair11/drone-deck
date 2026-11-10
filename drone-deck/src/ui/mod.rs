@@ -8,7 +8,9 @@ mod settings;
 mod tests;
 pub(crate) mod theme;
 use kit::*;
-pub(crate) use settings::{restore as restore_preferences, set_zoom, shortcuts as zoom_shortcuts};
+pub(crate) use settings::{
+    ThemeMode, restore as restore_preferences, set_theme, set_zoom, shortcuts as zoom_shortcuts,
+};
 use std::collections::HashSet;
 use theme::*;
 
@@ -37,6 +39,8 @@ pub(crate) struct UiState {
     pub search: TextEdit,
     pub reset_scroll: bool,
     pub zoom_percent: u16,
+    /// Dark, light or follow Windows; saved with the zoom.
+    pub theme: ThemeMode,
     /// Open disclosures, by key.
     pub open: HashSet<String>,
     /// Tools & config: filter index and whether to list every registered tool.
@@ -55,6 +59,7 @@ impl Default for UiState {
             search: TextEdit::new(""),
             reset_scroll: false,
             zoom_percent: settings::DEFAULT_ZOOM,
+            theme: ThemeMode::default(),
             open: HashSet::new(),
             tools_filter: 0,
             tools_all: false,
@@ -437,6 +442,70 @@ fn topbar(s: &State, vp: &Viewport) -> El {
         .child(meta(env).key("environment").wrap())
 }
 
+/// Whether an open vehicle link can be commanded, always in view under the top bar: a
+/// simulation Drone Deck started (flight actions enabled), a read-only physical link, or a
+/// physical link bridged to QGroundControl / scripts, which can command the vehicle.
+fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
+    // Headless scenes show a link through preview evidence instead of an open link.
+    let preview = s.headless && s.vehicle.link.is_none() && s.vehicle.preview.is_some();
+    let link = s.vehicle.link.as_ref();
+    if link.is_none() && !preview {
+        return None;
+    }
+    let owner = s.vehicle.owner.as_deref().and_then(|id| s.systems.get(id));
+    let name = owner.map_or_else(String::new, |x| format!(" · {}", x.name.trim()));
+    let physical = owner.is_some_and(|x| matches!(x.source, crate::systems::Source::Physical { .. }))
+        || link.is_some_and(|l| l.origin() == crate::mavlink::LinkOrigin::Physical);
+    let (tone, title, detail) = if crate::vehicle::authority(s).may_fly() {
+        (
+            success(),
+            "Simulation",
+            "Flight actions and the PX4 console reach the simulator Drone Deck started.",
+        )
+    } else if physical && owner.is_some_and(crate::systems::physical_bridge) {
+        (
+            danger(),
+            "Physical vehicle · bridged",
+            "QGroundControl and scripts can command this vehicle through Drone Deck. Drone Deck itself only reads.",
+        )
+    } else if physical {
+        (
+            warn(),
+            "Physical vehicle · read-only",
+            "Drone Deck sends no flight commands or parameter writes to this vehicle.",
+        )
+    } else {
+        (
+            muted(),
+            "Simulation link · commands locked",
+            "Flight actions stay disabled until the link is the app's own simulator link (see System).",
+        )
+    };
+    // A template name ("Physical vehicle") would only repeat the title.
+    let name = if title.to_lowercase().contains(&name.trim_start_matches(" · ").to_lowercase()) {
+        String::new()
+    } else {
+        name
+    };
+    Some(
+        row()
+            .key("mode-banner")
+            .role("status")
+            .label(format!("{title}{name}"))
+            .w_full()
+            .min_w(0.)
+            .px(vp.gutter() - 4.)
+            .py(8.)
+            .gaps(4., 16.)
+            .center_y()
+            .flex_wrap()
+            .fill(tone.alpha(0.14))
+            .border_sides([0., 0., 0., 4.], tone)
+            .child(caps(format!("{title}{name}"), 11., 700., 0.08, tone))
+            .child(body(detail, 12., fg()).grow(1.)),
+    )
+}
+
 fn statusbar(s: &State, vp: &Viewport) -> El {
     row()
         .key("statusbar")
@@ -551,6 +620,7 @@ fn confirm_dialog(w: f32, h: f32, ask: Ask) -> [El; 2] {
 }
 
 pub(super) fn view(s: &State, cx: &mut Cx<State>) -> El {
+    theme::set_light(s.ui.theme.light(cx.system_dark()));
     let [physical_w, physical_h] = cx.layout_size("window-frame").unwrap_or([1280., 800.]);
     let zoom = s.ui.zoom_percent as f32 / 100.;
     let vp = Viewport {
@@ -598,6 +668,7 @@ pub(super) fn view(s: &State, cx: &mut Cx<State>) -> El {
             .min_h(0.)
             .h_full()
             .child(topbar(s, &vp))
+            .children(mode_banner(s, &vp))
             .child(
                 col()
                     .key("main-scroll")

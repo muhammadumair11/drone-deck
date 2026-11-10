@@ -2,9 +2,38 @@ use super::*;
 use serde::{Deserialize, Serialize};
 
 pub(super) const DEFAULT_ZOOM: u16 = 100;
+/// Interface palette: follow Windows' app mode (the default), or always dark or light.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum ThemeMode {
+    #[default]
+    System,
+    Dark,
+    Light,
+}
+impl ThemeMode {
+    pub(crate) const ALL: [ThemeMode; 3] = [ThemeMode::System, ThemeMode::Dark, ThemeMode::Light];
+    pub(crate) fn label(self) -> &'static str {
+        match self {
+            ThemeMode::System => "Follow Windows",
+            ThemeMode::Dark => "Dark",
+            ThemeMode::Light => "Light",
+        }
+    }
+    /// Whether to draw the light palette, given Windows' app mode.
+    pub(crate) fn light(self, system_dark: bool) -> bool {
+        match self {
+            ThemeMode::System => !system_dark,
+            ThemeMode::Dark => false,
+            ThemeMode::Light => true,
+        }
+    }
+}
 #[derive(Serialize, Deserialize)]
 struct Preferences {
     zoom_percent: u16,
+    #[serde(default)]
+    theme: ThemeMode,
 }
 fn preference_path() -> std::path::PathBuf {
     backend::root().join("ui-preferences.json")
@@ -15,6 +44,27 @@ pub(crate) fn restore(s: &mut State) {
     }
     if let Some(p) = crate::store::read_json::<Preferences>(&preference_path()) {
         s.ui.zoom_percent = p.zoom_percent.clamp(50, 150);
+        s.ui.theme = p.theme;
+    }
+}
+/// Writes zoom and theme to `ui-preferences.json`; the error text when that fails.
+fn save(s: &State) -> Result<(), String> {
+    if s.headless {
+        return Ok(());
+    }
+    crate::store::write_json(
+        &preference_path(),
+        &Preferences {
+            zoom_percent: s.ui.zoom_percent,
+            theme: s.ui.theme,
+        },
+    )
+}
+pub(crate) fn set_theme(s: &mut State, mode: ThemeMode) {
+    s.ui.theme = mode;
+    s.notice = format!("Theme: {}.", mode.label());
+    if let Err(e) = save(s) {
+        s.notice = format!("Theme changed, but preferences could not be saved: {e}");
     }
 }
 pub(crate) fn set_zoom(s: &mut State, value: i32) {
@@ -24,16 +74,8 @@ pub(crate) fn set_zoom(s: &mut State, value: i32) {
         "UI zoom: {}%. Ctrl+− / Ctrl++ to change, Ctrl+0 to reset.",
         s.ui.zoom_percent
     );
-    if !s.headless {
-        let result = crate::store::write_json(
-            &preference_path(),
-            &Preferences {
-                zoom_percent: s.ui.zoom_percent,
-            },
-        );
-        if let Err(e) = result {
-            s.notice = format!("Zoom changed, but preferences could not be saved: {e}");
-        }
+    if let Err(e) = save(s) {
+        s.notice = format!("Zoom changed, but preferences could not be saved: {e}");
     }
 }
 pub(crate) fn shortcuts(s: &mut State, event: &rune::KeyEvent, _: &mut Tx) -> bool {
@@ -58,6 +100,13 @@ pub(crate) fn shortcuts(s: &mut State, event: &rune::KeyEvent, _: &mut Tx) -> bo
         }
         Some(',') => {
             s.navigate(Page::Settings);
+            true
+        }
+        // Ctrl+1–4: the rail's pages, in rail order.
+        Some(c @ '1'..='4') => {
+            let page = RAIL[c as usize - '1' as usize].0;
+            s.ui.menu = false;
+            s.navigate(page);
             true
         }
         _ => false,

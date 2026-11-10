@@ -265,6 +265,34 @@ fn export_logs(s: &mut State) {
     };
 }
 
+/// Copies the process output the current filter shows (every kept line, not only the visible
+/// ones) to the clipboard.
+fn copy_logs(s: &mut State, tx: &mut rune::Tx) {
+    let ids = log_ids(s);
+    let filter = s
+        .activity
+        .filter
+        .clone()
+        .filter(|f| ids.len() > 1 && ids.iter().any(|id| id == f));
+    let lines: Vec<&str> = match &filter {
+        Some(id) => {
+            let prefix = format!("[{id}]");
+            s.logs
+                .iter()
+                .filter(|l| l.starts_with(&prefix))
+                .map(String::as_str)
+                .collect()
+        }
+        None => s.logs.iter().map(String::as_str).collect(),
+    };
+    if lines.is_empty() {
+        return;
+    }
+    let count = lines.len();
+    tx.copy(lines.join("\n"));
+    s.notice = format!("Copied {} of process output.", plural(count, "line"));
+}
+
 fn output(s: &State, vp: &Viewport) -> El {
     let compact = vp.compact();
     let ids = log_ids(s);
@@ -304,6 +332,10 @@ fn output(s: &State, vp: &Viewport) -> El {
         } else {
             plural(lines.len(), "line")
         }))
+        .child(
+            ghost("copy-logs", "Copy", !lines.is_empty(), |_| {})
+                .on_press_tx(|s: &mut State, tx| copy_logs(s, tx)),
+        )
         .child(ghost(
             "export-logs",
             "Export log",
@@ -346,6 +378,7 @@ fn output(s: &State, vp: &Viewport) -> El {
         view = view.child(
             code(line.as_str(), 11., line_color(line))
                 .wrap_anywhere()
+                .selectable(true)
                 .w_full(),
         );
     }
@@ -360,6 +393,7 @@ fn output(s: &State, vp: &Viewport) -> El {
                 .max_h((vp.h - 360.).clamp(220., 640.))
                 .border_sides([1., 0., 1., 0.], rule())
                 .scroll(ScrollSpec { stick_bottom: true })
+                .selection_group(true)
                 .child(view),
         )
         .child(

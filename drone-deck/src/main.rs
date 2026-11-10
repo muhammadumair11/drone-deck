@@ -6,6 +6,7 @@ mod diagnostics;
 mod guided;
 mod hardware;
 mod mavlink;
+mod notify;
 mod process_output;
 mod profile_editor;
 mod qgc_launch;
@@ -134,6 +135,11 @@ impl State {
         }
         diagnostics::startup(&mut state);
         state.setup.distro = TextEdit::new(&state.config.distro);
+        // First use: nothing is prepared yet, so open in Guided setup rather than on an empty
+        // System page. Its header returns to System.
+        if !headless && !state.systems.any_prepared() {
+            guided::open(&mut state);
+        }
         state
     }
     fn send(&self, r: Request) {
@@ -436,6 +442,9 @@ fn main() {
     }
     if let Err(error) = rune::set_app_icon(include_bytes!("../assets/drone-deck.png").as_slice()) {
         eprintln!("Drone Deck icon: {error}");
+    }
+    if std::env::args().len() == 1 {
+        notify::register();
     }
     let app = rune::App::new(AppSpec {
         min_size: Some((360., 320.)),

@@ -103,7 +103,11 @@ fn body(s: &State, reason: Option<String>) -> El {
             muted(),
         ))
     } else {
-        out.child(code(tail(&s.vehicle.console, SHOWN_LINES), 11., fg()).wrap_anywhere())
+        out.child(
+            code(tail(&s.vehicle.console, SHOWN_LINES), 11., fg())
+                .wrap_anywhere()
+                .selectable(true),
+        )
     };
     let mut input = field(&s.vehicle.ui.console_input, "console-input", "nsh> command")
         .on_edit(|s: &mut State| &mut s.vehicle.ui.console_input)
