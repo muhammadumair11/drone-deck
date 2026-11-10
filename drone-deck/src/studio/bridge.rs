@@ -67,18 +67,14 @@ fn windows_request(value: Value, tx: &Sender<Value>) -> Result<(), String> {
         .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
         .arg(directory.join("control.ps1"))
         .arg("-Root")
-        .arg(backend::root());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000);
-    }
-    let mut child = command
+        .arg(backend::root())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .map_err(|e| e.to_string())?;
+        .stderr(Stdio::null());
+    // The helper dies with Drone Deck; a model download it detaches breaks away from the
+    // helper job and keeps running, and the app re-attaches to it by its status files.
+    let (mut child, _) =
+        crate::winjob::spawn_helper(&mut command, 0x08000000).map_err(|e| e.to_string())?;
     child
         .stdin
         .take()

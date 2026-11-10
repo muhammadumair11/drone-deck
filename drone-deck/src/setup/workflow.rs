@@ -20,12 +20,26 @@ pub(crate) const PRESETS: &[(&str, &[&str])] = &[
     ),
     ("ArduPilot development", &["ardupilot", "qgc"]),
     ("Offline CPU inference", &["onnx"]),
-    ("Physical vehicle (read-only link)", &["qgc"]),
+    ("Physical vehicle", &["qgc"]),
     (
         "PX4 SIH with ROS 2 and recordings",
         &["px4", "ros2", "dds", "ros-workspace", "qgc"],
     ),
 ];
+
+/// Earlier names of presets (old name, current name). Checkpoints name their preset, so a
+/// checkpoint saved under an old name still resumes. "(read-only link)" was dropped because
+/// the preset installs QGroundControl, which is bridged both ways when enabled.
+const RENAMED: &[(&str, &str)] = &[("Physical vehicle (read-only link)", "Physical vehicle")];
+
+/// The position in [`PRESETS`] of the preset saved as `name`, current or earlier.
+pub(crate) fn preset_index(name: &str) -> Option<usize> {
+    let name = RENAMED
+        .iter()
+        .find(|(old, _)| *old == name)
+        .map_or(name, |(_, new)| new);
+    PRESETS.iter().position(|(n, _)| *n == name)
+}
 
 pub(crate) fn ids(s: &State) -> &'static [&'static str] {
     PRESETS[s.setup.workflow.min(PRESETS.len() - 1)].1

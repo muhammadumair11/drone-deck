@@ -95,7 +95,15 @@ fn a_launch_waits_for_the_router_then_the_link_and_stop_session_closes_both() {
     let mut s = live_state(distro);
     let sim = s.systems.active_id().to_string();
     assert!(s.bundle(systems::session_stages(s.systems.current())));
-    session::poll(&mut s);
+    // The Windows port is checked off the UI thread: the first frame only starts the probe.
+    assert!(!session::poll(&mut s));
+    assert!(!s.status.contains_key("sih"));
+    wait_for(LIMIT, || {
+        poll(&mut s);
+        session::poll(&mut s);
+        s.status.contains_key("sih").then_some(())
+    })
+    .expect("SIH starts once the port is known to be free");
     assert_eq!(s.status.get("sih").map(String::as_str), Some("Starting"));
     s.status.insert("sih".into(), "Running".into());
     session::poll(&mut s);
@@ -287,7 +295,18 @@ fn a_foreign_listener_on_the_simulator_port_refuses_the_launch() {
     let seen = router_agent(distro);
     let mut s = live_state(distro);
     let foreign = std::net::TcpListener::bind(("127.0.0.1", s.vehicle.sim_port)).expect("bind");
-    assert!(!s.bundle(systems::session_stages(s.systems.current())));
+    let until_ended = |s: &mut State| {
+        wait_for(LIMIT, || {
+            poll(s);
+            session::poll(s);
+            s.session.is_none().then_some(())
+        })
+        .expect("the launch ends");
+    };
+    // The launch begins and its first stage, checked off the UI thread, ends it.
+    assert!(s.bundle(systems::session_stages(s.systems.current())));
+    until_ended(&mut s);
+    assert!(s.notice.contains("stopped at sih"), "{}", s.notice);
     assert!(s.notice.contains("already listens on TCP"), "{}", s.notice);
     assert!(!s.status.contains_key("sih"), "the simulator did not start");
     let sih = s
@@ -296,21 +315,263 @@ fn a_foreign_listener_on_the_simulator_port_refuses_the_launch() {
         .iter()
         .position(|p| p.id == "sih")
         .unwrap();
+    std::thread::sleep(Duration::from_millis(1100));
     s.start(sih);
+    assert!(s.notice.contains("Checking that nothing"), "{}", s.notice);
+    wait_for(LIMIT, || {
+        poll(&mut s);
+        s.notice.contains("already listens on TCP").then_some(())
+    })
+    .expect("a direct start says why once the probe answers");
     assert!(!s.status.contains_key("sih"), "nor on its own");
 
     // The router stage refuses too (SIH already running, started elsewhere).
     s.session = Some(session::Launch::new(["router", "link"]));
-    session::poll(&mut s);
-    assert!(s.session.is_none(), "the launch ends at once");
+    until_ended(&mut s);
     assert!(s.notice.contains("stopped at router"), "{}", s.notice);
     assert!(s.notice.contains("already listens on TCP"), "{}", s.notice);
     assert!(!seen.methods().contains(&"router.start".to_string()));
     assert!(s.vehicle.link.is_none());
+    // The router station and the gate name the taken port, not "Not started" or a closed link.
+    let router = s.vehicle.router.error.clone().expect("router error");
+    assert!(router.contains("already listens on TCP"), "{router}");
+    let station = systems::state(&s, systems::component("router").unwrap());
+    assert_eq!(station, (router, systems::Tone::Bad));
+    let reason = gate_reason(&s).unwrap();
+    assert!(reason.contains("already listens on TCP"), "{reason}");
+    s.stop_all();
+    assert!(s.vehicle.router.error.is_none(), "Stop session clears it");
 
     // Once it is gone, the router may start.
     drop(foreign);
-    assert_eq!(stage::sim_port_taken(&s), None);
+    assert!(!port::probe(s.vehicle.sim_port));
+}
+
+/// A direct start (Tools, the runtime list) probes the port off the UI thread and starts once
+/// it is free; Stop session drops a start still waiting.
+#[test]
+fn a_direct_simulator_start_waits_for_the_port_check() {
+    let mut s = live_state("fake-b1-direct");
+    let sih = s
+        .config
+        .profiles
+        .iter()
+        .position(|p| p.id == "sih")
+        .unwrap();
+    s.start(sih);
+    assert!(
+        s.notice
+            .contains("Checking that nothing on Windows listens on TCP"),
+        "{}",
+        s.notice
+    );
+    assert!(!s.status.contains_key("sih"));
+    wait_for(LIMIT, || {
+        poll(&mut s);
+        s.status.contains_key("sih").then_some(())
+    })
+    .expect("started once the port is free");
+    assert_eq!(s.status.get("sih").map(String::as_str), Some("Starting"));
+
+    let mut s = live_state("fake-b1-direct-stop");
+    s.start(sih);
+    s.stop_all();
+    std::thread::sleep(Duration::from_millis(400));
+    for _ in 0..5 {
+        poll(&mut s);
+    }
+    assert!(!s.status.contains_key("sih"), "Stop session dropped it");
+}
+
+/// A direct start waiting for the port check stays with the system it was started for: once
+/// another system is active (or the system is gone) it is dropped with a notice instead of
+/// being claimed for whichever system is active when the probe answers.
+#[test]
+fn a_waiting_direct_start_is_dropped_when_the_system_changes() {
+    let until_answered = |s: &mut State| {
+        wait_for(LIMIT, || {
+            poll(s);
+            s.notice.contains("was not started").then_some(())
+        })
+        .unwrap_or_else(|| panic!("the probe answers: {}", s.notice));
+    };
+    let mut s = live_state("fake-b1-direct-switch");
+    let sih = s
+        .config
+        .profiles
+        .iter()
+        .position(|p| p.id == "sih")
+        .unwrap();
+    let home = s.systems.active_id().to_string();
+    let lab = s.systems.create(systems::SIMULATION, "Second lab");
+    s.start(sih);
+    assert!(s.notice.contains("Checking that nothing"), "{}", s.notice);
+    s.systems.set_active(&lab);
+    until_answered(&mut s);
+    assert!(
+        s.notice.contains("active system changed")
+            && s.notice.contains(s.systems.get(&home).unwrap().label()),
+        "{}",
+        s.notice
+    );
+    assert!(!s.status.contains_key("sih"), "nothing started");
+
+    // Started for the second lab, which is then deleted.
+    std::thread::sleep(Duration::from_millis(1100));
+    s.start(sih);
+    assert!(s.notice.contains("Checking that nothing"), "{}", s.notice);
+    s.systems.set_active(&home);
+    s.systems.remove(&lab).expect("removed");
+    until_answered(&mut s);
+    assert!(s.notice.contains("no longer exists"), "{}", s.notice);
+    assert!(!s.status.contains_key("sih"));
+}
+
+/// While the active system's launch has not finished its link stage, the gate says the launch
+/// is under way; another system's launch and a link closed under a running stack are named.
+#[test]
+fn the_gate_names_a_launch_under_way_and_a_closed_link() {
+    let mut s = State::new();
+    let sim = s.systems.active_id().to_string();
+    assert_eq!(
+        gate_reason(&s).unwrap(),
+        "No live link. Start the workspace of a simulated system first."
+    );
+    s.session = Some(session::Launch::new(systems::SESSIONS[systems::SIMULATION]));
+    let reason = gate_reason(&s).unwrap();
+    assert!(
+        reason.starts_with("Workspace launch under way: starting PX4 / SIH (stage 1 of 4)"),
+        "{reason}"
+    );
+    assert!(command(&mut s, CommandKind::Arm).is_err(), "still refused");
+
+    // The link stage: the preview link connects, the router has no client yet.
+    s.session = Some(session::Launch::new(["link", "qgc"]));
+    preview(&mut s, &sim, true, false);
+    s.vehicle.preview = Some(SimulationEvidence {
+        app_router_link: false,
+        simulator_source: true,
+        stack_owned_running: true,
+    });
+    let reason = gate_reason(&s).unwrap();
+    assert!(reason.starts_with("Workspace launch under way"), "{reason}");
+    // A foreign vehicle still wins over the launch note.
+    s.agent.router.as_mut().unwrap().foreign = 2;
+    assert!(gate_reason(&s).unwrap().contains("2 datagrams ignored"));
+
+    // Another system's launch.
+    let mut s = State::new();
+    let other = s.systems.create(systems::SIMULATION, "Other lab");
+    s.systems.set_active(&other);
+    s.systems.claim("session");
+    s.systems.set_active(&sim);
+    s.session = Some(session::Launch::new(["sih"]));
+    let reason = gate_reason(&s).unwrap();
+    assert!(
+        reason.contains("A workspace launch for Other lab is under way"),
+        "{reason}"
+    );
+
+    // The stack runs and no link was ever opened (a direct start from Tools).
+    let mut s = State::new();
+    let sim = s.systems.active_id().to_string();
+    s.systems.claim("sih");
+    s.status.insert("sih".into(), "Running".into());
+    let reason = gate_reason(&s).unwrap();
+    assert_eq!(
+        reason,
+        "No live link: PX4 / SIH runs, but no vehicle link was opened for it. Start the workspace to open the link."
+    );
+    // Its link was opened, then closed on its own.
+    s.vehicle.owner = Some(sim.clone());
+    s.vehicle.closed = true;
+    let reason = gate_reason(&s).unwrap();
+    assert!(
+        reason.contains("the vehicle link was closed while PX4 / SIH still runs"),
+        "{reason}"
+    );
+    // Another system's closed link says nothing about this one.
+    s.vehicle.owner = Some("other".into());
+    assert!(
+        gate_reason(&s)
+            .unwrap()
+            .contains("no vehicle link was opened")
+    );
+    // A launch that stopped at the router names the router's reason.
+    s.vehicle.router.error = Some(port::taken(5760));
+    let reason = gate_reason(&s).unwrap();
+    assert!(
+        reason.starts_with("No live link. Something on Windows already listens on TCP 5760"),
+        "{reason}"
+    );
+}
+
+/// ArduPilot SITL has no MAVLink shell: a console line is refused before it reaches the link.
+#[test]
+fn the_console_refuses_an_ardupilot_link() {
+    let fake = FakeVehicle::tcp();
+    let mut s = live_state("fake-b1-ardupilot");
+    s.vehicle.sim_port = fake.addr.port();
+    let ap = s.systems.create(systems::SIMULATION, "ArduPilot lab");
+    s.systems.get_mut(&ap).unwrap().source = systems::Source::ArduPilot {
+        vehicle: "copter".into(),
+    };
+    let px4 = s
+        .systems
+        .list
+        .iter()
+        .find(|x| matches!(x.source, systems::Source::Sih))
+        .map(|x| x.id.clone())
+        .unwrap();
+    assert!(
+        shell_unsupported(&s, &ap).is_some(),
+        "known from the source"
+    );
+    assert!(shell_unsupported(&s, &px4).is_none());
+    connect_sim(&mut s, &ap).expect("link");
+    wait_until_up(&mut s);
+    let refused = console_send(&mut s, "ver all").unwrap_err();
+    assert!(refused.contains("no MAVLink shell"), "{refused}");
+    // Ending the shell session is refused the same way, whatever the UI button allows.
+    let refused = console_close(&mut s).unwrap_err();
+    assert!(refused.contains("no MAVLink shell"), "{refused}");
+    std::thread::sleep(Duration::from_millis(300));
+    poll(&mut s);
+    assert!(
+        fake.received(|m| matches!(m, Msg::SERIAL_CONTROL(_)))
+            .is_empty()
+    );
+    disconnect(&mut s);
+}
+
+/// A simulation link that keeps retrying (its router is gone) can be closed on its own:
+/// the simulator keeps running and the gate says how to reconnect.
+#[test]
+fn a_retrying_simulation_link_disconnects_on_its_own() {
+    let mut s = live_state("fake-b1-retrying");
+    let sim = s.systems.active_id().to_string();
+    s.systems.claim("sih");
+    s.status.insert("sih".into(), "Running".into());
+    connect_sim(&mut s, &sim).expect("link");
+    std::thread::sleep(Duration::from_millis(200));
+    poll(&mut s);
+    assert!(
+        view::sim_link_stuck(&s),
+        "nothing listens: the link retries"
+    );
+    s.session = Some(session::Launch::new(["qgc"]));
+    assert!(!view::sim_link_stuck(&s), "not while a launch runs");
+    s.session = None;
+    view::disconnect_link(&mut s);
+    assert!(s.vehicle.link.is_none());
+    assert!(s.notice.starts_with("Vehicle link closed"), "{}", s.notice);
+    assert_eq!(s.status.get("sih").map(String::as_str), Some("Running"));
+    assert!(!view::sim_link_stuck(&s));
+    let reason = gate_reason(&s).unwrap();
+    assert!(
+        reason.contains("closed while PX4 / SIH still runs"),
+        "{reason}"
+    );
 }
 
 #[test]

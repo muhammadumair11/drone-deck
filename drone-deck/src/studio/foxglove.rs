@@ -4,21 +4,58 @@
 //! Windows cannot reach that path, or no app opens it from there, the file is copied to
 //! `<data root>\exports\` (directly, or by the agent's `pipe.export` when the share is not
 //! reachable) and the copy is opened. Live mode starts the owned `foxglove` profile
-//! (`foxglove_bridge` on port 8765, reached through WSL localhost forwarding) and opens Foxglove
-//! on its websocket once the profile runs.
+//! (`foxglove_bridge` on port 8765, reached through WSL localhost forwarding) and asks Windows to
+//! open Foxglove on its websocket once the profile runs and port 8765 accepts a TCP connection.
 use super::pipelines::Msg;
 use crate::*;
 use serde_json::json;
 use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpStream},
     path::{Path, PathBuf},
     process::Command,
+    sync::mpsc::{self, Receiver, TryRecvError},
 };
 
 pub(crate) const PROFILE: &str = "foxglove";
 pub(crate) const LIVE_URL: &str =
     "foxglove://open?ds=foxglove-websocket&ds.url=ws://localhost:8765";
-/// The websocket accepts connections shortly after the process starts.
-const LIVE_DELAY: Duration = Duration::from_millis(1500);
+/// The bridge's websocket as Windows reaches it (WSL localhost forwarding).
+pub(crate) const LIVE_ADDR: SocketAddr =
+    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8765));
+/// How long a running bridge may take to accept a connection before Live gives up.
+pub(crate) const LIVE_PORT_TIMEOUT: Duration = Duration::from_secs(20);
+/// Pause between connect attempts, and the limit of one attempt.
+const PROBE_EVERY: Duration = Duration::from_millis(250);
+const PROBE_CONNECT: Duration = Duration::from_millis(500);
+
+/// "Live in Foxglove" waiting for the bridge: first for the profile to run, then for its port
+/// to accept a TCP connection. Connect attempts run on a worker thread, one at a time.
+pub(crate) struct LiveWait {
+    pub addr: SocketAddr,
+    /// When the profile was first seen Running.
+    pub running: Option<Instant>,
+    probe: Option<Receiver<bool>>,
+    next_probe: Instant,
+}
+impl LiveWait {
+    pub(crate) fn new(addr: SocketAddr) -> Self {
+        Self {
+            addr,
+            running: None,
+            probe: None,
+            next_probe: Instant::now(),
+        }
+    }
+}
+
+/// One connect attempt to `addr` on a worker thread; true when it connected.
+fn probe(addr: SocketAddr) -> Receiver<bool> {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(TcpStream::connect_timeout(&addr, PROBE_CONNECT).is_ok());
+    });
+    rx
+}
 
 /// `\\wsl.localhost\<distro>\…` then `\\wsl$\<distro>\…` for a Linux path.
 pub(crate) fn unc_candidates(distro: &str, linux: &str) -> Vec<PathBuf> {
@@ -105,12 +142,10 @@ fn start_process(path: &Path) -> Result<(), String> {
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000);
-    }
-    let output = command.output().map_err(|e| e.to_string())?;
+    // The helper dies with Drone Deck; the app it opens breaks away and stays open.
+    let (child, _) =
+        crate::winjob::spawn_helper(&mut command, 0x08000000).map_err(|e| e.to_string())?;
+    let output = child.wait_with_output().map_err(|e| e.to_string())?;
     if output.status.success() {
         Ok(())
     } else {
@@ -209,7 +244,7 @@ pub(crate) fn live(s: &State) -> bool {
         .is_some_and(|v| v == "Running" || v == "Starting")
 }
 
-/// Starts or stops the owned `foxglove` bridge; Foxglove opens once it runs.
+/// Starts or stops the owned `foxglove` bridge; Windows is asked to open Foxglove once port 8765 accepts connections.
 pub(crate) fn toggle_live(s: &mut State) {
     if s.headless {
         s.notice = "Headless preview · the Foxglove bridge does not start.".into();
@@ -228,34 +263,84 @@ pub(crate) fn toggle_live(s: &mut State) {
     };
     s.start(index);
     if live(s) {
-        s.studio.pipes.live_pending = Some(Instant::now());
-        s.studio.pipes.message =
-            "Starting the Foxglove bridge on port 8765; Foxglove opens when it runs.".into();
+        s.studio.pipes.live_pending = Some(LiveWait::new(LIVE_ADDR));
+        s.studio.pipes.message = "Starting the Foxglove bridge on port 8765; Drone Deck asks Windows to open Foxglove once the port accepts connections.".into();
         activity::record(s, "Started the Foxglove bridge for Live in Foxglove");
     }
 }
 
-/// Opens Foxglove once a requested bridge runs; drops the request if the bridge stops.
+/// Shown when the port check passes. The check proves only that something on `127.0.0.1:8765`
+/// accepts a TCP connection, and `open` only hands the `foxglove://` link to Windows.
+pub(crate) const LIVE_OPENED: &str = "Port 8765 accepts connections; asked Windows to open Foxglove on ws://localhost:8765. Any program listening on that port passes this check, and Drone Deck does not check that Foxglove started.";
+
+/// What one poll of a Live wait decided.
+enum Step {
+    Wait,
+    /// The profile runs and the port check started: say so once.
+    Probing,
+    Open,
+    Failed(String),
+}
+
+/// Opens Foxglove once a requested bridge runs and its port accepts a connection; gives up
+/// when the bridge stops, or when the port stays closed for [`LIVE_PORT_TIMEOUT`]. Never
+/// blocks: connect attempts run on a worker thread and their results are read here.
 pub(crate) fn poll(s: &mut State) -> bool {
-    let Some(since) = s.studio.pipes.live_pending else {
+    let status = s.status.get(PROFILE).cloned();
+    let Some(wait) = &mut s.studio.pipes.live_pending else {
         return false;
     };
-    match s.status.get(PROFILE).map(String::as_str) {
-        Some("Running") if since.elapsed() >= LIVE_DELAY => {
-            s.studio.pipes.live_pending = None;
-            s.open(LIVE_URL.into());
-            s.studio.pipes.message =
-                "Foxglove opened on ws://localhost:8765 (the owned foxglove_bridge).".into();
+    let step = match status.as_deref() {
+        Some("Starting") => Step::Wait,
+        Some("Running") => live_step(wait, Instant::now()),
+        other => Step::Failed(format!(
+            "The Foxglove bridge did not start ({}). See Activity → Process output.",
+            other.unwrap_or("not running")
+        )),
+    };
+    let p = &mut s.studio.pipes;
+    match step {
+        Step::Wait => false,
+        Step::Probing => {
+            p.message = "foxglove_bridge runs; waiting for port 8765 to accept a connection before opening Foxglove…".into();
             true
         }
-        Some("Running") | Some("Starting") => false,
-        other => {
-            s.studio.pipes.live_pending = None;
-            s.studio.pipes.message = format!(
-                "The Foxglove bridge did not start ({}). See Activity → Process output.",
-                other.unwrap_or("not running")
-            );
+        Step::Open => {
+            p.live_pending = None;
+            p.message = LIVE_OPENED.into();
+            s.open(LIVE_URL.into());
+            true
+        }
+        Step::Failed(text) => {
+            p.live_pending = None;
+            p.message = text;
             true
         }
     }
+}
+
+fn live_step(wait: &mut LiveWait, now: Instant) -> Step {
+    let first = wait.running.is_none();
+    let since = *wait.running.get_or_insert(now);
+    if let Some(rx) = &wait.probe {
+        match rx.try_recv() {
+            Ok(true) => return Step::Open,
+            Ok(false) | Err(TryRecvError::Disconnected) => {
+                wait.probe = None;
+                wait.next_probe = now + PROBE_EVERY;
+            }
+            Err(TryRecvError::Empty) => return Step::Wait,
+        }
+    }
+    if now.duration_since(since) >= LIVE_PORT_TIMEOUT {
+        return Step::Failed(format!(
+            "foxglove_bridge runs, but port {} did not accept a connection within {}s, so Foxglove was not opened. The bridge may have failed to bind the port, or WSL localhost forwarding is off. See Activity → Process output.",
+            wait.addr.port(),
+            LIVE_PORT_TIMEOUT.as_secs()
+        ));
+    }
+    if now >= wait.next_probe {
+        wait.probe = Some(probe(wait.addr));
+    }
+    if first { Step::Probing } else { Step::Wait }
 }

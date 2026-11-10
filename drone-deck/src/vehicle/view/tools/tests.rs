@@ -60,7 +60,8 @@ fn export_load_and_diff_round_trip() {
     // A quoted path, as Explorer's "Copy as path" gives it.
     s.hardware.params_file = TextEdit::new(format!("\"{}\"", path.display()));
     hardware::load_baseline(&mut s);
-    let b = s.hardware.baseline.as_ref().expect("loaded");
+    hardware::finish_loading(&mut s);
+    let b = s.hardware.baseline(s.systems.active_id()).expect("loaded");
     assert_eq!(b.set.params, params.params, "every value survives the file");
     assert!(b.bad.is_empty());
     assert!(
@@ -80,7 +81,7 @@ fn export_load_and_diff_round_trip() {
     std::fs::remove_file(&path).ok();
 
     hardware::clear_baseline(&mut s);
-    assert!(s.hardware.baseline.is_none() && !s.hardware.params_changed);
+    assert!(s.hardware.baseline(s.systems.active_id()).is_none() && !s.hardware.params_changed);
 }
 
 #[test]
@@ -124,11 +125,13 @@ fn rows_mark_changed_added_and_removed_and_filter_by_search() {
 fn loading_refuses_missing_and_unreadable_files_and_reports_bad_lines() {
     let mut s = State::new();
     hardware::load_baseline(&mut s);
+    hardware::finish_loading(&mut s);
     assert!(s.notice.contains("Enter the path"));
     s.hardware.params_file = TextEdit::new("Z:/no/such/file.params");
     hardware::load_baseline(&mut s);
+    hardware::finish_loading(&mut s);
     assert!(s.notice.starts_with("Could not read"), "{}", s.notice);
-    assert!(s.hardware.baseline.is_none());
+    assert!(s.hardware.baseline(s.systems.active_id()).is_none());
 
     let dir = std::env::temp_dir().join(format!("drone-deck-b3-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
@@ -136,8 +139,9 @@ fn loading_refuses_missing_and_unreadable_files_and_reports_bad_lines() {
     std::fs::write(&junk, "not a parameter\nfile at all\n").unwrap();
     s.hardware.params_file = TextEdit::new(junk.display().to_string());
     hardware::load_baseline(&mut s);
+    hardware::finish_loading(&mut s);
     assert!(s.notice.starts_with("No parameters found"), "{}", s.notice);
-    assert!(s.hardware.baseline.is_none());
+    assert!(s.hardware.baseline(s.systems.active_id()).is_none());
 
     let mixed = dir.join("mixed.params");
     std::fs::write(
@@ -147,7 +151,8 @@ fn loading_refuses_missing_and_unreadable_files_and_reports_bad_lines() {
     .unwrap();
     s.hardware.params_file = TextEdit::new(mixed.display().to_string());
     hardware::load_baseline(&mut s);
-    let b = s.hardware.baseline.as_ref().expect("loaded");
+    hardware::finish_loading(&mut s);
+    let b = s.hardware.baseline(s.systems.active_id()).expect("loaded");
     assert_eq!(b.set.params.len(), 2);
     assert_eq!(b.bad, [3]);
     assert!(
@@ -173,7 +178,9 @@ fn physical_tools_expose_no_write_control() {
         "Open exports folder ↗",
         "Compare later with this file",
         "Load and compare",
+        "Loading…",
         "Clear comparison",
+        "Stop waiting",
         "Changed only",
         "List logs",
         "List again",
@@ -449,11 +456,20 @@ fn the_tools_read_a_fake_vehicle_end_to_end_and_never_write_to_it() {
             .any(|t| t.starts_with("50 parameters") && !t.contains("last fetch"))
     );
     tap(&mut rt, "params-export");
-    let exported = rt.state.hardware.exported.clone().expect("exported");
+    let exported = rt.state.hardware.exported(&id).cloned().expect("exported");
     assert!(exported.is_file());
     tap(&mut rt, "params-compare-export");
     tap(&mut rt, "params-load");
-    let b = rt.state.hardware.baseline.as_ref().expect("compared");
+    assert!(
+        !rt.state.hardware.loads.is_empty(),
+        "the file is read off the UI thread"
+    );
+    hardware::finish_loading(&mut rt.state);
+    let b = rt
+        .state
+        .hardware
+        .baseline(rt.state.systems.active_id())
+        .expect("compared");
     assert_eq!(
         rows(rt.state.vehicle.params.as_ref(), Some(&b.set), "", true),
         [],
@@ -545,4 +561,316 @@ fn a_dataflash_download_offers_its_folder_not_flight_logs() {
         rt.find("logs-open-flight").is_none(),
         "Flight logs lists ULog files only"
     );
+}
+
+/// UI-04: an export is offered for a later comparison only on the system it was made for.
+#[test]
+fn an_export_is_offered_only_for_the_system_it_was_made_for() {
+    let mut rt = runtime(1440., 900., preview_params);
+    let first = rt.state.systems.active_id().to_string();
+    show(&mut rt, "vehicle-params");
+    assert!(rt.find("params-exported").is_some());
+
+    let other = rt
+        .state
+        .systems
+        .create(crate::systems::PHYSICAL, "Second airframe");
+    rt.update(move |s, _| {
+        s.select_system(&other);
+    });
+    show(&mut rt, "vehicle-tools");
+    assert!(
+        rt.find("params-exported").is_none(),
+        "another system's export is not offered"
+    );
+    assert!(
+        rt.state.hardware.exported(&first).is_some(),
+        "kept for its own system"
+    );
+
+    rt.update(move |s, _| {
+        s.select_system(&first);
+    });
+    show(&mut rt, "vehicle-params");
+    assert!(rt.find("params-exported").is_some());
+}
+
+/// PERF-01: Load and compare reads on a worker. While it reads, the button says so and is
+/// disabled; the result lands through `hardware::poll`, which reports a change only then.
+#[test]
+fn load_and_compare_reads_off_the_ui_thread_and_lands_through_poll() {
+    let mut rt = runtime(1440., 900., preview_params);
+    hardware::clear_baseline(&mut rt.state);
+    let tx = hardware::hold_loading(&mut rt.state, r"\\offline-share\params\old.params");
+    show(&mut rt, "params-compare");
+    assert!(rt.find("params-loading").is_some());
+    let load = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("params-load"))
+        .unwrap();
+    assert_eq!(load.label.as_deref(), Some("Loading…"));
+    rt.update(|s, _| s.notice.clear());
+    tap(&mut rt, "params-load");
+    assert!(rt.state.notice.is_empty(), "a disabled Load does nothing");
+    assert!(!hardware::poll(&mut rt.state), "nothing landed yet");
+
+    tx.send(Err(
+        "Could not read the file: the network path was not found.".into(),
+    ))
+    .unwrap();
+    assert!(hardware::poll(&mut rt.state));
+    assert!(rt.state.hardware.loads.is_empty());
+    assert!(
+        rt.state.notice.contains("network path"),
+        "{}",
+        rt.state.notice
+    );
+    assert!(!hardware::poll(&mut rt.state), "idle again");
+
+    // A load the user stops waiting for is dropped, whatever it returns later.
+    let tx = hardware::hold_loading(&mut rt.state, "slow.params");
+    show(&mut rt, "params-clear");
+    tap(&mut rt, "params-clear");
+    assert!(rt.state.hardware.loads.is_empty());
+    assert!(rt.state.notice.contains("Stopped waiting"));
+    assert!(
+        tx.send(Err(String::new())).is_err(),
+        "nobody listens any more"
+    );
+    assert!(!hardware::poll(&mut rt.state));
+}
+
+fn params_file(tag: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("drone-deck-left-{tag}-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("bench.params");
+    std::fs::write(
+        &file,
+        "# Onboard parameters\n1\t1\tMAV_SYS_ID\t1\t6\n1\t1\tMIS_TAKEOFF_ALT\t2.5\t9\n",
+    )
+    .unwrap();
+    file
+}
+
+/// A headless scene has no poll loop to land a worker's result, so Load and compare reads at
+/// once there instead of staying on "Loading…".
+#[test]
+fn load_and_compare_lands_at_once_in_a_headless_scene() {
+    let mut rt = runtime(1440., 900., preview_params);
+    assert!(rt.state.headless);
+    let file = params_file("headless");
+    rt.update({
+        let file = file.clone();
+        move |s, _| {
+            hardware::clear_baseline(s);
+            s.hardware.params_file = TextEdit::new(file.display().to_string());
+        }
+    });
+    tap(&mut rt, "params-load");
+    assert!(rt.state.hardware.loads.is_empty(), "nothing left reading");
+    let b = rt
+        .state
+        .hardware
+        .baseline(rt.state.systems.active_id())
+        .expect("landed");
+    assert_eq!(b.set.params.len(), 2);
+    assert!(
+        rt.state.notice.starts_with("Loaded 2 parameters"),
+        "{}",
+        rt.state.notice
+    );
+    show(&mut rt, "params-compare");
+    assert!(rt.find("params-loading").is_none());
+    assert!(rt.find("params-baseline").is_some());
+    let load = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("params-load"))
+        .unwrap();
+    assert_eq!(load.label.as_deref(), Some("Load and compare"));
+    std::fs::remove_dir_all(file.parent().unwrap()).ok();
+}
+
+/// UI-09: a loaded comparison and a load still reading belong to the system they were
+/// started for. Another system shows neither, and a load finishing after a switch lands for
+/// its own system (or is dropped when that system is gone).
+#[test]
+fn comparisons_and_loads_are_kept_per_system() {
+    let mut rt = runtime(1440., 900., preview_params);
+    let first = rt.state.systems.active_id().to_string();
+    let first_name = rt.state.systems.current().label().to_string();
+    show(&mut rt, "params-compare");
+    assert!(rt.find("params-baseline").is_some());
+
+    let other = rt
+        .state
+        .systems
+        .create(crate::systems::PHYSICAL, "Second airframe");
+    rt.update({
+        let other = other.clone();
+        move |s, _| {
+            s.select_system(&other);
+        }
+    });
+    show(&mut rt, "params-compare");
+    assert!(
+        rt.find("params-baseline").is_none(),
+        "another system's comparison is not shown"
+    );
+    let clear = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("params-clear"))
+        .unwrap();
+    assert_eq!(clear.label.as_deref(), Some("Clear comparison"));
+    hardware::clear_baseline(&mut rt.state);
+    assert!(
+        rt.state.hardware.baseline(&first).is_some(),
+        "clearing on one system keeps the other's"
+    );
+
+    // A load started on the first system and finished while the second is active.
+    rt.update({
+        let first = first.clone();
+        move |s, _| {
+            s.select_system(&first);
+        }
+    });
+    let tx = hardware::hold_loading(&mut rt.state, "first.params");
+    rt.update({
+        let other = other.clone();
+        move |s, _| {
+            s.select_system(&other);
+        }
+    });
+    show(&mut rt, "params-compare");
+    assert!(
+        rt.find("params-loading").is_none(),
+        "not this system's load"
+    );
+    let set = ParamSet {
+        params: crate::hardware::fake_params()
+            .params
+            .into_iter()
+            .take(3)
+            .collect(),
+        ..ParamSet::default()
+    };
+    tx.send(Ok(hardware::Baseline {
+        path: "first.params".into(),
+        set,
+        bad: Vec::new(),
+    }))
+    .unwrap();
+    assert!(hardware::poll(&mut rt.state));
+    assert_eq!(
+        rt.state
+            .hardware
+            .baseline(&first)
+            .map(|b| b.set.params.len()),
+        Some(3),
+        "landed for the system it was started for"
+    );
+    assert!(rt.state.hardware.baseline(&other).is_none());
+    assert!(
+        rt.state.notice.contains(&format!("for {first_name}")),
+        "{}",
+        rt.state.notice
+    );
+
+    // A load whose system was removed before it finished is dropped with a notice.
+    let gone = rt
+        .state
+        .systems
+        .create(crate::systems::PHYSICAL, "Retired airframe");
+    rt.update({
+        let gone = gone.clone();
+        move |s, _| {
+            s.select_system(&gone);
+        }
+    });
+    let tx = hardware::hold_loading(&mut rt.state, "retired.params");
+    rt.update({
+        let other = other.clone();
+        move |s, _| {
+            s.select_system(&other);
+        }
+    });
+    rt.state.systems.remove(&gone).expect("removed");
+    tx.send(Err("late".into())).unwrap();
+    assert!(hardware::poll(&mut rt.state));
+    assert!(
+        rt.state.notice.starts_with("Dropped retired.params"),
+        "{}",
+        rt.state.notice
+    );
+    assert!(rt.state.hardware.loads.is_empty());
+}
+
+/// A deleted system takes its comparison, load and export with it: a new system that gets
+/// the same id (the same name) starts with none of them.
+#[test]
+fn deleting_a_system_forgets_its_comparison_load_and_export() {
+    let mut rt = runtime(1440., 900., preview_params);
+    let first = rt.state.systems.active_id().to_string();
+    let spare = rt
+        .state
+        .systems
+        .create(crate::systems::PHYSICAL, "Spare airframe");
+    rt.update({
+        let (spare, first) = (spare.clone(), first.clone());
+        move |s, _| {
+            s.select_system(&spare);
+            s.hardware.baselines.insert(
+                spare.clone(),
+                hardware::Baseline {
+                    path: "spare.params".into(),
+                    set: ParamSet::default(),
+                    bad: Vec::new(),
+                },
+            );
+            s.hardware
+                .exports
+                .insert(spare.clone(), PathBuf::from("spare.params"));
+            s.select_system(&first);
+        }
+    });
+    let _tx = {
+        rt.update({
+            let spare = spare.clone();
+            move |s, _| {
+                s.select_system(&spare);
+            }
+        });
+        let tx = hardware::hold_loading(&mut rt.state, "spare-late.params");
+        rt.update({
+            let first = first.clone();
+            move |s, _| {
+                s.select_system(&first);
+            }
+        });
+        tx
+    };
+    rt.update(|s, _| s.navigate(Page::Settings));
+    rt.frame(0.1);
+    let i = rt.state.systems.position(&spare).unwrap();
+    tap(&mut rt, &format!("system-delete-{i}"));
+    tap(&mut rt, "confirm-delete-system");
+    assert!(
+        rt.state.systems.get(&spare).is_none(),
+        "{}",
+        rt.state.notice
+    );
+
+    let again = rt
+        .state
+        .systems
+        .create(crate::systems::PHYSICAL, "Spare airframe");
+    assert_eq!(again, spare, "the same name takes the same id");
+    let h = &rt.state.hardware;
+    assert!(h.baseline(&again).is_none());
+    assert!(h.loading(&again).is_none());
+    assert!(h.exported(&again).is_none());
+    assert!(h.baseline(&first).is_some(), "other systems keep theirs");
 }

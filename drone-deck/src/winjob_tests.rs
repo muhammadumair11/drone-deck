@@ -92,3 +92,91 @@ fn the_shared_job_accepts_children() {
     child.kill().unwrap();
     child.wait().unwrap();
 }
+
+#[cfg(windows)]
+mod process {
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        pub fn OpenProcess(access: u32, inherit: i32, pid: u32) -> isize;
+        pub fn GetExitCodeProcess(process: isize, code: *mut u32) -> i32;
+        pub fn TerminateProcess(process: isize, code: u32) -> i32;
+        pub fn IsProcessInJob(process: isize, job: isize, result: *mut i32) -> i32;
+    }
+    /// Query, terminate and wait rights.
+    pub const ACCESS: u32 = 0x1000 | 0x0001 | 0x0010_0000;
+    pub const STILL_ACTIVE: u32 = 259;
+}
+
+/// A helper (PowerShell) that starts `ping.exe` the way the setup and Studio helpers detach
+/// their workers (`Start-Process`), prints the worker's id and then waits.
+#[cfg(windows)]
+fn detaching_helper() -> Command {
+    let mut c = Command::new("powershell.exe");
+    c.args([
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "$p = Start-Process ping.exe -ArgumentList '-n','30','127.0.0.1' -WindowStyle Hidden \
+         -PassThru; [Console]::Out.WriteLine($p.Id); [Console]::Out.Flush(); Start-Sleep 30",
+    ])
+    .stdin(Stdio::null())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::null());
+    c
+}
+
+#[cfg(windows)]
+#[test]
+fn a_helper_dies_with_its_job_while_the_worker_it_starts_breaks_away() {
+    use std::io::BufRead;
+    let job = Job::for_helpers().expect("helper job");
+    let (mut helper, assigned) = job
+        .spawn(&mut detaching_helper(), 0x08000000)
+        .expect("powershell.exe starts");
+    assigned.expect("the helper is in the job");
+    let mut line = String::new();
+    std::io::BufReader::new(helper.stdout.take().unwrap())
+        .read_line(&mut line)
+        .expect("the helper prints its worker's id");
+    let pid: u32 = line.trim().parse().expect("a process id");
+    let worker = unsafe { process::OpenProcess(process::ACCESS, 0, pid) };
+    assert_ne!(worker, 0, "the worker {pid} runs");
+    let mut inside = 1;
+    let ok = unsafe { process::IsProcessInJob(worker, job.handle, &mut inside) };
+    assert!(ok != 0 && inside == 0, "the worker broke away from the job");
+    drop(job);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while helper.try_wait().unwrap().is_none() {
+        assert!(Instant::now() < deadline, "the helper outlived its job");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    let mut code = 0;
+    unsafe { process::GetExitCodeProcess(worker, &mut code) };
+    let survived = code == process::STILL_ACTIVE;
+    unsafe {
+        process::TerminateProcess(worker, 1);
+        ffi::CloseHandle(worker);
+    }
+    assert!(survived, "the detached worker survives the helper's job");
+}
+
+#[cfg(windows)]
+#[test]
+fn the_shared_helper_job_accepts_helpers_and_is_described() {
+    let mut c = Command::new("ping.exe");
+    c.args(["-n", "60", "127.0.0.1"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    let (mut child, assigned) = spawn_helper(&mut c, 0x08000000).expect("ping.exe starts");
+    assigned.expect("assign to the helper job");
+    assert!(child.try_wait().unwrap().is_none(), "the child was resumed");
+    let text = describe();
+    assert!(text.starts_with("Job object: kill on close"), "{text}");
+    assert!(
+        text.contains("Helper job: kill on close, children break away; "),
+        "{text}"
+    );
+    child.kill().unwrap();
+    child.wait().unwrap();
+}

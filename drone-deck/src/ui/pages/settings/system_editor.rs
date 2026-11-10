@@ -174,6 +174,23 @@ fn consumers(d: &Draft, compact: bool) -> El {
             "127.0.0.1:14540",
             |s| &mut draft(s).scripts_udp,
         ));
+        if let Some(problem) = d.scripts_problem() {
+            fields = fields.child(
+                body(problem, 11., danger())
+                    .key("system-scripts-invalid")
+                    .role("status")
+                    .wrap()
+                    .max_w(620.),
+            );
+        } else if let Some(caution) = d.caution() {
+            fields = fields.child(
+                body(caution, 11., warn())
+                    .key("system-scripts-network")
+                    .role("status")
+                    .wrap()
+                    .max_w(620.),
+            );
+        }
     }
     let consumers = pair(boxes, fields, compact);
     if d.source == 3 && (d.qgc || d.scripts) {

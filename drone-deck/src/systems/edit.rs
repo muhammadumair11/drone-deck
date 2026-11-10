@@ -4,6 +4,7 @@ use super::model::{
     Source, System,
 };
 use rune::TextEdit;
+use std::net::SocketAddr;
 
 pub(crate) struct Draft {
     /// The system being edited.
@@ -57,6 +58,35 @@ pub(crate) fn udp_address_ok(text: &str) -> bool {
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-')
         && port.parse::<u16>().is_ok_and(|p| p > 0)
+}
+
+/// What is wrong with a scripts address, or `None` for an `ip:port` the vehicle link forwards
+/// to. The link sends only to addresses that parse as an IP address and port: a host name
+/// (`localhost` included) is never resolved, and the unspecified 0.0.0.0 reaches no other
+/// computer.
+pub(crate) fn scripts_address_error(text: &str) -> Option<String> {
+    let addr = text.trim();
+    match addr.parse::<SocketAddr>() {
+        Ok(a) if a.port() == 0 => {
+            Some("The scripts port is a number from 1 to 65535, as in 127.0.0.1:14540.".into())
+        }
+        Ok(a) if a.ip().is_unspecified() => Some(format!(
+            "{addr} is a listen address, not a destination: nothing sent to it reaches another computer. Use 127.0.0.1:14540 for scripts on this computer, or the other computer's IP address."
+        )),
+        Ok(_) => None,
+        Err(_) if udp_address_ok(addr) => Some(format!(
+            "{addr} names a host. Host names are not resolved, so nothing would be forwarded to it. Use an IP address such as 127.0.0.1:14540 or 192.168.1.20:14540."
+        )),
+        Err(_) => Some("User scripts listen on an ip:port such as 127.0.0.1:14540.".into()),
+    }
+}
+
+/// Whether a scripts address is a real IP address on another computer: an `ip:port` that is
+/// neither loopback nor unspecified. A host name never counts: it is refused, not forwarded.
+pub(crate) fn off_this_computer(addr: &str) -> bool {
+    addr.trim()
+        .parse::<SocketAddr>()
+        .is_ok_and(|a| !a.ip().is_loopback() && !a.ip().is_unspecified())
 }
 
 /// `serial:COMn:baud`, `udp:host:port` or `tcp:host:port`, or empty (chosen later).
@@ -132,6 +162,24 @@ impl Draft {
         }
     }
 
+    /// Why the scripts address can't be saved, shown under the field as it is typed.
+    pub fn scripts_problem(&self) -> Option<String> {
+        scripts_address_error(&self.scripts_udp.text)
+    }
+
+    /// A caution that does not block saving: a physical system whose scripts consumer sends to
+    /// another computer. The bridge forwards both ways, so that computer gets the vehicle's
+    /// telemetry and what it sends reaches the vehicle.
+    pub fn caution(&self) -> Option<String> {
+        let addr = self.scripts_udp.text.trim();
+        (self.source == 3 && self.scripts && off_this_computer(addr))
+            .then(|| {
+                format!(
+                    "{addr} is not this computer. With scripts on, the computer at that address receives this vehicle's telemetry and can command the vehicle through the bridge. Use 127.0.0.1 unless that computer should control it."
+                )
+            })
+    }
+
     /// `base` with this draft's name, source and consumers, or what to fix first.
     pub fn apply(&self, base: &System) -> Result<System, String> {
         let name = super::clean_name(&self.name.text)?;
@@ -199,8 +247,11 @@ impl Draft {
             return Err("The project is a project name from Data & models → Projects.".into());
         }
         let scripts_udp = self.scripts_udp.text.trim();
-        if scripts && !udp_address_ok(scripts_udp) {
-            return Err("User scripts listen on a host:port such as 127.0.0.1:14540.".into());
+        if let Some(e) = scripts
+            .then(|| scripts_address_error(scripts_udp))
+            .flatten()
+        {
+            return Err(e);
         }
         let mut sys = base.clone();
         sys.name = name;

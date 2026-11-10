@@ -1,17 +1,13 @@
 //! Virtual launch stages: `router` (the agent's MAVLink router in WSL, UDP 14550 ⇄ TCP 5760)
 //! and `link` (the native service on `tcp:127.0.0.1:5760`). `session.rs` asks [`stage`] for
 //! them instead of starting a profile.
-use super::{ROUTER_UDP_PORT, SIM_TCP_PORT, connect_sim, sim_port};
+use super::{ROUTER_UDP_PORT, SIM_TCP_PORT, connect_sim};
 use crate::State;
 use crate::agent::{RouterStatus, Ticket, shared};
 use serde_json::json;
-use std::io::ErrorKind;
-use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::time::Duration;
 
 const ROUTER_TIMEOUT: Duration = Duration::from_secs(15);
-/// A listener on loopback accepts at once; this only bounds the wait on a free port.
-const PROBE_TIMEOUT: Duration = Duration::from_millis(150);
 
 /// The router as this app controls it.
 #[derive(Default)]
@@ -43,7 +39,7 @@ fn router_state(s: &State) -> &str {
 /// The router this app started reports itself up (listening or forwarding). False once the
 /// agent restarted or the router stopped or failed, whatever `started` still says.
 pub(crate) fn router_up(s: &State) -> bool {
-    s.vehicle.router.started && matches!(router_state(s), "listening" | "forwarding")
+    s.vehicle.router.started && router_listening(s)
 }
 
 /// The router reports a TCP client. While the app's link is up that client is the link, so
@@ -52,30 +48,9 @@ pub(crate) fn router_has_client(s: &State) -> bool {
     s.agent.router.as_ref().is_some_and(|r| r.clients >= 1)
 }
 
-/// Why the simulator port can't be the app's own: something on Windows already accepts
-/// connections on it (MAVProxy, mavlink-router, Mission Planner…), so WSL's localhost
-/// forwarding can't take it and the link would reach that program instead of the simulator.
-/// `None` when the port is free. Headless previews never probe.
-pub(crate) fn sim_port_taken(s: &State) -> Option<String> {
-    if s.headless {
-        return None;
-    }
-    let port = sim_port(s);
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    // Windows may let a specific bind succeed while another socket holds 0.0.0.0, so a free
-    // bind is followed by a connect.
-    let taken = match TcpListener::bind(addr) {
-        Err(e) => e.kind() == ErrorKind::AddrInUse,
-        Ok(listener) => {
-            drop(listener);
-            TcpStream::connect_timeout(&addr, PROBE_TIMEOUT).is_ok()
-        }
-    };
-    taken.then(|| {
-        format!(
-            "Something on Windows already listens on TCP {port} (MAVProxy, mavlink-router, Mission Planner…). Stop it first: Drone Deck would connect to it instead of the simulator."
-        )
-    })
+/// The agent runs a router that is up, whoever started it.
+pub(crate) fn router_listening(s: &State) -> bool {
+    matches!(router_state(s), "listening" | "forwarding")
 }
 
 /// The app's router is starting or running.
@@ -94,14 +69,9 @@ fn start_router(s: &mut State) -> Stage {
         s.vehicle.router.error = Some(message.clone());
         return Stage::Failed(message);
     };
-    // A router the agent already runs is joined: it holds the port itself, and the gate
-    // checks that the link is its client.
-    if !matches!(router_state(s), "listening" | "forwarding")
-        && let Some(message) = sim_port_taken(s)
-    {
-        s.vehicle.router.error = Some(message.clone());
-        return Stage::Failed(message);
-    }
+    // `session.rs` checked the Windows port first (`port::check`). A router the agent already
+    // runs is joined: it holds the port itself, and the gate checks that the link is its
+    // client.
     s.vehicle.router.error = None;
     s.vehicle.router.pending = Some(client.request(
         "router.start",

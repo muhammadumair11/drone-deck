@@ -19,6 +19,22 @@ fn workspace_does_not_start_later_steps_before_readiness() {
     assert!(!s.status.contains_key("qgc"));
 }
 
+/// The launch's seconds count is drawn on the System page only, so it redraws nothing on
+/// other pages.
+#[test]
+fn the_launch_wait_ticks_only_on_the_system_page() {
+    let mut s = State::new();
+    s.session = Some(session::Launch::new(["dds"]));
+    assert!(session::poll(&mut s), "the stage is requested");
+    std::thread::sleep(std::time::Duration::from_millis(1100));
+    s.page = ui::Page::Activity;
+    assert!(!session::poll(&mut s), "another page: no tick");
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+    s.page = ui::Page::System;
+    assert!(session::poll(&mut s), "the System page ticks");
+    assert!(!session::poll(&mut s), "same second");
+}
+
 #[test]
 fn a_failed_profile_stage_stops_the_launch() {
     let mut s = State::new();

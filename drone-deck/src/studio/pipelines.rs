@@ -147,8 +147,8 @@ pub(crate) struct Pipes {
     pub project: TextEdit,
     pub job: Option<Job>,
     pub message: String,
-    /// "Live in Foxglove" waits for the bridge to run before opening Foxglove.
-    pub live_pending: Option<Instant>,
+    /// "Live in Foxglove" waits for the bridge to run and its port to accept a connection.
+    pub live_pending: Option<super::foxglove::LiveWait>,
     pub(super) tx: Sender<Msg>,
     rx: Receiver<Msg>,
 }
@@ -529,6 +529,11 @@ fn rows<T: serde::de::DeserializeOwned>(value: &Value) -> Vec<T> {
         .unwrap_or_default()
 }
 
+/// Whether the job's seconds counter is drawn: only the Data → Pipelines status line shows it.
+pub(crate) fn counter_visible(s: &State) -> bool {
+    s.page == crate::ui::Page::Data && s.ui.data_tab == 2
+}
+
 /// Applies replies and progress; true when visible state changed.
 pub(crate) fn poll(s: &mut State) -> bool {
     let messages: Vec<Msg> = s.studio.pipes.rx.try_iter().take(200).collect();
@@ -582,10 +587,12 @@ pub(crate) fn poll(s: &mut State) -> bool {
             }
         }
     }
-    // The status line counts a running job's seconds: one redraw per second, only while it runs.
+    // The status line counts a running job's seconds: one redraw per second, only while it runs
+    // and its tab is on screen. Navigating there rebuilds the view, so the count is current.
+    let visible = counter_visible(s);
     if let Some(job) = &mut s.studio.pipes.job {
         let secs = job.started.elapsed().as_secs();
-        if secs != job.shown_secs {
+        if visible && secs != job.shown_secs {
             job.shown_secs = secs;
             changed = true;
         }

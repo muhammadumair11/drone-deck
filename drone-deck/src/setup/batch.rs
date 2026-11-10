@@ -48,7 +48,7 @@ fn checkpoint(s: &State) -> Value {
 /// Resumes the queue of `value` when every recipe id and the preset name are still known and
 /// automatic; anything else (another version, a changed catalog, the older format that kept
 /// positions) asks for a review instead.
-fn resume(s: &mut State, value: &Value) {
+pub(super) fn resume(s: &mut State, value: &Value) {
     if value["batch"].is_null() {
         return;
     }
@@ -61,9 +61,7 @@ fn resume(s: &mut State, value: &Value) {
         s.setup.batch_message = review.into();
         return;
     };
-    let preset = workflow::PRESETS
-        .iter()
-        .position(|(name, _)| Some(*name) == value["workflow"].as_str());
+    let preset = value["workflow"].as_str().and_then(workflow::preset_index);
     let remaining: Option<Vec<usize>> = saved
         .remaining
         .iter()

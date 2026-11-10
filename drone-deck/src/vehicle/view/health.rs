@@ -1,7 +1,14 @@
-//! Preflight and health (read-only): what the vehicle itself reports in SYS_STATUS, GPS,
-//! battery, landed state and STATUSTEXT. "Ready to arm" comes only from the vehicle.
+//! Preflight and health (read-only): what the vehicle itself reports in its health and arming
+//! check report (PX4 events), SYS_STATUS, GPS, battery, landed state and STATUSTEXT. "Ready to
+//! arm" comes only from the vehicle: the event report when one arrived, else the SYS_STATUS
+//! pre-arm bit, else a pre-arm STATUSTEXT, else "Not reported". PX4 sends the event report only
+//! when a result changes, so the periodic SYS_STATUS bit checks it: when the two disagree the
+//! stricter is shown, and once events were lost after the report the SYS_STATUS bit decides
+//! (or, without one, the report is shown as possibly out of date).
 use crate::State;
-use crate::mavlink::{StatusText, VehicleState};
+use crate::mavlink::{
+    HealthReport, StatusText, VehicleState, component_names, mode_group, mode_group_names,
+};
 use crate::ui::{kit::*, theme::*};
 use rune::{Color, El, col, row};
 
@@ -50,7 +57,202 @@ pub(crate) enum Readiness {
     Armed,
     Ready,
     NotReady(Option<String>),
+    /// From PX4's health and arming check report.
+    Checks(Checks),
     NotReported,
+}
+
+/// What a PX4 health and arming check report says about arming.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Checks {
+    /// The heartbeat mode's group, when it has one.
+    pub mode: Option<&'static str>,
+    /// Whether the vehicle may arm in that mode; `None` when the mode has no group.
+    pub can_arm: Option<bool>,
+    /// Mode groups the vehicle may arm in.
+    pub arm_modes: Vec<&'static str>,
+    /// Components whose arming checks fail, and those that only warn.
+    pub errors: Vec<&'static str>,
+    pub warnings: Vec<&'static str>,
+    /// The SYS_STATUS pre-arm bit for the current mode, when the vehicle sends it. PX4 derives
+    /// both from the same checks; the stricter of the two is shown when they disagree.
+    pub prearm: Option<bool>,
+    /// Events went missing after the report, so a newer one may have been lost.
+    pub outdated: bool,
+}
+
+/// The SYS_STATUS pre-arm bit, when the vehicle sends it.
+fn prearm_bit(v: &VehicleState) -> Option<bool> {
+    (v.sensors_present & PREARM_BIT != 0).then_some(v.sensors_health & PREARM_BIT != 0)
+}
+
+fn checks(v: &VehicleState, r: &HealthReport) -> Checks {
+    let group = mode_group(v.autopilot, v.base_mode, v.custom_mode);
+    Checks {
+        mode: group.map(|(_, name)| name),
+        can_arm: group.map(|(bit, _)| r.can_arm_in(bit)),
+        arm_modes: mode_group_names(r.can_arm),
+        errors: component_names(r.arming_errors),
+        warnings: component_names(r.arming_warnings & !r.arming_errors),
+        prearm: prearm_bit(v),
+        outdated: v.health_events.outdated(),
+    }
+}
+
+/// Whether the report and the SYS_STATUS pre-arm bit disagree about the current mode.
+fn disagree(c: &Checks) -> bool {
+    matches!((c.can_arm, c.prearm), (Some(a), Some(b)) if a != b)
+}
+
+/// The readiness line for a report, and its tone.
+fn checks_line(c: &Checks) -> (String, Color) {
+    let list = |names: &[&str]| names.join(", ");
+    let issues = match (c.errors.is_empty(), c.warnings.is_empty()) {
+        (true, true) => "no arming check errors or warnings".to_string(),
+        (true, false) => format!("warnings: {}", list(&c.warnings)),
+        (false, true) => format!("errors: {}", list(&c.errors)),
+        (false, false) => format!(
+            "errors: {} / warnings: {}",
+            list(&c.errors),
+            list(&c.warnings)
+        ),
+    };
+    let (mut line, mut tone) = report_verdict(c, &issues);
+    match (c.can_arm, c.prearm) {
+        (Some(false), Some(true)) => {
+            line.push_str(" / SYS_STATUS pre-arm check passes, the stricter report is shown")
+        }
+        (None, Some(pass)) => {
+            line.push_str(if pass {
+                " / SYS_STATUS pre-arm check passes"
+            } else {
+                " / SYS_STATUS pre-arm check fails"
+            });
+            if !pass {
+                tone = danger();
+            }
+        }
+        _ => {}
+    }
+    if c.outdated {
+        line.push_str(" / events were missed since this report, so it may be out of date");
+        if tone == success() {
+            tone = warn();
+        }
+    }
+    (line, tone)
+}
+
+fn report_verdict(c: &Checks, issues: &str) -> (String, Color) {
+    let list = |names: &[&str]| names.join(", ");
+    match (c.can_arm, c.mode) {
+        // The report says ready but SYS_STATUS, sent every second or so, says the pre-arm
+        // checks fail: one of them is out of date, so the stricter wins.
+        (Some(true), Some(mode)) if c.prearm == Some(false) => (
+            format!(
+                "Not ready to arm in {mode} / SYS_STATUS says the pre-arm checks fail, \
+                 the check report says ready / {issues}"
+            ),
+            danger(),
+        ),
+        (Some(true), Some(mode)) => (format!("Ready to arm in {mode} / {issues}"), success()),
+        (Some(false), Some(mode)) if c.arm_modes.is_empty() => (
+            format!("Not ready to arm in {mode} or any other mode / {issues}"),
+            danger(),
+        ),
+        (Some(false), Some(mode)) => (
+            format!(
+                "Not ready to arm in {mode} / {issues} / can arm in {}",
+                list(&c.arm_modes)
+            ),
+            danger(),
+        ),
+        _ if c.arm_modes.is_empty() => {
+            (format!("Not ready to arm in any mode / {issues}"), danger())
+        }
+        _ => (
+            format!(
+                "Can arm in {} / the report does not cover the current mode / {issues}",
+                list(&c.arm_modes)
+            ),
+            warn(),
+        ),
+    }
+}
+
+/// Where the readiness line comes from.
+fn source(v: &VehicleState, ready: &Readiness) -> &'static str {
+    match ready {
+        Readiness::Armed => "HEARTBEAT armed flag",
+        Readiness::Checks(c) if disagree(c) => {
+            "PX4 health and arming check report (EVENT), disagrees with SYS_STATUS"
+        }
+        Readiness::Checks(_) => "PX4 health and arming check report (EVENT)",
+        _ if v.sensors_present & PREARM_BIT != 0 && v.health_events.outdated() => {
+            "SYS_STATUS pre-arm check bit / the EVENT report may be out of date"
+        }
+        _ if v.sensors_present & PREARM_BIT != 0 => "SYS_STATUS pre-arm check bit",
+        Readiness::NotReady(Some(_)) => "STATUSTEXT pre-arm message",
+        _ => "Nothing received yet",
+    }
+}
+
+/// The health half of the report: which reported components have errors or warnings.
+fn report_line(r: &HealthReport, outdated: bool) -> (String, Color) {
+    let n = r.present.count_ones();
+    let reported = format!("{n} component{} reported", if n == 1 { "" } else { "s" });
+    let errors = component_names(r.health_errors);
+    let warnings = component_names(r.health_warnings & !r.health_errors);
+    let mut line = reported;
+    if !errors.is_empty() {
+        line.push_str(&format!(" / errors: {}", errors.join(", ")));
+    }
+    if !warnings.is_empty() {
+        line.push_str(&format!(" / warnings: {}", warnings.join(", ")));
+    }
+    let mut tone = match (errors.is_empty(), warnings.is_empty()) {
+        (false, _) => danger(),
+        (true, false) => warn(),
+        (true, true) => {
+            line.push_str(" / no errors or warnings");
+            fg()
+        }
+    };
+    if outdated {
+        line.push_str(" / events were missed since, it may be out of date");
+        if tone == fg() {
+            tone = warn();
+        }
+    }
+    (line, tone)
+}
+
+/// A disarmed PX4 vehicle in Hold whose report blocks arming on a magnetometer error and warns
+/// about the battery, still able to arm in Manual and Stabilized. For a headless scene of the
+/// event-based readiness (`vehicle-health-checks` in `scenes.rs`).
+pub(crate) fn px4_checks_fixture(v: &mut VehicleState) {
+    const MAGNETOMETER: u32 = 1 << 27;
+    const BATTERY: u32 = 1 << 11;
+    const GPS: u32 = 1 << 3;
+    v.armed = false;
+    v.base_mode = 1;
+    v.custom_mode = (4 << 16) | (3 << 24);
+    v.mode = "Hold".into();
+    // SYS_STATUS agrees: the pre-arm checks fail in Hold, and the magnetometer is unhealthy.
+    const SYS_STATUS_MAG: u32 = 1 << 2;
+    v.sensors_present |= PREARM_BIT;
+    v.sensors_health &= !(PREARM_BIT | SYS_STATUS_MAG);
+    v.status
+        .retain(|t| !t.text.starts_with("Ready for takeoff"));
+    v.health_events.report = Some(HealthReport {
+        arming_errors: MAGNETOMETER,
+        arming_warnings: BATTERY,
+        can_arm: 1 | (1 << 15),
+        can_run: 1 | (1 << 15),
+        present: GPS | BATTERY | MAGNETOMETER | (1 << 28) | (1 << 29),
+        health_errors: MAGNETOMETER,
+        health_warnings: BATTERY,
+    });
 }
 
 fn prearm_text(t: &StatusText) -> bool {
@@ -66,11 +268,19 @@ fn prearm_text(t: &StatusText) -> bool {
     .any(|w| lower.contains(w))
 }
 
-/// The SYS_STATUS pre-arm bit when the vehicle sends it; otherwise a pre-arm failure
-/// STATUSTEXT means "not ready"; nothing else is read as ready.
+/// PX4's arming check report when the vehicle sent one (unless events were lost since and a
+/// SYS_STATUS pre-arm bit is there to go by); otherwise the SYS_STATUS pre-arm bit
+/// when the vehicle sends it; otherwise a pre-arm failure STATUSTEXT means "not ready";
+/// nothing else is read as ready.
 pub(crate) fn readiness(v: &VehicleState, status: &[&StatusText]) -> Readiness {
     if v.armed {
         return Readiness::Armed;
+    }
+    if let Some(r) = v.health_report() {
+        // A report events were lost after yields to a SYS_STATUS bit the vehicle keeps sending.
+        if !(v.health_events.outdated() && prearm_bit(v).is_some()) {
+            return Readiness::Checks(checks(v, r));
+        }
     }
     let failure = status
         .iter()
@@ -195,8 +405,11 @@ fn messages(s: &State) -> El {
 pub(crate) fn health(s: &State, v: &VehicleState, fresh: bool, vp: &Viewport) -> El {
     let compact = vp.compact();
     let status: Vec<&StatusText> = s.vehicle.status.iter().collect();
-    let (ready, tone) = match readiness(v, &status) {
+    let readiness = readiness(v, &status);
+    let source = source(v, &readiness);
+    let (ready, tone) = match readiness {
         Readiness::Armed => ("Armed".to_string(), fg()),
+        Readiness::Checks(c) => checks_line(&c),
         Readiness::Ready => (
             "Ready to arm / the vehicle reports its pre-arm checks pass".to_string(),
             success(),
@@ -232,7 +445,7 @@ pub(crate) fn health(s: &State, v: &VehicleState, fresh: bool, vp: &Viewport) ->
     } else {
         v.landed_name().to_string()
     };
-    let facts = col()
+    let mut facts = col()
         .w_full()
         .min_w(0.)
         .child(
@@ -247,6 +460,17 @@ pub(crate) fn health(s: &State, v: &VehicleState, fresh: bool, vp: &Viewport) ->
                 .child(dot(tone))
                 .child(meta_sized(ready, 10., fg()).wrap().grow(1.)),
         )
+        .child(fact(
+            "health-source",
+            "Arming source",
+            source.into(),
+            muted(),
+        ));
+    if let Some(r) = v.health_report() {
+        let (line, tone) = report_line(r, v.health_events.outdated());
+        facts = facts.child(fact("health-report", "Health report", line, tone));
+    }
+    let facts = facts
         .child(fact("health-gps", "GPS", gps, fg()))
         .child(fact("health-battery", "Battery", battery, fg()))
         .child(fact("health-landed", "Landed state", landed, fg()))
@@ -264,13 +488,22 @@ pub(crate) fn health(s: &State, v: &VehicleState, fresh: bool, vp: &Viewport) ->
                 .justify_between()
                 .pb(8.)
                 .child(h3("Preflight & health", 15.))
-                .child(meta(match v.unhealthy_sensors().count_ones() {
-                    0 => "Read-only / as reported by the vehicle".to_string(),
-                    n => format!(
-                        "Read-only / {n} unhealthy sensor{}",
-                        if n == 1 { "" } else { "s" }
-                    ),
-                })),
+                .child(meta(
+                    match (v.health_report(), v.unhealthy_sensors().count_ones()) {
+                        (Some(r), _) if r.error_components() != 0 => {
+                            let n = r.error_components().count_ones();
+                            format!(
+                                "Read-only / {n} component{} with errors",
+                                if n == 1 { "" } else { "s" }
+                            )
+                        }
+                        (_, 0) => "Read-only / as reported by the vehicle".to_string(),
+                        (_, n) => format!(
+                            "Read-only / {n} unhealthy sensor{}",
+                            if n == 1 { "" } else { "s" }
+                        ),
+                    },
+                )),
         )
         .child(asset(facts, messages(s), compact).pt(4.));
     if !fresh {
@@ -278,3 +511,7 @@ pub(crate) fn health(s: &State, v: &VehicleState, fresh: bool, vp: &Viewport) ->
     }
     block
 }
+
+#[cfg(test)]
+#[path = "health_tests.rs"]
+mod tests;

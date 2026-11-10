@@ -5,8 +5,8 @@
 //! - `app.log` rolls at [`LOG_CAP`] bytes into `app.1.log` … `app.<LOG_KEEP>.log`.
 //! - A panic writes `crash-<YYYYMMDD-HHMMSS>.txt`; the next launch offers the newest unseen one
 //!   in the startup notice, the activity history and a strip on the Activity page.
-//! - `export` writes `<data root>\exports\drone-deck-diagnostics-<stamp>.zip` with redacted
-//!   profiles, state and recent logs.
+//! - `start_export` writes `<data root>\exports\drone-deck-diagnostics-<stamp>.zip` with
+//!   redacted profiles, state and recent logs, on a worker thread; `poll` lands the result.
 //!
 //! Nothing is written in headless mode or under `cfg(test)`, where `startup` is never enabled.
 pub(crate) mod redact;
@@ -21,6 +21,7 @@ use std::{
     sync::{
         Mutex,
         atomic::{AtomicBool, AtomicU32, Ordering},
+        mpsc::{self, Receiver, TryRecvError},
     },
 };
 
@@ -467,24 +468,37 @@ fn recent_job_dirs(n: usize) -> Vec<PathBuf> {
     dirs.into_iter().take(n).map(|(_, p)| p).collect()
 }
 
-/// The bundle's files (name, text) before redaction.
-pub(crate) fn entries(s: &State) -> Vec<(String, String)> {
-    let mut files = vec![
-        ("about.txt".to_string(), about(s)),
-        ("state.txt".to_string(), state(s)),
-        (
-            "profiles.json".to_string(),
-            serde_json::to_string_pretty(&s.config).unwrap_or_default(),
-        ),
-        (
-            "activity.json".to_string(),
-            serde_json::to_string_pretty(&s.activity.entries).unwrap_or_default(),
-        ),
-        (
-            "process-output.log".to_string(),
-            s.logs.iter().cloned().collect::<Vec<_>>().join("\n"),
-        ),
-    ];
+/// What a bundle takes from the app's state, copied on the UI thread so the file reads,
+/// redaction and zip run on a worker ([`start_export`]).
+pub(crate) struct Snapshot {
+    /// In-memory files (name, text): about, state, profiles, activity, process output.
+    memory: Vec<(String, String)>,
+}
+pub(crate) fn snapshot(s: &State) -> Snapshot {
+    Snapshot {
+        memory: vec![
+            ("about.txt".to_string(), about(s)),
+            ("state.txt".to_string(), state(s)),
+            (
+                "profiles.json".to_string(),
+                serde_json::to_string_pretty(&s.config).unwrap_or_default(),
+            ),
+            (
+                "activity.json".to_string(),
+                serde_json::to_string_pretty(&s.activity.entries).unwrap_or_default(),
+            ),
+            (
+                "process-output.log".to_string(),
+                s.logs.iter().cloned().collect::<Vec<_>>().join("\n"),
+            ),
+        ],
+    }
+}
+
+/// The bundle's files (name, text) before redaction: the snapshot, then the tails of the
+/// saved data, app logs, crash reports and recent installation jobs. Reads files.
+fn files(snapshot: Snapshot) -> Vec<(String, String)> {
+    let mut files = snapshot.memory;
     let root = backend::root();
     for name in ["systems.json", "ui-preferences.json"] {
         if let Some(text) = read_tail(&root.join(name)) {
@@ -519,12 +533,17 @@ pub(crate) fn entries(s: &State) -> Vec<(String, String)> {
     }
     files
 }
+#[cfg(test)]
+pub(crate) fn entries(s: &State) -> Vec<(String, String)> {
+    files(snapshot(s))
+}
 
-/// Writes the redacted bundle to `<data root>\exports\` and returns its path.
-pub(crate) fn export(s: &State) -> Result<PathBuf, String> {
+/// Writes the redacted bundle to `<data root>\exports\` and returns its path. Reads and
+/// writes files: [`start_export`] runs it off the UI thread.
+pub(crate) fn write_bundle(snapshot: Snapshot) -> Result<PathBuf, String> {
     let redactor = redact::Redactor::from_env();
-    // Every entry is capped, including in-memory ones and any added to `entries` later.
-    let files: Vec<(String, Vec<u8>)> = entries(s)
+    // Every entry is capped, including in-memory ones and any added to `files` later.
+    let files: Vec<(String, Vec<u8>)> = files(snapshot)
         .into_iter()
         .map(|(name, text)| {
             (
@@ -543,4 +562,66 @@ pub(crate) fn export(s: &State) -> Result<PathBuf, String> {
         &format!("Diagnostics exported to {}", path.display()),
     );
     Ok(path)
+}
+
+/// A diagnostics export running on its worker thread (`Activity::exporting`).
+pub(crate) struct Exporting(Receiver<Result<PathBuf, String>>);
+
+/// Starts **Export diagnostics**: snapshots the state here, then reads, redacts, zips and
+/// writes on a worker; [`poll`] lands the result. A request while one runs does nothing.
+pub(crate) fn start_export(s: &mut State) {
+    if s.headless {
+        s.notice = "Headless preview: diagnostics export is disabled.".into();
+        return;
+    }
+    if s.activity.exporting.is_some() {
+        return;
+    }
+    let snapshot = snapshot(s);
+    let (tx, rx) = mpsc::channel();
+    let spawned = std::thread::Builder::new()
+        .name("diagnostics-export".into())
+        .spawn(move || {
+            let _ = tx.send(write_bundle(snapshot));
+        });
+    match spawned {
+        Ok(_) => {
+            s.activity.exporting = Some(Exporting(rx));
+            s.notice = "Exporting diagnostics…".into();
+        }
+        Err(e) => s.notice = format!("Could not export diagnostics: {e}"),
+    }
+}
+
+/// Lands a finished diagnostics export. True only when one landed.
+pub(crate) fn poll(s: &mut State) -> bool {
+    let Some(Exporting(rx)) = &s.activity.exporting else {
+        return false;
+    };
+    let result = match rx.try_recv() {
+        Ok(result) => result,
+        Err(TryRecvError::Empty) => return false,
+        Err(TryRecvError::Disconnected) => {
+            Err("the export stopped before it finished. See the app log.".to_string())
+        }
+    };
+    s.activity.exporting = None;
+    match result {
+        Ok(path) => {
+            s.notice = format!(
+                "Diagnostics saved to {}. User names and home folders are replaced; review the files before sharing them.",
+                path.display()
+            );
+            activity::record(s, "Exported diagnostics");
+            if let Some(dir) = path.parent() {
+                s.open(dir.display().to_string());
+            }
+        }
+        Err(e) => s.notice = format!("Could not export diagnostics: {e}"),
+    }
+    true
+}
+#[cfg(test)]
+pub(crate) fn exporting(rx: Receiver<Result<PathBuf, String>>) -> Exporting {
+    Exporting(rx)
 }

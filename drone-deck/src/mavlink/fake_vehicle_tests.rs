@@ -71,6 +71,8 @@ pub struct Script {
     /// Answers MAV_CMD_REQUEST_MESSAGE; false = refuses it as unsupported (older firmware),
     /// leaving only MAV_CMD_GET_HOME_POSITION.
     pub request_message: bool,
+    /// Sent once, in order, after the next telemetry burst.
+    pub extra: Vec<Msg>,
     /// Everything the fake received.
     pub received: Vec<Msg>,
 }
@@ -104,6 +106,7 @@ impl Default for Script {
             log_drop_once: HashSet::new(),
             home: Some((473_977_000, 85_456_000, 498_000)),
             request_message: true,
+            extra: Vec::new(),
             received: Vec::new(),
         }
     }
@@ -285,8 +288,9 @@ fn run(mut wire: Wire, script: Arc<Mutex<Script>>, stop: Arc<AtomicBool>) {
         if Instant::now() >= next_beat {
             next_beat = Instant::now() + Duration::from_millis(100);
             if script.lock().expect("script").heartbeats {
-                for msg in telemetry() {
-                    send(&mut wire, &mut enc, &msg);
+                let extra = std::mem::take(&mut script.lock().expect("script").extra);
+                for msg in telemetry().iter().chain(&extra) {
+                    send(&mut wire, &mut enc, msg);
                 }
                 if let Some(status) = status.take() {
                     send(&mut wire, &mut enc, &status);

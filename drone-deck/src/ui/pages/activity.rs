@@ -20,6 +20,7 @@ pub(super) fn eyebrow(s: &State) -> String {
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
     let compact = vp.compact();
     let tab = s.activity.tab.min(TABS.len() - 1);
+    let exporting = s.activity.exporting.is_some();
     let export = row()
         .gap(12.)
         .flex_wrap()
@@ -31,9 +32,13 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
         ))
         .child(pill(
             "export-diagnostics",
-            "Export diagnostics",
-            true,
-            export_diagnostics,
+            if exporting {
+                "Exporting…"
+            } else {
+                "Export diagnostics"
+            },
+            !exporting,
+            crate::diagnostics::start_export,
         ));
     let export = if compact { export.self_start() } else { export };
     let body = match tab {
@@ -86,26 +91,6 @@ fn export_history(s: &mut State) {
         Ok(path) => format!("Activity history exported to {}", path.display()),
         Err(e) => format!("Could not export activity history: {e}"),
     };
-}
-
-fn export_diagnostics(s: &mut State) {
-    if s.headless {
-        s.notice = "Headless preview: diagnostics export is disabled.".into();
-        return;
-    }
-    match crate::diagnostics::export(s) {
-        Ok(path) => {
-            s.notice = format!(
-                "Diagnostics saved to {}. User names and home folders are replaced; review the files before sharing them.",
-                path.display()
-            );
-            activity::record(s, "Exported diagnostics");
-            if let Some(dir) = path.parent() {
-                s.open(dir.display().to_string());
-            }
-        }
-        Err(e) => s.notice = format!("Could not export diagnostics: {e}"),
-    }
 }
 
 /// Shown for the session after a launch that found a crash report from the previous one.

@@ -99,14 +99,19 @@ pub(crate) fn preview_params(s: &mut State) {
     let path =
         PathBuf::from("workspace/exports/params/physical-vehicle-2026-11-02_14-20-00.params");
     s.hardware.params_file = rune::TextEdit::new(path.display().to_string());
-    s.hardware.baseline = Some(Baseline {
-        path,
-        set: fake_baseline(),
-        bad: vec![7],
-    });
-    s.hardware.exported = Some(PathBuf::from(
-        "workspace/exports/params/physical-vehicle-2026-11-10_09-41-07.params",
-    ));
+    let id = s.systems.active_id().to_string();
+    s.hardware.baselines.insert(
+        id.clone(),
+        Baseline {
+            path,
+            set: fake_baseline(),
+            bad: vec![7],
+        },
+    );
+    s.hardware.exports.insert(
+        id,
+        PathBuf::from("workspace/exports/params/physical-vehicle-2026-11-10_09-41-07.params"),
+    );
 }
 
 /// `physical-logs`: a listed vehicle with one log downloading and one already downloaded.

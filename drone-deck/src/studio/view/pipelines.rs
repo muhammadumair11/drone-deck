@@ -147,7 +147,7 @@ fn live_panel(s: &State) -> El {
                 .child(meta_sized(format!("foxglove_bridge / {state}"), 10., fg()).wrap()),
         )
         .child(p(
-            "Starts the owned foxglove_bridge (ROS 2, port 8765) and opens Foxglove on ws://localhost:8765 once it runs. It shows the live ROS graph of the capture domain, not the replay domain.",
+            "Starts the owned foxglove_bridge (ROS 2, port 8765) and asks Windows to open Foxglove on ws://localhost:8765 once something accepts connections on that port. It shows the live ROS graph of the capture domain, not the replay domain.",
             11.,
         ))
         .child(

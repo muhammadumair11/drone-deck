@@ -1,7 +1,7 @@
 ; Drone Deck per-user installer (Inno Setup 6).
 ;
 ; Built by `drone-deck\Build.ps1 -Installer` after it has packaged dist\DroneDeck-<version>\, or by hand:
-;   ISCC.exe /DAppVersion=0.8.0 /DSourceDir=<repo>\dist\DroneDeck-0.8.0 /DOutputDir=<repo>\dist drone-deck\installer\drone-deck.iss
+;   ISCC.exe /DAppVersion=0.9.0 /DSourceDir=<repo>\dist\DroneDeck-0.9.0 /DOutputDir=<repo>\dist drone-deck\installer\drone-deck.iss
 ;
 ; Installs for the current user only (no administrator prompt) into %LOCALAPPDATA%\Programs\DroneDeck with a
 ; Start menu shortcut. User data lives elsewhere (%LOCALAPPDATA%\DroneDeck\workspace, \logs, \models, \tools and

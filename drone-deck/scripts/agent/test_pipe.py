@@ -387,6 +387,35 @@ class FakeProcesses:
         return {'key': key, 'stopped': True, 'running': False}
 
 
+class QuickExitProcesses(FakeProcesses):
+    """Like `procs.Processes`: a waiter thread finishes an entry under the table's lock and drops
+    it from `entries`. The node exits at once, before `run` has returned."""
+
+    def __init__(self):
+        super().__init__()
+        self.lock = threading.RLock()
+
+    def run(self, key, bash, env=None, cwd=None, readiness=None):
+        reply = super().run(key, bash, env, cwd, readiness)
+        if key == pipe.KEYS['node']:
+            waiter = threading.Thread(target=self.exit, args=(key, 3), daemon=True)
+            waiter.start()
+            waiter.join(0.2)  # done here unless the caller holds the lock
+        return reply
+
+    def exit(self, key, code):
+        with self.lock:
+            entry = self.entries.pop(key, None)
+            if entry is not None and not entry.finished.is_set():
+                entry.child.returncode = code
+                entry.finished.set()
+
+    def stop(self, key, grace_s=3):
+        self.stopped.append(key)
+        self.exit(key, -15)
+        return {'key': key, 'stopped': True, 'running': False}
+
+
 class InferTests(Fixture, unittest.TestCase):
     def pipes(self, processes):
         def metadata(path):
@@ -452,6 +481,40 @@ class InferTests(Fixture, unittest.TestCase):
         self.assertEqual(json.loads((run / 'run.json').read_text())['status'], 'Failed')
         listed = pipes.list()['runs']
         self.assertEqual([(r['kind'], r['status']) for r in listed], [('inference', 'Failed')])
+
+    def test_a_process_that_exits_at_once_keeps_its_real_exit_code(self):
+        processes = QuickExitProcesses()
+        with self.assertRaisesRegex(RuntimeError, 'exited before the replay'):
+            self.pipes(processes).call('infer', self.params(), threading.Event(), lambda m: None)
+        run = next((self.recording / 'inference').iterdir())
+        saved = json.loads((run / 'run.json').read_text())
+        self.assertEqual(saved['exits'], {'node': 3, 'record': -15})
+        self.assertEqual(saved['status'], 'Failed')
+
+    def test_status_reports_a_request_cancelled_before_it_created_its_folder(self):
+        planning, release = threading.Event(), threading.Event()
+
+        def metadata(path):
+            if 'inference' not in str(path):
+                planning.set()
+                release.wait(10)
+            return self.metadata(path)
+        processes = FakeProcesses()
+        pipes = pipe.Pipelines(None, processes, root=self.root, projects=self.root / 'projects',
+                               metadata=metadata)
+        pipes.SETTLE_S, pipes.DRAIN_S = 0.1, 0.05
+        cancel, result = threading.Event(), {}
+        worker = threading.Thread(target=lambda: result.update(
+            run=pipes.call('infer', self.params(), cancel, lambda m: None)))
+        worker.start()
+        self.assertTrue(planning.wait(10))
+        cancel.set()
+        self.assertEqual(pipes.call('status', {}, None, None), {'active': [pipe.PREPARING]})
+        release.set()
+        worker.join(10)
+        self.assertEqual(result['run']['status'], 'Cancelled')
+        self.assertEqual(processes.started, [])
+        self.assertEqual(pipes.call('status', {}, None, None), {'active': []})
 
     def test_a_run_left_running_by_an_earlier_agent_lists_as_interrupted(self):
         folder = self.recording / 'inference' / 'old'

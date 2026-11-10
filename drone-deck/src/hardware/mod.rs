@@ -6,6 +6,7 @@
 use crate::mavlink::ParamSet;
 use crate::*;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::{self, Receiver, TryRecvError};
 mod preview;
 #[cfg(test)]
 mod tests;
@@ -34,9 +35,33 @@ pub(crate) struct Hardware {
     pub params_changed: bool,
     /// Path of the `.params` file to compare with.
     pub params_file: TextEdit,
-    pub baseline: Option<Baseline>,
-    /// The last `.params` export of this session.
-    pub exported: Option<PathBuf>,
+    /// The loaded comparison of each system, by the system it was loaded for.
+    pub baselines: HashMap<String, Baseline>,
+    /// `.params` files being read on a worker for **Load and compare** (`poll` lands them),
+    /// by the system each was started for.
+    pub loads: HashMap<String, Loading>,
+    /// The last `.params` export of this session, by the system whose parameters it holds.
+    pub exports: HashMap<String, PathBuf>,
+}
+/// A `.params` file read off the UI thread: a path on an offline network share can block
+/// until Windows gives up.
+pub(crate) struct Loading {
+    pub path: PathBuf,
+    rx: Receiver<Result<Baseline, String>>,
+}
+impl Hardware {
+    /// The last export made for system `id` this session.
+    pub(crate) fn exported(&self, id: &str) -> Option<&PathBuf> {
+        self.exports.get(id)
+    }
+    /// The comparison loaded for system `id`.
+    pub(crate) fn baseline(&self, id: &str) -> Option<&Baseline> {
+        self.baselines.get(id)
+    }
+    /// The **Load and compare** still reading for system `id`.
+    pub(crate) fn loading(&self, id: &str) -> Option<&Loading> {
+        self.loads.get(id)
+    }
 }
 impl Default for Hardware {
     fn default() -> Self {
@@ -47,8 +72,9 @@ impl Default for Hardware {
             params_search: TextEdit::new(""),
             params_changed: false,
             params_file: TextEdit::new(""),
-            baseline: None,
-            exported: None,
+            baselines: HashMap::new(),
+            loads: HashMap::new(),
+            exports: HashMap::new(),
         }
     }
 }
@@ -186,7 +212,12 @@ pub(crate) fn export(s: &mut State) {
         Ok(path) => {
             s.notice = format!("Exported the parameters to {}.", path.display());
             activity::record(s, format!("Exported parameters to {}", path.display()));
-            s.hardware.exported = Some(path);
+            let system = s
+                .vehicle
+                .owner
+                .clone()
+                .unwrap_or_else(|| s.systems.active_id().to_string());
+            s.hardware.exports.insert(system, path);
         }
         Err(e) => s.notice = e,
     }
@@ -211,34 +242,145 @@ pub(crate) fn open_exports(s: &mut State) {
     s.open(dir.display().to_string());
 }
 
-/// Loads the `.params` file named in `params_file` to compare with the vehicle.
+/// Starts reading the `.params` file named in `params_file` on a worker, to compare with the
+/// active system's vehicle; [`poll`] lands it for that system. A request while one reads for
+/// the active system does nothing. A headless scene reads it at once: its update loop returns
+/// before [`poll`], so a worker's result would never land.
 pub(crate) fn load_baseline(s: &mut State) {
+    let system = s.systems.active_id().to_string();
+    if s.hardware.loads.contains_key(&system) {
+        return;
+    }
     let text = s.hardware.params_file.text.trim().trim_matches('"').trim();
     if text.is_empty() {
         s.notice = "Enter the path of a .params file to compare with.".into();
         return;
     }
     let path = PathBuf::from(text);
-    match read_baseline(&path) {
+    if s.headless {
+        let result = read_baseline(&path);
+        land_baseline(s, &system, &path, result);
+        return;
+    }
+    let (tx, rx) = mpsc::channel();
+    let file = path.clone();
+    let spawned = std::thread::Builder::new()
+        .name("params-load".into())
+        .spawn(move || {
+            let _ = tx.send(read_baseline(&file));
+        });
+    match spawned {
+        Ok(_) => {
+            s.notice = format!("Loading {}…", path.display());
+            s.hardware.loads.insert(system, Loading { path, rx });
+        }
+        Err(e) => s.notice = format!("Could not read {}: {e}", path.display()),
+    }
+}
+
+/// Lands each finished **Load and compare** for the system it was started for. True only
+/// when a result landed.
+pub(crate) fn poll(s: &mut State) -> bool {
+    if s.hardware.loads.is_empty() {
+        return false;
+    }
+    let mut done = Vec::new();
+    for (system, loading) in &s.hardware.loads {
+        match loading.rx.try_recv() {
+            Ok(result) => done.push((system.clone(), result)),
+            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Disconnected) => done.push((
+                system.clone(),
+                Err(format!(
+                    "Reading {} stopped before it finished.",
+                    loading.path.display()
+                )),
+            )),
+        }
+    }
+    let landed = !done.is_empty();
+    for (system, result) in done {
+        if let Some(loading) = s.hardware.loads.remove(&system) {
+            land_baseline(s, &system, &loading.path, result);
+        }
+    }
+    landed
+}
+
+/// Waits for the active system's running load (tests drive the worker without the app's
+/// poll loop).
+#[cfg(test)]
+pub(crate) fn finish_loading(s: &mut State) {
+    let system = s.systems.active_id().to_string();
+    let Some(loading) = s.hardware.loads.remove(&system) else {
+        return;
+    };
+    let result = loading
+        .rx
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .map_err(|e| e.to_string())
+        .and_then(|r| r);
+    land_baseline(s, &system, &loading.path, result);
+}
+
+/// A load of `path` for the active system that stays pending until the returned sender
+/// answers.
+#[cfg(test)]
+pub(crate) fn hold_loading(s: &mut State, path: &str) -> mpsc::Sender<Result<Baseline, String>> {
+    let (tx, rx) = mpsc::channel();
+    let system = s.systems.active_id().to_string();
+    s.hardware.loads.insert(
+        system,
+        Loading {
+            path: path.into(),
+            rx,
+        },
+    );
+    tx
+}
+
+/// Keeps a finished load as `system`'s comparison. A load for a system that is not active
+/// says whose it is; one for a system deleted meanwhile is dropped with a notice.
+fn land_baseline(s: &mut State, system: &str, path: &Path, result: Result<Baseline, String>) {
+    let Some(name) = s.systems.get(system).map(|sys| sys.label().to_string()) else {
+        s.notice = format!(
+            "Dropped {}: the system it was loaded for no longer exists.",
+            path.display()
+        );
+        return;
+    };
+    let active = system == s.systems.active_id();
+    match result {
         Ok(b) => {
             let n = b.set.params.len();
+            let whose = if active {
+                String::new()
+            } else {
+                format!(" for {name}; it shows when {name} is the active system")
+            };
             s.notice = if b.bad.is_empty() {
-                format!("Loaded {n} parameters from {}.", path.display())
+                format!("Loaded {n} parameters from {}{whose}.", path.display())
             } else {
                 format!(
-                    "Loaded {n} parameters from {}; {} line(s) did not parse.",
+                    "Loaded {n} parameters from {}{whose}; {} line(s) did not parse.",
                     path.display(),
                     b.bad.len()
                 )
             };
             activity::record(
                 s,
-                format!("Loaded {} to compare parameters", path.display()),
+                format!(
+                    "Loaded {} to compare the parameters of {name}",
+                    path.display()
+                ),
             );
-            s.hardware.params_changed = s.vehicle.params.is_some();
-            s.hardware.baseline = Some(b);
+            if active {
+                s.hardware.params_changed = s.vehicle.params.is_some();
+            }
+            s.hardware.baselines.insert(system.to_string(), b);
         }
-        Err(e) => s.notice = e,
+        Err(e) if active => s.notice = e,
+        Err(e) => s.notice = format!("{name}: {e}"),
     }
 }
 
@@ -269,8 +411,22 @@ fn read_baseline(path: &Path) -> Result<Baseline, String> {
     })
 }
 
+/// Forgets the comparison, a load still reading and the last export of system `id` when it is
+/// deleted: a later system can take the same id, and it starts with none of them.
+pub(crate) fn forget(s: &mut State, id: &str) {
+    s.hardware.baselines.remove(id);
+    s.hardware.loads.remove(id);
+    s.hardware.exports.remove(id);
+}
+
+/// Clears the active system's comparison. Its load still reading is abandoned: the result is
+/// dropped. Other systems keep theirs.
 pub(crate) fn clear_baseline(s: &mut State) {
-    s.hardware.baseline = None;
+    let system = s.systems.active_id().to_string();
+    if let Some(l) = s.hardware.loads.remove(&system) {
+        s.notice = format!("Stopped waiting for {}.", l.path.display());
+    }
+    s.hardware.baselines.remove(&system);
     s.hardware.params_changed = false;
 }
 

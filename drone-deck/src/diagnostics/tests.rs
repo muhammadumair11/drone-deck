@@ -395,3 +395,96 @@ fn redaction_cuts_secret_values_by_key() {
     );
     assert_eq!(r.apply("passwd='ü x' tail"), "passwd='<redacted>' tail");
 }
+
+/// PERF-01: the state is copied on the UI thread; the bundle is read, zipped and written on
+/// another thread.
+#[test]
+fn a_snapshot_writes_its_bundle_from_another_thread() {
+    let mut s = State::new();
+    s.logs.push_back("[sih] snapshot line".into());
+    let snap = snapshot(&s);
+    let path = std::thread::spawn(move || write_bundle(snap))
+        .join()
+        .unwrap()
+        .expect("bundle written");
+    let bytes = fs::read(&path).unwrap();
+    fs::remove_file(&path).ok();
+    assert_eq!(&bytes[..4], b"PK\x03\x04");
+    assert!(
+        bytes
+            .windows(b"process-output.log".len())
+            .any(|w| w == b"process-output.log")
+    );
+}
+
+/// PERF-01: an export result lands through `poll`, which reports a change only then, and
+/// failures say what went wrong.
+#[test]
+fn export_results_land_through_poll_only_when_they_arrive() {
+    let mut s = State::new();
+    start_export(&mut s);
+    assert!(s.notice.contains("Headless"), "{}", s.notice);
+    assert!(s.activity.exporting.is_none());
+    assert!(!poll(&mut s), "idle");
+
+    let (tx, rx) = mpsc::channel();
+    s.activity.exporting = Some(exporting(rx));
+    assert!(!poll(&mut s), "nothing landed yet");
+    tx.send(Err("disk full".into())).unwrap();
+    assert!(poll(&mut s));
+    assert!(s.activity.exporting.is_none());
+    assert_eq!(s.notice, "Could not export diagnostics: disk full");
+
+    let (tx, rx) = mpsc::channel();
+    s.activity.exporting = Some(exporting(rx));
+    tx.send(Ok(PathBuf::from("exports/drone-deck-diagnostics-1.zip")))
+        .unwrap();
+    assert!(poll(&mut s));
+    assert!(s.notice.starts_with("Diagnostics saved to"), "{}", s.notice);
+    assert_eq!(s.activity.entries[0].text, "Exported diagnostics");
+
+    let (tx, rx) = mpsc::channel::<Result<PathBuf, String>>();
+    s.activity.exporting = Some(exporting(rx));
+    drop(tx);
+    assert!(poll(&mut s), "a worker that died still ends the export");
+    assert!(
+        s.notice.contains("stopped before it finished"),
+        "{}",
+        s.notice
+    );
+}
+
+#[test]
+fn the_export_button_is_disabled_while_an_export_runs() {
+    use crate::ui::{Page, view};
+    use rune::{Env, Runtime};
+    let mut s = State::new();
+    s.navigate(Page::Activity);
+    let (tx, rx) = mpsc::channel();
+    s.activity.exporting = Some(exporting(rx));
+    let mut rt = Runtime::new(
+        s,
+        view,
+        (1280., 800.),
+        Env {
+            system_dark: true,
+            scale: 1.,
+        },
+    );
+    for _ in 0..5 {
+        rt.frame(0.1);
+    }
+    let button = rt
+        .elements()
+        .into_iter()
+        .find(|e| e.key.as_deref() == Some("export-diagnostics"))
+        .expect("export button");
+    assert_eq!(button.label.as_deref(), Some("Exporting…"));
+    rt.state.notice.clear();
+    let (x, y) = rt.find("export-diagnostics").unwrap();
+    rt.pointer_down(x, y);
+    rt.pointer_up(x, y);
+    rt.frame(0.1);
+    assert!(rt.state.notice.is_empty(), "a disabled export does nothing");
+    drop(tx);
+}

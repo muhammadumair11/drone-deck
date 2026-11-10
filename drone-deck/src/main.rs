@@ -217,7 +217,7 @@ impl State {
             .owner(&p.id)
             .unwrap_or(self.systems.active_id())
             .to_string();
-        if let Some(conflict) = vehicle::simulator_conflict(self, &p.id, &owner) {
+        if let Some(conflict) = vehicle::start_conflict(self, &p.id, &owner) {
             self.notice = conflict;
             return;
         }
@@ -399,7 +399,9 @@ fn poll(s: &mut State, _: f64, tx: &mut Tx) -> bool {
         | guided::poll(s)
         | ulog::poll(s)
         | agent::poll(s)
-        | vehicle::poll(s);
+        | vehicle::poll(s)
+        | hardware::poll(s)
+        | diagnostics::poll(s);
     let events: Vec<_> = s
         .backend
         .as_ref()
@@ -468,6 +470,8 @@ fn main() {
     })
     .on_close(|s, _| {
         setup::save_workflow(s);
+        // A setup or model start still with its helper dies with it: say what may not start.
+        setup::close::warn_on_close(s);
         recordings::shutdown(s);
         // Like Stop session: a running pipeline job is cancelled. If the cancel reaches the agent
         // after its shutdown began, the shutdown stops the job's processes instead.
@@ -687,9 +691,16 @@ const SCENES: &[Scene] = &[
     ("vehicle-live", vehicle::view::scene_live),
     ("vehicle-stale", vehicle::view::scene_stale),
     ("vehicle-actions", vehicle::view::scene_actions),
+    ("vehicle-health-checks", vehicle::view::scene_health_checks),
     ("vehicle-console", vehicle::view::scene_console),
     ("vehicle-gated", vehicle::view::scene_gated),
     ("vehicle-readonly", vehicle::view::scene_readonly),
+    ("vehicle-launching", vehicle::view::scene_launching),
+    (
+        "vehicle-ardupilot-console",
+        vehicle::view::scene_ardupilot_console,
+    ),
+    ("vehicle-link-retrying", vehicle::view::scene_link_retrying),
     ("physical-params", hardware::preview_params),
     ("physical-logs", hardware::preview_logs),
     ("setup-recipe", |s| {

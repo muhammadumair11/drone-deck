@@ -18,6 +18,8 @@ pub(crate) struct Activity {
     pub tab: usize,
     /// Process output filtered to one tool id.
     pub filter: Option<String>,
+    /// The diagnostics export running on its worker (`diagnostics::start_export`).
+    pub exporting: Option<crate::diagnostics::Exporting>,
 }
 fn path() -> std::path::PathBuf {
     backend::root().join("activity.json")
