@@ -53,6 +53,9 @@ struct State {
     confirm: Option<String>,
     readiness: HashMap<String, String>,
     session: Option<session::Launch>,
+    /// The stage the last workspace launch stopped at and why; shown on System until the
+    /// next launch or Dismiss.
+    launch_failure: Option<(String, String)>,
     qgc: qgc_launch::Watch,
     flight_logs: ulog::FlightLogs,
     agent: agent::AgentState,
@@ -116,6 +119,7 @@ impl State {
             confirm: None,
             readiness: HashMap::new(),
             session: None,
+            launch_failure: None,
             qgc: Default::default(),
             flight_logs: Default::default(),
             agent: Default::default(),
@@ -284,6 +288,7 @@ impl State {
             );
             return false;
         }
+        self.launch_failure = None;
         self.session = Some(session::Launch::new(stages.clone()));
         // Later stages start on later frames; they belong to the system that asked now.
         for key in stages.iter().copied().chain(["session"]) {
@@ -682,6 +687,14 @@ const SCENES: &[Scene] = &[
     ("system-launch-demo", |s| {
         s.session = Some(session::Launch::new(systems::SESSIONS[systems::SIMULATION]));
         s.status.insert("sih".into(), "Starting".into());
+    }),
+    ("system-launch-failed", |s| {
+        s.status.insert("sih".into(), "Exited (2)".into());
+        s.logs.push_back("[sih] ERROR [simulator_sih] lockstep timeout".into());
+        s.launch_failure = Some((
+            "sih".into(),
+            "PX4 / SIH exited before it reported vehicle status (exit code 2).".into(),
+        ));
     }),
     ("system-live-demo", |s| {
         for id in ["sih", "qgc"] {

@@ -45,6 +45,7 @@ fn stopped(s: &mut State, id: &str, why: &str) -> bool {
         "Workspace stopped at {id}: {why} Check its process output; later tools were not started."
     );
     activity::record(s, format!("Workspace stopped at {id}: {why}"));
+    s.launch_failure = Some((id.to_string(), why.to_string()));
     true
 }
 

@@ -206,7 +206,7 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
             "Choose an ONNX model",
             &[("ONNX model", &["onnx"])],
             true,
-            |s, path| s.studio.model_file = TextEdit::new(&path.display().to_string()),
+            |s, path| s.studio.model_file = TextEdit::new(path.display().to_string()),
         ))
         .child(labeled(
             "NPZ inputs path (Windows or Linux)",
@@ -218,7 +218,7 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
             "Choose NPZ inputs",
             &[("NumPy arrays", &["npz"])],
             true,
-            |s, path| s.studio.inputs = TextEdit::new(&path.display().to_string()),
+            |s, path| s.studio.inputs = TextEdit::new(path.display().to_string()),
         ))
         .child(notice(
             "ONNX inference needs a model and correctly preprocessed NPZ tensors.",

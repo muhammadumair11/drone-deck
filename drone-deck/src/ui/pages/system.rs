@@ -29,6 +29,9 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
     if let Some(launch) = &s.session {
         page = page.child(launch_progress(s, launch, compact));
     }
+    if let Some((id, why)) = &s.launch_failure {
+        page = page.child(launch_failure(id, why));
+    }
     page = page
         .child(guidance(s, compact))
         .child(topology::section(s, vp));
@@ -90,6 +93,20 @@ fn environment_note(s: &State) -> Option<String> {
 
 fn guidance(s: &State, compact: bool) -> El {
     let env = environment_note(s);
+    // While a session runs the large first-use strip would push the live view down; a quiet
+    // line keeps the way back to guided setup.
+    if !s.systems.current().prepared && systems::active_work(s) {
+        let text = env.unwrap_or_else(|| {
+            "This system runs with its current configuration; guided setup has not prepared it yet.".into()
+        });
+        return helpstrip(
+            "guided-entry",
+            None,
+            &text,
+            ghost("review-setup", "Prepare in guided setup ↗", true, crate::guided::open),
+            compact,
+        );
+    }
     if !s.systems.current().prepared {
         let mut text = "Choose what you want to do. Guided setup finds existing tools, explains the connections and prepares only what this system needs.".to_string();
         if let Some(e) = env {
@@ -118,6 +135,50 @@ fn guidance(s: &State, compact: bool) -> El {
         ghost("review-setup", "Review setup ↗", true, crate::guided::open),
         compact,
     )
+}
+
+/// Where and why the last workspace launch stopped, kept on the page (the status bar line is
+/// replaced by the next message) with the way to that tool's output.
+fn launch_failure(id: &str, why: &str) -> El {
+    let name = systems::component(id).map_or_else(|| id.to_string(), |c| c.name.to_string());
+    let output_id = id.to_string();
+    let message = format!("Workspace stopped at {name}: {why}");
+    col()
+        .key("launch-failure")
+        .role("alert")
+        .label(message.clone())
+        .w_full()
+        .min_w(0.)
+        .mt(8.)
+        .mb(16.)
+        .px(16.)
+        .py(12.)
+        .gap(6.)
+        .fill(danger().alpha(0.12))
+        .border_sides([0., 0., 0., 4.], danger())
+        .child(caps(format!("Workspace stopped at {name}"), 11., 700., 0.08, danger()).wrap())
+        .child(body(why, 13., fg()))
+        .child(body("Later tools were not started. Nothing was sent to a vehicle.", 12., muted()))
+        .child(
+            row()
+                .gaps(0., 20.)
+                .flex_wrap()
+                .center_y()
+                .child(small_link("launch-failure-output", "Show output ↗", move |s| {
+                    runtime::show_output(s, &output_id)
+                }))
+                .child(
+                    small_link("launch-failure-copy", "Copy message", |_| {}).on_press_tx(
+                        move |s: &mut State, tx| {
+                            tx.copy(message.clone());
+                            s.notice = "Failure message copied.".into();
+                        },
+                    ),
+                )
+                .child(small_link("launch-failure-dismiss", "Dismiss", |s| {
+                    s.launch_failure = None
+                })),
+        )
 }
 
 /// What the staged launch waits for before starting the next tool.

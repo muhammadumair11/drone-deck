@@ -215,7 +215,12 @@ fn rail(s: &State, width: f32, drawer: bool, height: f32) -> El {
             s.ui.menu = false;
             s.navigate(Page::System)
         })
-        .child(caps("Drone Deck", 19., 700., 0.12, fg()).wrap());
+        // Narrower rails (≤1100 px windows) get a smaller wordmark; it wraps rather than clips.
+        .child(
+            caps("Drone Deck", if width < 180. { 15. } else { 19. }, 700., 0.1, fg())
+                .wrap()
+                .w_full(),
+        );
     let mut top = col().w_full().gap(8.).child(logo);
     if drawer {
         top = top.child(ghost("close-menu", "Close navigation", true, |s| {
@@ -446,6 +451,7 @@ fn topbar(s: &State, vp: &Viewport) -> El {
 /// simulation Drone Deck started (flight actions enabled), a read-only physical link, or a
 /// physical link bridged to QGroundControl / scripts, which can command the vehicle.
 fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
+    let compact = vp.compact();
     // Headless scenes show a link through preview evidence instead of an open link.
     let preview = s.headless && s.vehicle.link.is_none() && s.vehicle.preview.is_some();
     let link = s.vehicle.link.as_ref();
@@ -487,8 +493,9 @@ fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
     } else {
         name
     };
+    let strip = if compact { col().gap(4.) } else { row().gaps(4., 16.).center_y().flex_wrap() };
     Some(
-        row()
+        strip
             .key("mode-banner")
             .role("status")
             .label(format!("{title}{name}"))
@@ -496,13 +503,10 @@ fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
             .min_w(0.)
             .px(vp.gutter() - 4.)
             .py(8.)
-            .gaps(4., 16.)
-            .center_y()
-            .flex_wrap()
             .fill(tone.alpha(0.14))
             .border_sides([0., 0., 0., 4.], tone)
-            .child(caps(format!("{title}{name}"), 11., 700., 0.08, tone))
-            .child(body(detail, 12., fg()).grow(1.)),
+            .child(caps(format!("{title}{name}"), 11., 700., 0.08, tone).wrap().shrink())
+            .child(body(detail, 12., fg()).grow(1.).shrink()),
     )
 }
 
@@ -518,7 +522,7 @@ fn statusbar(s: &State, vp: &Viewport) -> El {
         .fill(bg())
         .border_sides([1., 0., 0., 0.], soft())
         .child(
-            meta_sized(s.notice.clone(), 10., fg())
+            body(s.notice.clone(), 12., fg())
                 .key("feedback")
                 .role("status")
                 .grow(1.)

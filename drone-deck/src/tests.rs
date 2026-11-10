@@ -688,3 +688,32 @@ fn mode_banner_shows_only_while_a_link_is_shown() {
     let rt = runtime(s, (1216., 700.));
     assert!(rt.find("mode-banner").is_some());
 }
+
+#[test]
+fn a_stopped_launch_stays_on_system_with_its_output_and_dismiss() {
+    let mut s = State::new();
+    s.launch_failure = Some(("sih".into(), "PX4 SIH exited with status 2.".into()));
+    s.logs.push_back("[sih] ERROR boom".into());
+    let mut rt = runtime(s, (1216., 900.));
+    assert!(rt.find("launch-failure").is_some());
+    tap(&mut rt, "launch-failure-output");
+    assert_eq!(rt.state.page, Page::Activity);
+    assert_eq!(rt.state.activity.filter.as_deref(), Some("sih"));
+    rt.update(|s, _| s.navigate(Page::System));
+    settle(&mut rt);
+    tap(&mut rt, "launch-failure-dismiss");
+    assert!(rt.state.launch_failure.is_none());
+}
+
+#[test]
+fn runtime_rows_link_to_a_tools_output_once_it_wrote_some() {
+    let rt = runtime(State::new(), (1216., 900.));
+    assert!(rt.find("output-sih").is_none(), "no output yet");
+    let mut s = State::new();
+    s.logs.push_back("[sih] INFO started".into());
+    let mut rt = runtime(s, (1216., 900.));
+    tap(&mut rt, "output-sih");
+    assert_eq!(rt.state.page, Page::Activity);
+    assert_eq!(rt.state.activity.tab, 1);
+    assert_eq!(rt.state.activity.filter.as_deref(), Some("sih"));
+}

@@ -374,7 +374,7 @@ fn fact(key: &str, label: &str, value: String, color: Color) -> El {
         .center_y()
         .justify_between()
         .child(meta_sized(label, 9., muted()))
-        .child(meta_sized(value, 10., color).wrap())
+        .child(meta_sized(value, 10., color).wrap().shrink())
 }
 
 fn messages(s: &State) -> El {

@@ -317,7 +317,7 @@ fn compare(s: &State, vehicle: Option<&ParamSet>) -> El {
                     &[("QGroundControl parameters", &["params"])],
                     !loading,
                     |s, path| {
-                        s.hardware.params_file = TextEdit::new(&path.display().to_string());
+                        s.hardware.params_file = TextEdit::new(path.display().to_string());
                     },
                 ))
                 .child(ghost(

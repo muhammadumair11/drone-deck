@@ -116,7 +116,7 @@ fn display(s: &State, compact: bool) -> El {
                 .gap(16.)
                 .center_y()
                 .child(meta_sized(combo, 10., fg()).w(88.))
-                .child(meta(effect)),
+                .child(meta(effect).wrap().shrink()),
         );
     }
     section(

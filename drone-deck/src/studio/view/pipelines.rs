@@ -376,7 +376,7 @@ fn infer_form(s: &State, vp: &Viewport) -> El {
             "Choose an ONNX model",
             &[("ONNX model", &["onnx"])],
             true,
-            |s, path| s.studio.pipes.model = TextEdit::new(&path.display().to_string()),
+            |s, path| s.studio.pipes.model = TextEdit::new(path.display().to_string()),
         ))
         .child(
             col()
