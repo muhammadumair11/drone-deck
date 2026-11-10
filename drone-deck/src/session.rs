@@ -8,7 +8,8 @@ pub(crate) struct Launch {
     stage: usize,
     started: Instant,
     requested: bool,
-    /// Whole seconds of `started.elapsed()` last shown, so the wait redraws once a second.
+    /// Whole seconds of `started.elapsed()` last counted, so the wait redraws once a second
+    /// while the System page shows it.
     shown: u64,
 }
 impl Launch {
@@ -55,12 +56,18 @@ fn launch_owner(s: &State) -> String {
         .to_string()
 }
 
-/// Requests stage `id`; `Err` ends the launch with that reason.
-fn request(s: &mut State, id: &'static str) -> Result<(), String> {
+/// Requests stage `id`: `Ok(false)` while the Windows simulator port is still being checked
+/// off the UI thread (asked again on a later frame); `Err` ends the launch with that reason.
+fn request(s: &mut State, id: &'static str) -> Result<bool, String> {
+    match vehicle::port_check(s, id) {
+        vehicle::Port::Checking => return Ok(false),
+        vehicle::Port::Taken(why) => return Err(why),
+        vehicle::Port::Free => {}
+    }
     if let Some(stage) = vehicle::stage(s, id, Step::Start) {
         return match stage {
             Stage::Failed(e) => Err(e),
-            _ => Ok(()),
+            _ => Ok(true),
         };
     }
     let Some(index) = s.config.profiles.iter().position(|p| p.id == id) else {
@@ -72,7 +79,7 @@ fn request(s: &mut State, id: &'static str) -> Result<(), String> {
         return Err(conflict);
     }
     s.start(index);
-    Ok(())
+    Ok(true)
 }
 
 /// Whether stage `id` is ready; `Err` when it failed.
@@ -106,8 +113,13 @@ pub(crate) fn poll(s: &mut State) -> bool {
     }
     let id = launch.current();
     if !launch.requested {
-        if let Err(e) = request(s, id) {
-            return stopped(s, id, &e);
+        match request(s, id) {
+            Err(e) => return stopped(s, id, &e),
+            Ok(false) => {
+                s.session = Some(launch);
+                return false;
+            }
+            Ok(true) => {}
         }
         launch.requested = true;
         launch.started = Instant::now();
@@ -152,8 +164,9 @@ pub(crate) fn poll(s: &mut State) -> bool {
         );
         return true;
     }
+    // The seconds count is drawn on the System page only (`launch_progress`).
     let secs = launch.started.elapsed().as_secs();
-    let tick = secs != launch.shown;
+    let tick = secs != launch.shown && s.page == crate::ui::Page::System;
     launch.shown = secs;
     s.session = Some(launch);
     tick

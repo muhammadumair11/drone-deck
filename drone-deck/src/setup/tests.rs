@@ -280,9 +280,41 @@ fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
             "PX4 SIH simulation",
             "PX4 + Gazebo with ROS 2 and recordings",
             "Offline CPU inference",
-            "Physical vehicle (read-only link)",
+            "Physical vehicle",
         ]
     );
+}
+
+/// UI-03: the physical preset lost "(read-only link)" (it installs QGroundControl, which is
+/// bridged both ways when enabled). A checkpoint saved under the old name still resumes.
+#[test]
+fn a_checkpoint_saved_under_the_old_physical_preset_name_still_resumes() {
+    let physical = workflow::preset_index("Physical vehicle").expect("current name");
+    assert_eq!(workflow::PRESETS[physical].0, "Physical vehicle");
+    assert_eq!(
+        workflow::preset_index("Physical vehicle (read-only link)"),
+        Some(physical)
+    );
+    assert_eq!(workflow::preset_index("PX4 SIH simulation"), Some(0));
+    assert_eq!(workflow::preset_index("Lightweight visual"), None);
+    assert!(
+        workflow::PRESETS
+            .iter()
+            .all(|(n, _)| !n.contains("read-only")),
+        "no preset claims a read-only link"
+    );
+
+    let saved = serde_json::json!({
+        "app_version": env!("CARGO_PKG_VERSION"),
+        "batch": {"remaining": [], "waiting": null, "distro": "Ubuntu-24.04"},
+        "workflow": "Physical vehicle (read-only link)",
+        "message": "",
+    });
+    let mut s = State::new();
+    batch::resume(&mut s, &saved);
+    assert!(s.setup.batch.is_some(), "{}", s.setup.batch_message);
+    assert_eq!(s.setup.workflow, physical);
+    assert!(s.setup.batch_message.starts_with("Resuming"));
 }
 
 #[test]

@@ -15,11 +15,13 @@
 - `pipe.export{path, dest}` copies one recording file to a Windows folder (Foxglove fallback when a
   `\\\\wsl.localhost` path cannot be opened).
 - `pipe.status` → `{active: [folders]}`: the extract and inference folders this agent is still
-  writing (a cancelled run stays active until its processes have stopped).
+  writing (a cancelled run stays active until its processes have stopped), plus one `PREPARING`
+  entry for each extract or infer request that has not created its folder yet.
 
 Both long requests report `progress` events and honour cancel.
 """
 from collections import deque
+import contextlib
 import csv
 from datetime import datetime, timezone
 import hashlib
@@ -52,6 +54,7 @@ DETECTIONS = '/drone_deck/detections'
 IMAGE = 'sensor_msgs/msg/Image'
 COMPRESSED = 'sensor_msgs/msg/CompressedImage'
 KEYS = {'record': 'pipe-detections', 'node': 'pipe-infer', 'replay': 'pipe-replay'}
+PREPARING = 'a request that has not created its folder yet'
 FORMATS = ('png', 'npz')
 # encoding → (channels, bits, swap red and blue)
 ENCODINGS = {'rgb8': (3, 8, False), 'bgr8': (3, 8, True), 'rgba8': (4, 8, False),
@@ -659,6 +662,9 @@ class Pipelines:
         # Extract and inference folders being written now; `list` reports other Running ones
         # as Interrupted.
         self.active = set()
+        # extract and infer requests from their start until they return: a cancel that arrives
+        # before the request has created its folder still has something to wait for.
+        self.requests = {}
         self._recordings = None
 
     def metadata(self, recording):
@@ -677,10 +683,23 @@ class Pipelines:
                  'extract': lambda: self.extract(params, cancel, progress),
                  'infer': lambda: self.infer(params, cancel, progress),
                  'export': lambda: self.export(params),
-                 'status': lambda: {'active': sorted(str(p) for p in set(self.active))}}
+                 'status': self.status}
         if name not in table:
             raise ValueError(f'Unknown pipeline method pipe.{name}.')
-        return table[name]()
+        if name not in ('extract', 'infer'):
+            return table[name]()
+        token = object()
+        self.requests[token] = name
+        try:
+            return table[name]()
+        finally:
+            self.requests.pop(token, None)
+
+    def status(self):
+        """Folders being written, then one entry per request that has not created its folder."""
+        active = sorted(str(p) for p in set(self.active))
+        preparing = max(0, len(self.requests) - len(active))
+        return {'active': active + [PREPARING] * preparing}
 
     # -- list -------------------------------------------------------------------------------
     def list(self):
@@ -825,9 +844,12 @@ class Pipelines:
             self.lock.release()
 
     def _start(self, part, plan):
-        self.procs.run(KEYS[part], ros_command(plan['commands'][part]), plan['env'])
-        entries = getattr(self.procs, 'entries', {})
-        return entries.get(KEYS[part])
+        # A process that exits within milliseconds is finished, and dropped from `entries`, by
+        # its waiter thread, which needs the table's (reentrant) lock to do so. Holding it
+        # until the entry is in hand keeps the entry, and with it the real exit code.
+        with getattr(self.procs, 'lock', None) or contextlib.nullcontext():
+            self.procs.run(KEYS[part], ros_command(plan['commands'][part]), plan['env'])
+            return getattr(self.procs, 'entries', {}).get(KEYS[part])
 
     @staticmethod
     def _exit_code(entry):

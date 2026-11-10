@@ -22,7 +22,8 @@ mod track;
 pub(crate) use actions::{actions, ask};
 pub(crate) use console::console;
 pub(crate) use scenes::{
-    scene_actions, scene_console, scene_gated, scene_live, scene_readonly, scene_stale,
+    scene_actions, scene_ardupilot_console, scene_console, scene_gated, scene_health_checks,
+    scene_launching, scene_link_retrying, scene_live, scene_readonly, scene_stale,
 };
 pub(crate) use tools::tools;
 pub(crate) use track::Track;
@@ -78,9 +79,11 @@ pub(crate) fn silence(v: &VehicleState) -> String {
 
 /// Folds the latest snapshot into the position trace and ticks the heartbeat age. True when
 /// something drawn changed. Called from `vehicle::poll`. The age ticks only while it is on
-/// screen: the System page of the system that owns the link.
+/// screen: the System page of the system that owns the link (the live view, or a physical
+/// system's connection panel), which an AI system's page does not show.
 pub(crate) fn follow(s: &mut State) -> bool {
     let drawn = s.page == crate::ui::Page::System
+        && s.systems.active != crate::systems::AI
         && s.vehicle.owner.as_deref() == Some(s.systems.active_id());
     let v = &mut s.vehicle;
     let Some(snap) = v.snapshot.as_ref() else {
@@ -296,6 +299,56 @@ fn instruments(s: &State, v: &VehicleState, fresh: bool, vp: &Viewport) -> El {
         .child(trace)
 }
 
+/// Whether the active system's simulation link is open but not connected (retrying after the
+/// router or simulator went away) while no launch is under way: the case for [`disconnect`].
+pub(crate) fn sim_link_stuck(s: &State) -> bool {
+    let v = &s.vehicle;
+    let up = v
+        .snapshot
+        .as_ref()
+        .is_some_and(|snap| snap.link.state == LinkState::Connected);
+    // A headless scene's preview stands in for the link.
+    let open = v.link.is_some() || (s.headless && v.preview.is_some());
+    v.sim
+        && open
+        && v.owner.as_deref() == Some(s.systems.active_id())
+        && s.session.is_none()
+        && (!up || v.router.error.is_some())
+}
+
+/// Closes only the simulation link: the simulator, router and other tools keep running.
+pub(crate) fn disconnect_link(s: &mut State) {
+    crate::vehicle::disconnect(s);
+    s.notice = "Vehicle link closed; nothing was sent to the vehicle. The simulator and other tools keep running: Stop session stops them.".into();
+}
+
+/// Disconnect for a stuck simulation link (key `vehicle-disconnect`); empty otherwise.
+fn disconnect(s: &State) -> El {
+    if !sim_link_stuck(s) {
+        return col();
+    }
+    row()
+        .key("vehicle-disconnect")
+        .w_full()
+        .min_w(0.)
+        .gaps(8., 16.)
+        .flex_wrap()
+        .center_y()
+        .child(
+            ghost("link-disconnect", "Disconnect link", true, disconnect_link).help(
+                "Closes only the vehicle link. Processes keep running; Stop session stops everything.",
+            ),
+        )
+        .child(
+            meta_sized(
+                "The link keeps retrying. Disconnect closes only the link; Stop session stops the simulator and every tool too.",
+                9.,
+                muted(),
+            )
+            .wrap(),
+        )
+}
+
 /// Live view of the active system's vehicle (key `vehicle-live`). Another system's link is
 /// named, not shown.
 pub(crate) fn live(s: &State, vp: &Viewport) -> El {
@@ -319,6 +372,7 @@ pub(crate) fn live(s: &State, vp: &Viewport) -> El {
     if let Some(note) = owner_note(s) {
         return section.child(notice(note).key("vehicle-owner"));
     }
+    let section = section.child(disconnect(s));
     let Some(snap) = s.vehicle.shown_for(s.systems.active_id()) else {
         let current = s.systems.current();
         // The launch belongs to the system that started it (the active one when unrecorded).
@@ -329,6 +383,8 @@ pub(crate) fn live(s: &State, vp: &Viewport) -> El {
                 .is_some_and(|id| crate::systems::staged(s, id));
         return section.child(notice(if starting {
             "Workspace starting; the live view appears once the vehicle link is up."
+        } else if s.vehicle.owned_by(active) {
+            "Connecting to the vehicle link…"
         } else if current.source.simulated() {
             "No live link. Start the workspace to see the simulated vehicle here."
         } else {

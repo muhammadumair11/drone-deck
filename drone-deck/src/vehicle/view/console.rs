@@ -1,8 +1,9 @@
 //! The vehicle console (MAVLink shell over SERIAL_CONTROL): bounded output, an input line
 //! (Return sends, Up / Down walk the history), disabled with the gate's reason. PX4 answers
-//! with its NuttX shell; collapsed by default.
+//! with its NuttX shell; ArduPilot has none, so the console is disabled there and says so.
+//! Collapsed by default.
 use super::actions::blocked;
-use crate::mavlink::Autopilot;
+use super::owner_note;
 use crate::ui::{kit::*, theme::*};
 use crate::{State, TextEdit, activity, vehicle};
 use rune::{El, Key, KeyEvent, ScrollSpec, Tx, col, row};
@@ -22,13 +23,21 @@ pub(crate) fn tail(text: &str, lines: usize) -> &str {
     }
 }
 
+/// Why the console is off for the active system: another system's link, a flight stack
+/// without a MAVLink shell (ArduPilot), or the gate. `None` when it may send.
+pub(crate) fn console_blocked(s: &State) -> Option<String> {
+    owner_note(s)
+        .or_else(|| vehicle::shell_unsupported(s, s.systems.active_id()).map(String::from))
+        .or_else(|| blocked(s))
+}
+
 /// Sends the typed line and keeps it in the history.
 pub(crate) fn submit(s: &mut State) {
     let line = s.vehicle.ui.console_input.text.trim().to_string();
     if line.is_empty() {
         return;
     }
-    if let Some(reason) = blocked(s) {
+    if let Some(reason) = console_blocked(s) {
         s.notice = format!("Console: {reason}");
         return;
     }
@@ -73,11 +82,6 @@ pub(crate) fn history_key(s: &mut State, ev: &KeyEvent, _: &mut Tx) -> bool {
 
 fn body(s: &State, reason: Option<String>) -> El {
     let on = reason.is_none();
-    let ardupilot = s
-        .vehicle
-        .shown_for(s.systems.active_id())
-        .and_then(|snap| snap.vehicle.as_ref())
-        .is_some_and(|v| v.autopilot == Autopilot::ArduPilot);
     let mut out = col()
         .key("console-output")
         .role("log")
@@ -90,7 +94,11 @@ fn body(s: &State, reason: Option<String>) -> El {
         .scroll(ScrollSpec { stick_bottom: true });
     out = if s.vehicle.console.is_empty() {
         out.child(meta_sized(
-            "No console output yet. Try help, ver all or commander status.",
+            if on {
+                "No console output yet. Try help, ver all or commander status."
+            } else {
+                "No console output."
+            },
             9.,
             muted(),
         ))
@@ -136,13 +144,9 @@ fn body(s: &State, reason: Option<String>) -> El {
         .child(p(
             "Commands run on the simulated flight controller's shell. Return sends; Up and Down recall earlier commands.",
             10.,
-        ));
-    if ardupilot {
-        block = block.child(notice(
-            "ArduPilot has no MAVLink shell; this console answers on PX4 only.",
-        ));
-    }
-    block = block.child(out).child(controls);
+        ))
+        .child(out)
+        .child(controls);
     if let Some(why) = reason {
         block = block.child(notice(why).key("console-gate").role("status"));
     }
@@ -154,7 +158,7 @@ pub(crate) fn console(s: &State, _vp: &Viewport) -> El {
     if !s.systems.current().source.simulated() {
         return col();
     }
-    let reason = blocked(s);
+    let reason = console_blocked(s);
     col().w_full().min_w(0.).pb(18.).child(disclosure(
         s,
         KEY,

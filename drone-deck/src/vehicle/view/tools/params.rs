@@ -289,6 +289,9 @@ fn status(s: &State, vehicle: Option<&ParamSet>) -> El {
 
 fn compare(s: &State, vehicle: Option<&ParamSet>) -> El {
     let h = &s.hardware;
+    let id = s.systems.active_id();
+    let (pending, baseline) = (h.loading(id), h.baseline(id));
+    let loading = pending.is_some();
     let mut block = col()
         .key("params-compare")
         .w_full()
@@ -310,18 +313,34 @@ fn compare(s: &State, vehicle: Option<&ParamSet>) -> El {
                 .flex_wrap()
                 .child(ghost(
                     "params-load",
-                    "Load and compare",
-                    !h.params_file.text.trim().is_empty(),
+                    if loading {
+                        "Loading…"
+                    } else {
+                        "Load and compare"
+                    },
+                    !loading && !h.params_file.text.trim().is_empty(),
                     hardware::load_baseline,
                 ))
                 .child(ghost(
                     "params-clear",
-                    "Clear comparison",
-                    h.baseline.is_some(),
+                    if loading {
+                        "Stop waiting"
+                    } else {
+                        "Clear comparison"
+                    },
+                    loading || baseline.is_some(),
                     hardware::clear_baseline,
                 )),
         );
-    if let Some(b) = &h.baseline {
+    if let Some(l) = pending {
+        block = block.child(
+            meta_sized(format!("Reading {}…", l.path.display()), 9., muted())
+                .key("params-loading")
+                .role("status")
+                .wrap_anywhere(),
+        );
+    }
+    if let Some(b) = baseline {
         let mut text = format!("{} / {} parameters", b.path.display(), b.set.params.len());
         if let Some(v) = vehicle {
             let changes = crate::vehicle::diff_params(&b.set, v);
@@ -353,8 +372,9 @@ fn compare(s: &State, vehicle: Option<&ParamSet>) -> El {
     block
 }
 
+/// The last export of the active system's parameters, offered for a later comparison.
 fn exported(s: &State) -> El {
-    let Some(path) = &s.hardware.exported else {
+    let Some(path) = s.hardware.exported(s.systems.active_id()) else {
         return el();
     };
     let shown = path.display().to_string();
@@ -376,7 +396,7 @@ fn exported(s: &State) -> El {
 pub(super) fn section(s: &State, vp: &Viewport) -> El {
     let compact = vp.compact();
     let vehicle = s.vehicle.params.as_ref().filter(|_| mine(s));
-    let file = s.hardware.baseline.as_ref();
+    let file = s.hardware.baseline(s.systems.active_id());
     let fetching = s.vehicle.params_progress.is_some() && mine(s);
     let actions = row()
         .gaps(8., 20.)

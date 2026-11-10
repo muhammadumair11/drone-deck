@@ -11,6 +11,7 @@
 
 mod command;
 mod engine;
+mod events;
 mod frame;
 mod home;
 mod link;
@@ -25,6 +26,7 @@ mod tlog;
 pub use command::{
     Authority, CommandKind, CommandResult, Refusal, SimulationEvidence, takeoff_needs_home,
 };
+pub use events::{HealthReport, component_names, mode_group, mode_group_names};
 pub use link::Endpoint;
 pub use logs::{LogEntry, utc_stamp};
 pub use modes::{Autopilot, available as available_modes, is_vehicle_heartbeat};

@@ -150,6 +150,19 @@ pub(crate) fn scene_actions(s: &mut State) {
     s.ui.open.insert("flight-modes".into());
 }
 
+/// `vehicle-health-checks`: on the ground in Hold with PX4's event-based arming check report
+/// (`health::px4_checks_fixture`): arming blocked by the magnetometer, a battery warning.
+pub(crate) fn scene_health_checks(s: &mut State) {
+    scene_actions(s);
+    s.ui.open.remove("flight-modes");
+    if let Some(v) = s.vehicle.snapshot.as_mut().and_then(|x| x.vehicle.as_mut()) {
+        super::health::px4_checks_fixture(v);
+    }
+    s.vehicle
+        .status
+        .retain(|t| !t.text.starts_with("Ready for takeoff"));
+}
+
 /// `vehicle-console`: the console open with some PX4 shell output and history.
 pub(crate) fn scene_console(s: &mut State) {
     live(s, true);
@@ -191,6 +204,60 @@ pub(crate) fn scene_gated(s: &mut State) {
     });
     fly(s);
     s.ui.open.insert(super::console::KEY.into());
+}
+
+/// `vehicle-launching`: the workspace launch at its first stage: the actions bar and the
+/// console say the launch is under way.
+pub(crate) fn scene_launching(s: &mut State) {
+    simulation(s);
+    s.session = Some(crate::session::Launch::new(
+        systems::SESSIONS[systems::SIMULATION],
+    ));
+    s.status.insert("sih".into(), "Starting".into());
+    s.ui.open.insert(super::console::KEY.into());
+}
+
+/// `vehicle-ardupilot-console`: an ArduPilot SITL system with granted flight actions: the
+/// console is disabled, since ArduPilot has no MAVLink shell.
+pub(crate) fn scene_ardupilot_console(s: &mut State) {
+    let id = s.systems.create(systems::SIMULATION, "ArduPilot lab");
+    if let Some(sys) = s.systems.get_mut(&id) {
+        sys.source = Source::ArduPilot {
+            vehicle: "copter".into(),
+        };
+    }
+    s.select_system(&id);
+    s.systems.claim("ardupilot");
+    s.status.insert("ardupilot".into(), "Running".into());
+    vehicle::preview(s, &id, true, true);
+    fly(s);
+    if let Some(v) = s.vehicle.snapshot.as_mut().and_then(|x| x.vehicle.as_mut()) {
+        v.autopilot = crate::mavlink::Autopilot::ArduPilot;
+        v.mode = "LOITER".into();
+    }
+    s.ui.open.insert(super::console::KEY.into());
+    s.vehicle.ui.console_input = TextEdit::new("");
+}
+
+/// `vehicle-link-retrying`: the simulation link retries after the agent restarted and took
+/// the router with it: Disconnect closes only the link.
+pub(crate) fn scene_link_retrying(s: &mut State) {
+    live(s, false);
+    s.vehicle.sim = true;
+    s.agent.router = None;
+    s.vehicle.router.error = Some(
+        "The Linux agent restarted, so the MAVLink router stopped. Stop the session and start it again."
+            .into(),
+    );
+    if let Some(snap) = s.vehicle.snapshot.as_mut() {
+        snap.link.state =
+            crate::mavlink::LinkState::Down("connection refused (os error 10061)".into());
+    }
+    s.vehicle.preview = Some(SimulationEvidence {
+        app_router_link: false,
+        simulator_source: true,
+        stack_owned_running: true,
+    });
 }
 
 /// `vehicle-readonly`: a physical vehicle: live view and health, no actions, no console.

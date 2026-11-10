@@ -32,6 +32,8 @@ pub(super) fn save_editor(s: &mut State) {
             return;
         }
     };
+    // Shown in the editor and repeated on save; it never blocks saving.
+    let caution = d.caution();
     if next.source != base.source && systems::owns_work(s, &base.id) {
         draft(s).error = format!(
             "{} has running work. Stop its session before changing the source; name and consumers can change now.",
@@ -56,7 +58,10 @@ pub(super) fn save_editor(s: &mut State) {
     }
     match save(s) {
         Ok(()) => {
-            s.notice = format!("Saved {label}.");
+            s.notice = match caution {
+                Some(c) => format!("Saved {label}. {c}"),
+                None => format!("Saved {label}."),
+            };
             crate::activity::record(
                 s,
                 if renamed {
@@ -100,6 +105,7 @@ fn confirm_delete(s: &mut State) {
     let was_active = id == s.systems.active_id();
     match s.systems.remove(&id) {
         Ok(gone) => {
+            crate::hardware::forget(s, &id);
             if was_active {
                 s.ui.tools_filter = 0;
                 s.ui.expanded = None;

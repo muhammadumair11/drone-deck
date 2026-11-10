@@ -1,9 +1,17 @@
-//! A Windows Job Object that owns every Windows-native child Drone Deck starts. The job is
-//! created with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` and its handle stays open for the life of
-//! the process, so when Drone Deck exits for any reason (normal close, panic, crash, Task
-//! Manager) Windows closes the handle and terminates the children and their descendants.
-//! Children start suspended and run only once they are in the job, so nothing they start can
-//! escape it. WSL processes are not covered: killing `wsl.exe` does not stop the Linux side.
+//! Windows Job Objects that tie Drone Deck's Windows children to its lifetime. Both jobs are
+//! created with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` and their handles stay open for the life
+//! of the process, so when Drone Deck exits for any reason (normal close, panic, crash, Task
+//! Manager) Windows closes the handles and terminates what is in them. Children start
+//! suspended and run only once they are in their job.
+//!
+//! - The process job ([`spawn`]) owns Windows-native profiles and `wsl.exe` agents: they and
+//!   everything they start die with Drone Deck. Killing `wsl.exe` does not kill the Linux side;
+//!   its stdin closes and the agent shuts down on EOF (owned Linux processes are detached by
+//!   design and listed by the next agent).
+//! - The helper job ([`spawn_helper`]) owns the PowerShell helpers (setup, Studio, opening a
+//!   file with its app). It also has `JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK`: the helper dies
+//!   with Drone Deck, but whatever it starts is outside the job, so the install and model
+//!   download workers it detaches (and the apps it opens) survive a restart on purpose.
 use std::{
     io,
     process::{Child, Command},
@@ -14,6 +22,9 @@ use std::{
 #[path = "winjob_tests.rs"]
 mod tests;
 
+const KILL_ON_JOB_CLOSE: u32 = 0x2000;
+const SILENT_BREAKAWAY_OK: u32 = 0x1000;
+
 /// A job object handle. Dropping it closes the handle, which kills the processes in the job.
 pub(crate) struct Job {
     #[cfg(windows)]
@@ -22,7 +33,6 @@ pub(crate) struct Job {
 
 #[cfg(windows)]
 mod ffi {
-    pub const KILL_ON_JOB_CLOSE: u32 = 0x2000;
     pub const CREATE_SUSPENDED: u32 = 0x4;
     pub const BASIC_ACCOUNTING: i32 = 1;
     pub const EXTENDED_LIMIT: i32 = 9;
@@ -95,8 +105,17 @@ mod ffi {
 }
 
 impl Job {
-    /// Creates an unnamed job whose processes are killed when its last handle closes.
+    /// Creates an unnamed job whose processes, and their descendants, are killed when its last
+    /// handle closes.
     pub(crate) fn new() -> io::Result<Self> {
+        Self::with_limits(KILL_ON_JOB_CLOSE)
+    }
+    /// Creates a job whose own processes are killed when its last handle closes, while the
+    /// processes they start are created outside it (silent breakaway) and outlive it.
+    pub(crate) fn for_helpers() -> io::Result<Self> {
+        Self::with_limits(KILL_ON_JOB_CLOSE | SILENT_BREAKAWAY_OK)
+    }
+    fn with_limits(flags: u32) -> io::Result<Self> {
         #[cfg(windows)]
         {
             let handle = unsafe { ffi::CreateJobObjectW(std::ptr::null(), std::ptr::null()) };
@@ -106,7 +125,7 @@ impl Job {
             let job = Self { handle };
             let limits = ffi::ExtendedLimit {
                 basic: ffi::BasicLimit {
-                    limit_flags: ffi::KILL_ON_JOB_CLOSE,
+                    limit_flags: flags,
                     ..Default::default()
                 },
                 ..Default::default()
@@ -126,6 +145,7 @@ impl Job {
         }
         #[cfg(not(windows))]
         {
+            let _ = flags;
             Ok(Self {})
         }
     }
@@ -207,11 +227,17 @@ impl Drop for Job {
     }
 }
 
-/// The process-wide job. It lives in a static, so it is never dropped: the handle closes only
-/// when Drone Deck itself exits.
+/// The process-wide jobs. They live in statics, so they are never dropped: the handles close
+/// only when Drone Deck itself exits.
 fn shared() -> Result<&'static Job, &'static str> {
     static JOB: OnceLock<Result<Job, String>> = OnceLock::new();
     JOB.get_or_init(|| Job::new().map_err(|e| e.to_string()))
+        .as_ref()
+        .map_err(String::as_str)
+}
+fn helpers() -> Result<&'static Job, &'static str> {
+    static JOB: OnceLock<Result<Job, String>> = OnceLock::new();
+    JOB.get_or_init(|| Job::for_helpers().map_err(|e| e.to_string()))
         .as_ref()
         .map_err(String::as_str)
 }
@@ -220,7 +246,25 @@ fn shared() -> Result<&'static Job, &'static str> {
 /// anything it starts can outlive Drone Deck. A failed assignment is written to the app log
 /// and returned beside the running child.
 pub(crate) fn spawn(command: &mut Command, flags: u32) -> io::Result<(Child, io::Result<()>)> {
-    let (child, assigned) = match shared() {
+    spawn_in(shared(), command, flags)
+}
+
+/// Starts a helper script in the helper job: the helper dies with Drone Deck, while the
+/// processes it starts break away, so a worker it detaches keeps running after a restart.
+/// A failed assignment is written to the app log and returned beside the running child.
+pub(crate) fn spawn_helper(
+    command: &mut Command,
+    flags: u32,
+) -> io::Result<(Child, io::Result<()>)> {
+    spawn_in(helpers(), command, flags)
+}
+
+fn spawn_in(
+    job: Result<&Job, &str>,
+    command: &mut Command,
+    flags: u32,
+) -> io::Result<(Child, io::Result<()>)> {
+    let (child, assigned) = match job {
         Ok(job) => job.spawn(command, flags)?,
         Err(e) => {
             #[cfg(windows)]
@@ -243,16 +287,21 @@ pub(crate) fn spawn(command: &mut Command, flags: u32) -> io::Result<(Child, io:
     Ok((child, assigned))
 }
 
-/// A one-line description of the process-wide job for diagnostics.
+/// One line for diagnostics: both jobs, their limits and how many processes each holds now.
 pub(crate) fn describe() -> String {
     if !cfg!(windows) {
         return "Job object: not used on this platform".into();
     }
-    match shared() {
+    let state = |job: Result<&Job, &str>, limits: &str| match job {
         Ok(job) => match job.active_processes() {
-            Some(n) => format!("Job object: kill on close; {n} active process(es)"),
-            None => "Job object: kill on close; process count unavailable".into(),
+            Some(n) => format!("{limits}; {n} active process(es)"),
+            None => format!("{limits}; process count unavailable"),
         },
-        Err(e) => format!("Job object: unavailable ({e})"),
-    }
+        Err(e) => format!("unavailable ({e})"),
+    };
+    format!(
+        "Job object: {}. Helper job: {}",
+        state(shared(), "kill on close"),
+        state(helpers(), "kill on close, children break away")
+    )
 }

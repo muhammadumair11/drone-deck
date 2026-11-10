@@ -479,6 +479,123 @@ fn the_heartbeat_age_ticks_only_while_it_is_drawn() {
     assert!(!follow(&mut s), "another system's link is not drawn here");
 }
 
+/// No page but System draws the age, so an open link with a silent vehicle never ticks the
+/// window elsewhere; neither does an AI system's page, which has no live view.
+#[test]
+fn the_heartbeat_age_never_ticks_off_the_system_page() {
+    use crate::ui::Page;
+    let mut s = State::new();
+    let id = s.systems.active_id().to_string();
+    s.vehicle.owner = Some(id);
+    s.vehicle.snapshot = Some(vehicle::fake_snapshot(false));
+    for page in [
+        Page::Tools,
+        Page::Data,
+        Page::Activity,
+        Page::Settings,
+        Page::Setup,
+    ] {
+        s.page = page;
+        assert!(!follow(&mut s), "only the System page draws the age");
+    }
+    assert!(s.select_system(crate::systems::AI));
+    let ai = s.systems.active_id().to_string();
+    s.vehicle.owner = Some(ai);
+    s.page = Page::System;
+    assert!(!follow(&mut s), "an AI system's page draws no live view");
+}
+
+fn texts(rt: &Runtime<State>) -> Vec<String> {
+    rt.elements().into_iter().filter_map(|e| e.text).collect()
+}
+
+/// While the workspace launch runs, the actions bar and the console name the stage instead of
+/// the general "No live link", and send nothing.
+#[test]
+fn a_launch_under_way_disables_actions_with_its_stage() {
+    let mut rt = runtime(scene(scene_launching), (1440., 900.));
+    let reason = actions::blocked(&rt.state).expect("not granted");
+    assert!(
+        reason.starts_with("Workspace launch under way: starting PX4 / SIH"),
+        "{reason}"
+    );
+    tap(&mut rt, "flight-arm");
+    assert!(rt.state.confirm.is_none() && rt.state.vehicle.ui.pending.is_none());
+    rt.update(|_, tx| tx.scroll_into_view("flight-gate"));
+    for _ in 0..10 {
+        rt.frame(0.1);
+    }
+    let t = texts(&rt);
+    assert!(
+        t.iter()
+            .any(|x| x.starts_with("Workspace launch under way")),
+        "{t:?}"
+    );
+    assert!(!t.iter().any(|x| x.contains("Start the workspace of a")));
+}
+
+/// ArduPilot has no MAVLink shell: its console is disabled with the reason, flight actions
+/// stay granted, and PX4's console is unchanged.
+#[test]
+fn the_ardupilot_console_is_disabled_and_px4s_is_not() {
+    let mut rt = runtime(scene(scene_ardupilot_console), (1440., 900.));
+    assert_eq!(
+        actions::blocked(&rt.state),
+        None,
+        "flight actions are granted"
+    );
+    let reason = console::console_blocked(&rt.state).expect("console off");
+    assert!(reason.contains("no MAVLink shell"), "{reason}");
+    assert!(rt.find("console-gate").is_some());
+    rt.state.vehicle.ui.console_input = TextEdit::new("ver all");
+    tap(&mut rt, "console-send");
+    console::submit(&mut rt.state);
+    assert!(rt.state.vehicle.ui.history.is_empty(), "nothing was sent");
+    assert!(
+        rt.state.notice.contains("no MAVLink shell"),
+        "{}",
+        rt.state.notice
+    );
+
+    let s = scene(scene_console);
+    assert_eq!(console::console_blocked(&s), None, "PX4 keeps its console");
+}
+
+/// A simulation link that keeps retrying shows Disconnect, which closes only the link; a
+/// connected link and a launch under way do not show it.
+#[test]
+fn a_retrying_simulation_link_offers_disconnect() {
+    let mut rt = runtime(scene(scene_link_retrying), (1440., 900.));
+    assert!(sim_link_stuck(&rt.state));
+    rt.update(|_, tx| tx.scroll_into_view("vehicle-disconnect"));
+    for _ in 0..10 {
+        rt.frame(0.1);
+    }
+    assert!(rt.find("link-disconnect").is_some());
+    let t = texts(&rt);
+    assert!(t.iter().any(|x| x == "Disconnect link"), "{t:?}");
+    assert!(
+        t.iter().any(|x| x == "Stop session"),
+        "Stop session stays: {t:?}"
+    );
+    tap(&mut rt, "link-disconnect");
+    assert!(
+        rt.state.notice.starts_with("Vehicle link closed"),
+        "{}",
+        rt.state.notice
+    );
+    assert!(
+        rt.state.status.get("sih").is_some_and(|v| v == "Running"),
+        "the simulator keeps running"
+    );
+
+    let rt = runtime(scene(scene_live), (1440., 900.));
+    assert!(rt.find("link-disconnect").is_none(), "a connected link");
+    let mut s = scene(scene_link_retrying);
+    s.session = Some(crate::session::Launch::new(["qgc"]));
+    assert!(!sim_link_stuck(&s), "the launch handles its own link");
+}
+
 /// PX4 takes off to an altitude above sea level: without a reported home the confirmed
 /// height can't be sent, so Takeoff is refused before the dialog instead of climbing to
 /// PX4's own default.

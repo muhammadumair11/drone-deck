@@ -25,12 +25,10 @@ pub(super) fn request(value: Value, tx: Sender<Result<Value, String>>) {
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
-            #[cfg(windows)]
-            {
-                use std::os::windows::process::CommandExt;
-                command.creation_flags(0x08000000);
-            }
-            let mut child = command.spawn().map_err(|e| e.to_string())?;
+            // The helper dies with Drone Deck; the install worker it detaches breaks away from
+            // the helper job and keeps running, and the app re-attaches to it by its status files.
+            let (mut child, _) =
+                crate::winjob::spawn_helper(&mut command, 0x08000000).map_err(|e| e.to_string())?;
             child
                 .stdin
                 .take()

@@ -349,7 +349,7 @@ fn the_editor_validates_source_details_and_consumers() {
     d.domain = rune::TextEdit::new("42");
     d.scripts = true;
     d.scripts_udp = rune::TextEdit::new("localhost");
-    assert!(d.apply(&base).unwrap_err().contains("host:port"));
+    assert!(d.apply(&base).unwrap_err().contains("ip:port"));
     d.scripts_udp = rune::TextEdit::new("127.0.0.1:14541");
     d.inference = true;
     d.project = rune::TextEdit::new("detector");
@@ -560,4 +560,199 @@ fn a_running_pipeline_job_is_owned_work_that_stop_session_cancels() {
 
     s.stop_all();
     assert!(s.studio.pipes.job.as_ref().is_some_and(Job::cancelling));
+}
+
+/// UI-02: a physical system whose scripts consumer sends to another computer is warned about,
+/// never refused: that computer gets the telemetry and can command the vehicle.
+#[test]
+fn a_physical_scripts_address_off_this_computer_is_cautioned_not_refused() {
+    use super::edit::off_this_computer;
+    // Only a real IP on another computer counts: loopback, the unspecified address and host
+    // names (refused, never forwarded) do not.
+    for not_remote in [
+        "127.0.0.1:14540",
+        "127.8.0.3:9",
+        "[::1]:14540",
+        "localhost:14540",
+        "ground-pc:14540",
+        "0.0.0.0:14540",
+        "[::]:14540",
+    ] {
+        assert!(!off_this_computer(not_remote), "{not_remote}");
+    }
+    for remote in ["192.168.1.20:14540", "10.0.0.5:1", "[fd00::5]:14540"] {
+        assert!(off_this_computer(remote), "{remote}");
+    }
+
+    let base = template(PHYSICAL, "rig", "Rig");
+    let mut d = Draft::of(&base);
+    d.source = 3;
+    d.scripts = true;
+    d.scripts_udp = rune::TextEdit::new("127.0.0.1:14540");
+    assert_eq!(d.caution(), None);
+    d.scripts_udp = rune::TextEdit::new("192.168.1.20:14540");
+    let caution = d.caution().expect("a network address is cautioned");
+    assert!(caution.starts_with("192.168.1.20:14540 is not this computer"));
+    assert!(caution.contains("can command the vehicle"));
+    let sys = d.apply(&base).expect("saving is not blocked");
+    assert_eq!(
+        sys.consumers.scripts_udp.as_deref(),
+        Some("192.168.1.20:14540")
+    );
+
+    d.scripts = false;
+    assert_eq!(d.caution(), None, "scripts off");
+    d.scripts = true;
+    d.source = 0;
+    assert_eq!(
+        d.caution(),
+        None,
+        "a simulation is not a vehicle in the air"
+    );
+    d.source = 3;
+    d.scripts_udp = rune::TextEdit::new("not an address");
+    assert_eq!(d.caution(), None, "the address error comes first");
+}
+
+/// UI-08: the vehicle link forwards only to an `ip:port`, so a host name or the unspecified
+/// address is refused with its own reason instead of being saved and silently not forwarded.
+#[test]
+fn a_scripts_address_the_link_cannot_forward_to_is_refused_with_its_reason() {
+    let base = template(PHYSICAL, "rig", "Rig");
+    let mut d = Draft::of(&base);
+    d.source = 3;
+    d.scripts = true;
+    for host in ["ground-pc:14540", "localhost:14540"] {
+        d.scripts_udp = rune::TextEdit::new(host);
+        let e = d.apply(&base).unwrap_err();
+        assert!(e.contains("Host names are not resolved"), "{host}: {e}");
+        assert!(e.contains("Use an IP address"), "{e}");
+        assert_eq!(d.scripts_problem(), Some(e));
+        assert_eq!(
+            d.caution(),
+            None,
+            "{host} is never forwarded, so never cautioned"
+        );
+    }
+    for unspecified in ["0.0.0.0:14540", "[::]:14540"] {
+        d.scripts_udp = rune::TextEdit::new(unspecified);
+        let e = d.apply(&base).unwrap_err();
+        assert!(e.contains("listen address, not a destination"), "{e}");
+        assert_eq!(d.caution(), None);
+    }
+    d.scripts_udp = rune::TextEdit::new("127.0.0.1:0");
+    assert!(d.apply(&base).unwrap_err().contains("1 to 65535"));
+    d.scripts_udp = rune::TextEdit::new("ground pc");
+    assert!(d.apply(&base).unwrap_err().contains("ip:port"));
+    for ok in ["127.0.0.1:14540", " [::1]:14540 ", "192.168.1.20:14540"] {
+        d.scripts_udp = rune::TextEdit::new(ok);
+        assert_eq!(d.scripts_problem(), None, "{ok}");
+        assert!(d.apply(&base).is_ok(), "{ok}");
+    }
+    // Scripts off: the hidden address is not checked.
+    d.scripts = false;
+    d.scripts_udp = rune::TextEdit::new("ground-pc:14540");
+    assert!(d.apply(&base).is_ok());
+}
+
+/// UI-08 in the editor: a host name shows its reason under the field, not the caution, and
+/// Save keeps the editor open with the old address.
+#[test]
+fn the_system_editor_refuses_a_host_name_scripts_address_under_the_field() {
+    use crate::ui::Page;
+    use rune::{Env, Runtime};
+    let mut s = State::new();
+    s.navigate(Page::Settings);
+    let id = s.systems.create(PHYSICAL, "Host rig");
+    let before = s.systems.get(&id).unwrap().consumers.scripts_udp.clone();
+    let mut d = s.systems.get(&id).map(Draft::of).unwrap();
+    d.scripts = true;
+    d.scripts_udp = rune::TextEdit::new("ground-pc:14540");
+    s.systems.editor = Some(d);
+    let mut rt = Runtime::new(
+        s,
+        crate::view,
+        (1440., 900.),
+        Env {
+            scale: 1.,
+            system_dark: true,
+        },
+    );
+    rt.update(|_, tx| tx.scroll_into_view("system-scripts"));
+    for _ in 0..10 {
+        rt.frame(0.1);
+    }
+    assert!(rt.find("system-scripts-invalid").is_some());
+    assert!(rt.find("system-scripts-network").is_none());
+    rt.update(|_, tx| tx.scroll_into_view("system-save"));
+    for _ in 0..10 {
+        rt.frame(0.1);
+    }
+    let (x, y) = rt.find("system-save").expect("save");
+    rt.pointer_down(x, y);
+    rt.pointer_up(x, y);
+    rt.frame(0.1);
+    let editor = rt.state.systems.editor.as_ref().expect("still editing");
+    assert!(
+        editor.error.contains("Host names are not resolved"),
+        "{}",
+        editor.error
+    );
+    assert_eq!(
+        rt.state.systems.get(&id).unwrap().consumers.scripts_udp,
+        before
+    );
+}
+
+/// UI-02 in the editor: the caution shows under the scripts address and is repeated on save.
+#[test]
+fn the_system_editor_cautions_a_network_scripts_address_on_a_physical_system() {
+    use crate::ui::Page;
+    use rune::{Env, Runtime};
+    let mut s = State::new();
+    s.navigate(Page::Settings);
+    let id = s.systems.create(PHYSICAL, "Bench rig");
+    let mut d = s.systems.get(&id).map(Draft::of).unwrap();
+    d.scripts = true;
+    d.scripts_udp = rune::TextEdit::new("192.168.1.20:14540");
+    s.systems.editor = Some(d);
+    let mut rt = Runtime::new(
+        s,
+        crate::view,
+        (1440., 900.),
+        Env {
+            scale: 1.,
+            system_dark: true,
+        },
+    );
+    rt.update(|_, tx| tx.scroll_into_view("system-scripts"));
+    for _ in 0..10 {
+        rt.frame(0.1);
+    }
+    assert!(rt.find("system-scripts-network").is_some());
+    assert!(rt.find("system-bridge-warning").is_some());
+    rt.update(|_, tx| tx.scroll_into_view("system-save"));
+    for _ in 0..10 {
+        rt.frame(0.1);
+    }
+    let (x, y) = rt.find("system-save").expect("save");
+    rt.pointer_down(x, y);
+    rt.pointer_up(x, y);
+    rt.frame(0.1);
+    assert!(rt.state.systems.editor.is_none(), "saved");
+    assert!(
+        rt.state.notice.contains("is not this computer"),
+        "{}",
+        rt.state.notice
+    );
+    assert_eq!(
+        rt.state
+            .systems
+            .get(&id)
+            .unwrap()
+            .consumers
+            .scripts_udp
+            .as_deref(),
+        Some("192.168.1.20:14540")
+    );
 }

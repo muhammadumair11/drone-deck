@@ -187,7 +187,16 @@ fn rail(s: &State, width: f32, drawer: bool, height: f32) -> El {
             s.ui.menu = false;
             s.navigate(Page::Settings)
         }))
-        .child(meta_sized("Drone Deck v0.8", 9., muted()));
+        .child(meta_sized(
+            concat!(
+                "Drone Deck v",
+                env!("CARGO_PKG_VERSION_MAJOR"),
+                ".",
+                env!("CARGO_PKG_VERSION_MINOR")
+            ),
+            9.,
+            muted(),
+        ));
     let logo = row()
         .key("app-logo")
         .role("button")

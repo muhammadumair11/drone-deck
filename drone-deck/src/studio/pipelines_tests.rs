@@ -450,24 +450,131 @@ fn open_in_place_then_copy_then_agent_export() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+/// A port nothing listens on: bound, then released.
+fn closed_port() -> std::net::SocketAddr {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.local_addr().unwrap()
+}
+
+/// Polls until `done` (each poll must return quickly: probes run on a worker thread).
+fn poll_live_until(s: &mut State, done: impl Fn(&State) -> bool) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !done(s) {
+        assert!(Instant::now() < deadline, "{}", s.studio.pipes.message);
+        let started = Instant::now();
+        foxglove::poll(s);
+        assert!(
+            started.elapsed() < Duration::from_millis(100),
+            "poll blocked for {:?}",
+            started.elapsed()
+        );
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
 #[test]
-fn live_foxglove_opens_once_the_bridge_runs_and_gives_up_when_it_stops() {
+fn live_foxglove_waits_for_the_port_to_accept_before_opening() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let mut s = State::new();
-    s.studio.pipes.live_pending = Some(Instant::now() - Duration::from_secs(5));
+    s.studio.pipes.live_pending = Some(foxglove::LiveWait::new(listener.local_addr().unwrap()));
     s.status.insert(foxglove::PROFILE.into(), "Starting".into());
     assert!(!foxglove::poll(&mut s));
     assert!(s.studio.pipes.live_pending.is_some());
     s.status.insert(foxglove::PROFILE.into(), "Running".into());
+    // Running is not enough: the first poll starts the port check and says so.
+    assert!(foxglove::poll(&mut s));
+    assert!(s.studio.pipes.live_pending.is_some());
+    assert!(s.studio.pipes.message.contains("waiting for port"));
+    poll_live_until(&mut s, |s| s.studio.pipes.live_pending.is_none());
+    assert_eq!(s.studio.pipes.message, foxglove::LIVE_OPENED);
+}
+
+#[test]
+fn live_foxglove_claims_only_what_the_port_check_and_open_prove() {
+    // The listener is not foxglove_bridge, and `open` only asks Windows: the message must not
+    // credit the owned bridge or say Foxglove opened.
+    let m = foxglove::LIVE_OPENED;
+    assert!(m.contains("Port 8765 accepts connections"), "{m}");
+    assert!(m.contains("asked Windows to open Foxglove"), "{m}");
+    assert!(m.contains("Any program listening on that port"), "{m}");
+    assert!(!m.contains("Foxglove opened"), "{m}");
+    assert!(!m.contains("owned"), "{m}");
+}
+
+#[test]
+fn live_foxglove_keeps_checking_a_closed_port_then_opens_when_it_listens() {
+    let addr = closed_port();
+    let mut s = State::new();
+    s.status.insert(foxglove::PROFILE.into(), "Running".into());
+    s.studio.pipes.live_pending = Some(foxglove::LiveWait::new(addr));
+    let until = Instant::now() + Duration::from_millis(600);
+    poll_live_until(&mut s, |_| Instant::now() >= until);
+    assert!(
+        s.studio.pipes.live_pending.is_some(),
+        "a refused connection does not open Foxglove"
+    );
+    let Ok(_listener) = std::net::TcpListener::bind(addr) else {
+        return; // Another process took the port meanwhile; the refusal above is what matters.
+    };
+    poll_live_until(&mut s, |s| s.studio.pipes.live_pending.is_none());
+    assert_eq!(s.studio.pipes.message, foxglove::LIVE_OPENED);
+}
+
+#[test]
+fn live_foxglove_gives_up_honestly_when_the_port_stays_closed() {
+    let mut s = State::new();
+    s.status.insert(foxglove::PROFILE.into(), "Running".into());
+    let mut wait = foxglove::LiveWait::new(closed_port());
+    wait.running = Some(Instant::now() - foxglove::LIVE_PORT_TIMEOUT);
+    s.studio.pipes.live_pending = Some(wait);
     assert!(foxglove::poll(&mut s));
     assert!(s.studio.pipes.live_pending.is_none());
-    assert!(s.studio.pipes.message.contains("ws://localhost:8765"));
-    s.studio.pipes.live_pending = Some(Instant::now());
+    let text = &s.studio.pipes.message;
+    assert!(
+        text.contains("did not accept a connection within 20s"),
+        "{text}"
+    );
+    assert!(text.contains("Foxglove was not opened"), "{text}");
+}
+
+#[test]
+fn live_foxglove_gives_up_when_the_bridge_stops() {
+    let mut s = State::new();
+    s.studio.pipes.live_pending = Some(foxglove::LiveWait::new(closed_port()));
     s.status.insert(foxglove::PROFILE.into(), "Exited 1".into());
     assert!(foxglove::poll(&mut s));
+    assert!(s.studio.pipes.live_pending.is_none());
     assert!(s.studio.pipes.message.contains("did not start (Exited 1)"));
     s.headless = true;
     foxglove::toggle_live(&mut s);
     assert!(s.studio.pipes.live_pending.is_none());
+}
+
+#[test]
+fn the_job_counter_redraws_only_while_the_pipelines_tab_is_on_screen() {
+    let mut s = State::new();
+    let mut job = Job::fake(JobKind::Extract);
+    job.started = Instant::now() - Duration::from_secs(5);
+    s.studio.pipes.job = Some(job);
+    s.navigate(crate::ui::Page::System);
+    assert!(!counter_visible(&s));
+    assert!(!poll(&mut s), "a ticking counter off screen draws nothing");
+    s.navigate(crate::ui::Page::Data);
+    s.ui.data_tab = 1;
+    assert!(!poll(&mut s), "another Data tab does not show the counter");
+    s.ui.data_tab = 2;
+    assert!(counter_visible(&s));
+    assert!(poll(&mut s), "the visible counter advanced");
+    assert!(!poll(&mut s), "and redraws once per second");
+    // Real state changes redraw on any page.
+    s.navigate(crate::ui::Page::System);
+    s.studio
+        .pipes
+        .tx
+        .send(Msg::Progress("Reading".into()))
+        .unwrap();
+    assert!(poll(&mut s));
+    assert_eq!(s.studio.pipes.job.as_ref().unwrap().progress, "Reading");
 }
 
 fn runtime() -> Runtime<State> {

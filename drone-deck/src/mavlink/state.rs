@@ -1,4 +1,5 @@
 //! What the app knows about the vehicle, built from decoded messages.
+use super::events::{HealthEvents, HealthReport};
 use super::frame::{Msg, text};
 use super::modes::{self, Autopilot};
 use std::collections::VecDeque;
@@ -77,6 +78,8 @@ pub struct VehicleState {
     pub vtol_state: u8,
     /// HOME_POSITION: latitude, longitude (degrees) and altitude MSL (metres).
     pub home: Option<(f64, f64, f32)>,
+    /// PX4's health and arming check report (events protocol), when the vehicle sent one.
+    pub health_events: HealthEvents,
     pub last_heartbeat: Instant,
     /// Messages per second by name, sorted by name.
     pub message_rates: Vec<(&'static str, f32)>,
@@ -116,6 +119,7 @@ impl VehicleState {
             landed_state: 0,
             vtol_state: 0,
             home: None,
+            health_events: HealthEvents::default(),
             last_heartbeat: now,
             message_rates: Vec::new(),
             status: VecDeque::new(),
@@ -133,6 +137,10 @@ impl VehicleState {
     /// Present and enabled sensors that report unhealthy, as MAV_SYS_STATUS_SENSOR bits.
     pub fn unhealthy_sensors(&self) -> u32 {
         self.sensors_present & self.sensors_enabled & !self.sensors_health
+    }
+    /// The last complete health and arming check report.
+    pub fn health_report(&self) -> Option<&HealthReport> {
+        self.health_events.report.as_ref()
     }
     pub fn is_fresh(&self, now: Instant, stale_after: std::time::Duration) -> bool {
         now.saturating_duration_since(self.last_heartbeat) < stale_after
@@ -220,6 +228,8 @@ impl VehicleState {
                     h.altitude as f32 / 1000.0,
                 ));
             }
+            Msg::EVENT(e) => return self.health_events.on_event(e),
+            Msg::CURRENT_EVENT_SEQUENCE(c) => return self.health_events.on_sequence(c),
             _ => return false,
         }
         true

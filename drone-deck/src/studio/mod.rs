@@ -29,6 +29,9 @@ pub(crate) struct Studio {
     /// shared `message` there would show unrelated Data prompts).
     pub credential_note: String,
     pub pending: bool,
+    /// What the pending `start_model` or `retry_model` starts, while it is still with its
+    /// helper: a close then stops the helper and the download may not start (`setup::close`).
+    pub starting: Option<String>,
     pub selected_job: Option<String>,
     /// Lazy Data & models loads already requested (`models`, `credential_status`, `data_library`,
     /// `pipe_list`).
@@ -60,6 +63,7 @@ impl Default for Studio {
             message: "Choose a model or project workflow.".into(),
             credential_note: String::new(),
             pending: false,
+            starting: None,
             selected_job: None,
             loaded: Vec::new(),
             pipes: pipelines::Pipes::default(),
@@ -139,12 +143,30 @@ pub(crate) fn request(s: &mut State, action: &str) {
         }
         _ => {}
     }
+    r.starting = starting(r, action);
     r.pending = true;
     r.message = format!("{}…", action.replace('_', " "));
     if credential {
         r.credential_note = r.message.clone();
     }
     bridge::request(value, s.config.distro.clone(), linux, r.tx.clone());
+}
+/// What a request starts, named for the close warning: a model download, or its retry.
+pub(crate) fn starting(r: &Studio, action: &str) -> Option<String> {
+    let repo = r
+        .preview
+        .as_ref()
+        .and_then(|p| p["repo"].as_str())
+        .filter(|repo| !repo.is_empty())
+        .unwrap_or_else(|| r.repo.text.trim());
+    match action {
+        "start_model" => Some(format!("the model download of {repo}")),
+        "retry_model" => Some(match &r.selected_job {
+            Some(id) => format!("the retry of model download {id}"),
+            None => "the retry of a model download".into(),
+        }),
+        _ => None,
+    }
 }
 /// The Linux path of a model path typed or browsed on Windows, inside `distro`: a drive path goes
 /// through the distro's drive mount (`automount_root` from the agent's `hello`, `/mnt/` when
@@ -184,6 +206,7 @@ pub(crate) fn poll(s: &mut State) -> bool {
             continue;
         }
         r.pending = false;
+        r.starting = None;
         let credential = event["action"]
             .as_str()
             .is_some_and(|a| CREDENTIAL_ACTIONS.contains(&a));

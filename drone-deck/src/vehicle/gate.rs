@@ -89,7 +89,7 @@ pub(crate) fn gate_reason(s: &State) -> Option<String> {
     }
     let v = &s.vehicle;
     if v.link.is_none() && !(s.headless && v.preview.is_some()) {
-        return Some("No live link. Start the workspace of a simulated system first.".into());
+        return Some(no_link(s));
     }
     if v.link
         .as_ref()
@@ -105,6 +105,10 @@ pub(crate) fn gate_reason(s: &State) -> Option<String> {
         why
     } else if let (false, Some(router)) = (e.app_router_link, &v.router.error) {
         router.clone()
+    } else if let Some(launch) = launching(s) {
+        // Until the link stage is done the link is still connecting and the router has no
+        // client yet: that is the launch under way, not another program on the port.
+        launch
     } else if !e.app_router_link
         && v.sim
         && owner.is_some_and(systems::routed)
@@ -123,9 +127,88 @@ pub(crate) fn gate_reason(s: &State) -> Option<String> {
     })
 }
 
-/// Why simulator `id` must not start for system `for_system` now: another simulator runs,
-/// the same one runs for another system, or something on Windows already listens on the
-/// simulator port (`stage::sim_port_taken`). `None` when it may start.
+/// A stage's name as the launch progress shows it.
+fn stage_name(s: &State, id: &str) -> String {
+    systems::component(id)
+        .map(|c| c.name.to_string())
+        .or_else(|| {
+            s.config
+                .profiles
+                .iter()
+                .find(|p| p.id == id)
+                .map(|p| p.name.clone())
+        })
+        .unwrap_or_else(|| id.to_string())
+}
+
+/// The active system's staged launch while it has not finished its `link` stage, in user
+/// words; `None` without one, for another system's launch, or once the link stage is done
+/// (then the gate's own reasons apply).
+fn launching(s: &State) -> Option<String> {
+    let launch = s.session.as_ref()?;
+    let active = s.systems.active_id();
+    if s.systems.owner("session").unwrap_or(active) != active {
+        return None;
+    }
+    let (stages, at) = (launch.stages(), launch.stage());
+    if stages
+        .iter()
+        .position(|id| *id == "link")
+        .is_some_and(|link| at > link)
+    {
+        return None;
+    }
+    Some(format!(
+        "Workspace launch under way: starting {} (stage {} of {}). Flight actions and the console unlock once the vehicle link is up and the simulator runs under this system.",
+        stage_name(s, launch.current()),
+        (at + 1).min(stages.len()),
+        stages.len()
+    ))
+}
+
+/// Why there is no link to command, for [`gate_reason`].
+fn no_link(s: &State) -> String {
+    if let Some(launch) = launching(s) {
+        return launch;
+    }
+    let active = s.systems.active_id();
+    if s.session.is_some()
+        && let Some(other) = s.systems.owner("session").filter(|o| *o != active)
+    {
+        let name = s.systems.get(other).map_or("another system", |x| x.label());
+        return format!(
+            "No live link. A workspace launch for {name} is under way; start this system's workspace once it finishes, or stop that session."
+        );
+    }
+    let stack = s
+        .systems
+        .get(active)
+        .and_then(systems::vehicle_profile)
+        .filter(|id| systems::running(s, id) && s.systems.owner(id) == Some(active));
+    let v = &s.vehicle;
+    if let Some(router) = &v.router.error {
+        // The launch stopped at (or lost) the router: that is why no link opened.
+        return format!("No live link. {router}");
+    }
+    let Some(id) = stack else {
+        return "No live link. Start the workspace of a simulated system first.".into();
+    };
+    let name = stage_name(s, id);
+    if v.closed && v.owner.as_deref() == Some(active) {
+        format!(
+            "No live link: the vehicle link was closed while {name} still runs. Stop session, then start the workspace again to reconnect."
+        )
+    } else {
+        format!(
+            "No live link: {name} runs, but no vehicle link was opened for it. Start the workspace to open the link."
+        )
+    }
+}
+
+/// Why simulator `id` must not start for system `for_system` now: another simulator runs, or
+/// the same one runs for another system. `None` when it may start. The Windows port is
+/// checked off the UI thread (`port::check`): by the staged launch before each simulator and
+/// router stage, and by `port::start_conflict` for a direct start.
 pub(crate) fn simulator_conflict(s: &State, id: &str, for_system: &str) -> Option<String> {
     if !SIMULATORS.contains(&id) {
         return None;
@@ -157,10 +240,5 @@ pub(crate) fn simulator_conflict(s: &State, id: &str, for_system: &str) -> Optio
             ));
         }
     }
-    // A simulator already running (ArduPilot serves the port itself) or the app's own router
-    // holds the port legitimately; otherwise it must be free before a simulator starts.
-    if systems::running(s, id) || super::stage::router_up(s) {
-        return None;
-    }
-    super::stage::sim_port_taken(s)
+    None
 }

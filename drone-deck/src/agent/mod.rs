@@ -178,12 +178,9 @@ pub(crate) fn wsl_connector(distro: String) -> Connector {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(0x08000000);
-        }
-        let mut child = command.spawn()?;
+        // In the process job: wsl.exe dies with Drone Deck. That closes the agent's stdin, and
+        // on EOF the agent finalizes a recording, stops the router and detaches owned processes.
+        let (mut child, _) = crate::winjob::spawn(&mut command, 0x08000000)?;
         let (Some(stdin), Some(stdout), Some(stderr)) =
             (child.stdin.take(), child.stdout.take(), child.stderr.take())
         else {

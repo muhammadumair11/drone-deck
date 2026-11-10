@@ -24,6 +24,7 @@ use std::{
 };
 
 mod gate;
+mod port;
 mod preview;
 mod retention;
 mod stage;
@@ -34,6 +35,7 @@ pub(crate) mod view;
 #[cfg(test)]
 pub(crate) use gate::evidence;
 pub(crate) use gate::{authority, gate_reason, simulator_conflict};
+pub(crate) use port::{Port, start_conflict};
 #[cfg(test)]
 pub(crate) use preview::fake_snapshot;
 pub(crate) use preview::preview;
@@ -96,9 +98,15 @@ pub(crate) struct Vehicle {
     pub error: Option<String>,
     /// Opened by `connect_sim` on the app's own loopback simulator link.
     pub(crate) sim: bool,
+    /// The link of `owner` was closed on its own (`disconnect`) while its tools may still run;
+    /// false once a link opens again or `Stop session` ends the rest. The gate tells a closed
+    /// link from one that never opened.
+    pub(crate) closed: bool,
     /// Simulator link port (`SIM_TCP_PORT`; tests point it at a fake vehicle).
     pub(crate) sim_port: u16,
     pub(crate) router: stage::Router,
+    /// The Windows simulator-port probe (off the UI thread) and a start waiting for it.
+    pub(crate) port: port::PortCheck,
     /// Wakes the UI when the service has news (set by `main` once the window is ready).
     pub(crate) waker: Option<Waker>,
     /// Headless scenes only: evidence shown in place of a link's (see `preview`).
@@ -247,6 +255,7 @@ fn open(s: &mut State, owner: &str, endpoint: Endpoint, origin: LinkOrigin) -> R
         v.console.clear();
     }
     v.sim = origin == LinkOrigin::SimulatorRouter;
+    v.closed = false;
     v.endpoint = endpoint.to_string();
     v.owner = Some(owner.to_string());
     v.error = None;
@@ -316,6 +325,7 @@ pub(crate) fn disconnect(s: &mut State) {
     link.stop();
     s.vehicle.reset_link_state();
     s.vehicle.sim = false;
+    s.vehicle.closed = true;
     let name = s
         .vehicle
         .owner
@@ -328,10 +338,42 @@ pub(crate) fn disconnect(s: &mut State) {
     );
 }
 
-/// Closes the link and stops the router this app started. `Stop session` and app exit.
+/// Closes the link and stops the router this app started. `Stop session` and app exit. A
+/// direct start still waiting for the port check is dropped.
 pub(crate) fn stop(s: &mut State) {
     disconnect(s);
+    s.vehicle.closed = false;
     stop_router(s);
+    port::forget(s);
+}
+
+/// Stage or profile `id` of the staged launch may start as far as the Windows simulator port
+/// goes (`Port::Checking` while a probe runs off the UI thread). A `router` stage refused for
+/// a taken port keeps the reason as the router's error, so its station and the gate name it.
+pub(crate) fn port_check(s: &mut State, id: &str) -> Port {
+    let port = port::check(s, id);
+    if let (Port::Taken(why), "router") = (&port, id) {
+        s.vehicle.router.error = Some(why.clone());
+    }
+    port
+}
+
+/// Why system `id`'s vehicle has no MAVLink shell, or `None`. ArduPilot SITL answers no
+/// SERIAL_CONTROL, so console lines would go unanswered: the source says so before a
+/// heartbeat, the heartbeat once one arrives.
+pub(crate) fn shell_unsupported(s: &State, id: &str) -> Option<&'static str> {
+    let source = s
+        .systems
+        .get(id)
+        .is_some_and(|x| matches!(x.source, crate::systems::Source::ArduPilot { .. }));
+    let heartbeat = s
+        .vehicle
+        .shown_for(id)
+        .and_then(|snap| snap.vehicle.as_ref())
+        .is_some_and(|v| v.autopilot == mavlink::Autopilot::ArduPilot);
+    (source || heartbeat).then_some(
+        "ArduPilot SITL has no MAVLink shell, so the console is off for this system; nothing is sent. It answers on PX4 systems (SIH, Gazebo).",
+    )
 }
 
 /// Whether the link or the app's router is up (dependent work for `State::busy`). A headless
@@ -369,12 +411,24 @@ pub(crate) fn command(s: &mut State, kind: CommandKind) -> Result<u64, String> {
     }
 }
 
+/// [`shell_unsupported`] for the system that owns the link.
+fn link_shell_unsupported(s: &State) -> Option<&'static str> {
+    s.vehicle
+        .owner
+        .as_deref()
+        .and_then(|id| shell_unsupported(s, id))
+}
+
 /// Types `line` into the vehicle console (MAVLink shell) and runs it.
+/// Refused on an ArduPilot link ([`shell_unsupported`]).
 pub(crate) fn console_send(s: &mut State, line: &str) -> Result<(), String> {
     let granted = authority(s);
     let Some(link) = &s.vehicle.link else {
         return Err("No live link.".into());
     };
+    if let Some(why) = link_shell_unsupported(s) {
+        return Err(why.into());
+    }
     link.shell(
         &format!("{}\n", line.trim_end_matches(['\r', '\n'])),
         granted,
@@ -455,7 +509,13 @@ pub(crate) fn cancel_log(s: &mut State) -> Result<(), String> {
 }
 
 /// Ends the console session on the vehicle (sent on any link; harmless when none is open).
+/// Refused like [`console_send`] on an ArduPilot link, which has no shell to end.
 pub(crate) fn console_close(s: &mut State) -> Result<(), String> {
+    if s.vehicle.link.is_some()
+        && let Some(why) = link_shell_unsupported(s)
+    {
+        return Err(why.into());
+    }
     request(s, "close the console", |l| l.shell_close())
 }
 
@@ -608,7 +668,7 @@ fn apply(s: &mut State, event: Event) {
 /// request; the live view follows (position trace, heartbeat age). True only when something
 /// visible changed.
 pub(crate) fn poll(s: &mut State) -> bool {
-    let changed = stage::poll(s) | poll_link(s);
+    let changed = stage::poll(s) | port::poll(s) | poll_link(s);
     view::follow(s) | changed
 }
 
