@@ -1,7 +1,7 @@
 name: drone-deck
 
 # Checks, tests and headless snapshots for the Drone Deck app in drone-deck/.
-# A tag v* additionally builds the release package and attaches the zip to a GitHub Release.
+# A tag v* additionally builds the release package and the Inno Setup installer and attaches both to a GitHub Release.
 on:
   push:
     branches: ["**"]
@@ -87,12 +87,13 @@ jobs:
           python-version: "3.12"
 
       # recordings.py reads rosbag metadata with PyYAML (python3-yaml inside WSL); the tests exercise that path.
+      # pipe.py reads MCAP with mcap + mcap-ros2-support and writes NPZ with numpy; its fixture tests need them.
       - name: Install test dependencies
-        run: python -m pip install pyyaml
+        run: python -m pip install pyyaml mcap mcap-ros2-support numpy
 
       - name: unittest
         run: |
-          for dir in drone-deck/scripts drone-deck/scripts/setup drone-deck/scripts/studio; do
+          for dir in drone-deck/scripts drone-deck/scripts/agent drone-deck/scripts/setup drone-deck/scripts/studio; do
             echo "::group::$dir"
             python -m unittest discover --start-directory "$dir" --top-level-directory "$dir" --pattern 'test_*.py' --verbose
             echo "::endgroup::"
@@ -128,12 +129,28 @@ jobs:
           if ("v$version" -ne '${{ github.ref_name }}') { throw "Tag ${{ github.ref_name }} does not match drone-deck/Cargo.toml version $version" }
           "version=$version" >> $env:GITHUB_OUTPUT
 
-      - name: Build and package (Windows PowerShell 5.1)
-        shell: powershell
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File drone-deck/Build.ps1 -NoLocalDeploy
+      - name: Install Inno Setup 6
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "choco install innosetup failed ($LASTEXITCODE)" }
 
+      - name: Build, package and installer (Windows PowerShell 5.1)
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File drone-deck/Build.ps1 -NoLocalDeploy -Installer
+
+      - name: Check the installer was built
+        shell: pwsh
+        run: |
+          $setup = "dist/DroneDeck-${{ steps.version.outputs.version }}-setup.exe"
+          if (-not (Test-Path -LiteralPath $setup)) { throw "$setup was not produced" }
+          Get-Item $setup | Format-List Name, Length
+
+      # The setup executable is unsigned until a code-signing certificate is available (drone-deck/docs/release.md).
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/DroneDeck-${{ steps.version.outputs.version }}.zip
+          files: |
+            dist/DroneDeck-${{ steps.version.outputs.version }}.zip
+            dist/DroneDeck-${{ steps.version.outputs.version }}-setup.exe
           fail_on_unmatched_files: true
           generate_release_notes: true

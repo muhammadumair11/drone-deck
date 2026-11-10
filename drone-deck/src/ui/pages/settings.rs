@@ -1,7 +1,9 @@
-//! Settings: the Linux environment, display scale, model access and the profile registry.
-//! They belong to this computer and apply to every system.
+//! Settings: saved systems, then what belongs to this computer and applies to every system:
+//! the Linux environment, display scale, model access and the profile registry.
 use super::activity::eyebrow;
 use super::*;
+mod system_editor;
+mod system_list;
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
     let compact = vp.compact();
@@ -12,16 +14,17 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
         .child(mast(
             &eyebrow(s),
             "Settings.",
-            "Preferences for this computer: the Linux environment tools run in, display scale, model access and the launch profile registry. They apply to every system.",
+            "Your systems, and preferences for this computer: the Linux environment tools run in, display scale, model access and the launch profile registry.",
             None,
             compact,
         ))
+        .child(system_list::section(s, compact))
         .child(
             col()
                 .key("settings-environment")
                 .w_full()
                 .min_w(0.)
-                .pt(if compact { 8. } else { 16. })
+                .pt(if compact { 24. } else { 36. })
                 .child(crate::setup::environment(s, vp)),
         )
         .child(display(s, compact))

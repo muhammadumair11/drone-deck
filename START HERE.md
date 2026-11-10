@@ -3,8 +3,8 @@
 Drone Deck lives in [`drone-deck/`](drone-deck/README.md). Build it by running `drone-deck\Build.cmd` (it calls `Build.ps1` with a one-off execution-policy bypass), which places **Drone Deck.exe** (with `runtime\` and `assets\`) in this folder, or run it directly with `cargo run --manifest-path drone-deck/Cargo.toml`.
 
 1. **First time:** open **Guided setup** in the rail, choose what you want to try, name the system and let **Preparation** check this computer. Review the plan, tick the acknowledgement and apply it. Nothing installs from a check alone.
-2. **System** shows the active system. **Start workspace** starts its tools in order; QGroundControl is the flight-control window, MAVSDK telemetry is read-only.
-3. **Tools & config**, **Data & models**, **Activity** and **Settings** (Ctrl+,) hold configuration, data, history and preferences.
+2. **System** shows the active system. **Start workspace** starts its tools in order and Drone Deck's own vehicle link shows the live vehicle; QGroundControl is the flight-control window. Flight actions and the PX4 console appear only for a simulation Drone Deck started; a physical vehicle is read-only from Drone Deck.
+3. **Tools & config**, **Data & models** (recordings, models, pipelines, projects, flight logs), **Activity** and **Settings** (Ctrl+,) hold configuration, data, history and preferences.
 
 **Stop session** stops processes Drone Deck owns. It is not a vehicle landing command.
 

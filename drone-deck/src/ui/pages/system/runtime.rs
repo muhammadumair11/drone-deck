@@ -40,12 +40,15 @@ fn action(s: &State, c: &Component) -> El {
                 toggle_profile(s, id)
             })
         }
-        Backing::Monitor => ghost(
+        // Started and stopped with the workspace session.
+        Backing::Router | Backing::Scripts => el(),
+        Backing::Link if s.systems.current().source.simulated() => el(),
+        Backing::Link => ghost(
             key,
-            if systems::running(s, "hardware") {
-                "Stop"
+            if hardware::connected(s) {
+                "Disconnect"
             } else {
-                "Start"
+                "Connect"
             },
             true,
             hardware::toggle,
@@ -53,12 +56,12 @@ fn action(s: &State, c: &Component) -> El {
         Backing::Endpoint => ghost(key, "Edit ↗", true, |_| {})
             .on_press_tx(|_: &mut State, tx| tx.scroll_center("hardware-endpoint")),
         Backing::Recorder => ghost(key, "Recordings ↗", true, to_data(0)),
-        Backing::Artifacts => ghost(key, "Open ↗", true, to_data(2)),
+        Backing::Pipelines => ghost(key, "Pipelines ↗", true, to_data(2)),
         Backing::Projects => ghost(key, "Projects ↗", true, to_data(3)),
         Backing::Tlog => {
-            let path = s.hardware.path.clone();
-            ghost(key, "Open ↗", !path.is_empty(), move |s| {
-                s.open(path.clone())
+            let dir = vehicle::tlog_dir().display().to_string();
+            ghost(key, "Open ↗", s.vehicle.tlog().is_some(), move |s| {
+                s.open(dir.clone())
             })
         }
     }
@@ -152,7 +155,7 @@ pub(super) fn section(s: &State, vp: &Viewport) -> El {
     if !vp.compact() {
         list = list.child(label_row(vp));
     }
-    for c in systems::components(s.systems.active) {
+    for c in systems::components(s.systems.current()) {
         list = list.child(component_row(s, c, vp));
     }
     list

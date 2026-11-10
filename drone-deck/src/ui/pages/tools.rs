@@ -80,7 +80,6 @@ impl Item {
 pub(super) fn target(program: &str) -> &'static str {
     match program {
         "wsl" => "Ubuntu / WSL",
-        "java" => "Windows / Java",
         _ => "Windows",
     }
 }
@@ -89,7 +88,8 @@ pub(super) fn target(program: &str) -> &'static str {
 fn profile_for_recipe(recipe: &str) -> &str {
     match recipe {
         "px4" => "sih",
-        "mavsdk" => "telemetry",
+        "ros-gz" => "rosgz",
+        "foxglove-bridge" => "foxglove",
         other => other,
     }
 }
@@ -97,8 +97,8 @@ fn profile_for_recipe(recipe: &str) -> &str {
 /// Filter category of a tool that only has a setup recipe.
 fn recipe_filter(recipe: &str) -> &'static str {
     match recipe {
-        "px4" | "jmavsim" | "gazebo" | "ardupilot" => "Simulation",
-        "dds" => "Transport",
+        "px4" | "gazebo" | "ardupilot" => "Simulation",
+        "dds" | "ros-gz" => "Transport",
         "mavsdk" => "Telemetry",
         "qgc" => "Ground station",
         "onnx" => "AI",
@@ -142,8 +142,8 @@ fn items(s: &State) -> Vec<Item> {
         }
         all
     } else {
-        systems::components(s.systems.active)
-            .iter()
+        systems::components(s.systems.current())
+            .into_iter()
             .map(|c| Item {
                 id: c.id.into(),
                 index: match c.backing {
@@ -226,7 +226,7 @@ fn link(c: &Component) -> (&'static str, fn(&mut State)) {
             s.ui.data_tab = 3;
             s.navigate(Page::Data)
         }),
-        Backing::Artifacts => ("Reports ↗", |s| {
+        Backing::Pipelines => ("Pipelines ↗", |s| {
             s.ui.data_tab = 2;
             s.navigate(Page::Data)
         }),
@@ -415,7 +415,7 @@ fn list_head(s: &State, count: usize, vp: &Viewport) -> El {
     let scope = if s.ui.tools_all {
         "All registered tools".to_string()
     } else {
-        format!("{} / active system", systems::KINDS[s.systems.active])
+        format!("{} / active system", s.systems.current().label())
     };
     let n = format!(
         "{count} tool{} / {scope}",
@@ -491,11 +491,11 @@ fn empty_state(s: &State) -> El {
 }
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
-    let kind = s.systems.active;
+    let current = s.systems.current();
     let eyebrow = format!(
         "{} / {}",
-        s.systems.name(kind),
-        if s.systems.prepared(kind) {
+        current.label(),
+        if current.prepared {
             "Configured"
         } else {
             "Preparation required"

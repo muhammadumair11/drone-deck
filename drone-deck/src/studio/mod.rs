@@ -1,4 +1,6 @@
 mod bridge;
+pub(crate) mod foxglove;
+pub(crate) mod pipelines;
 mod projects;
 #[cfg(test)]
 mod tests;
@@ -13,25 +15,29 @@ pub(crate) struct Studio {
     pub repo: TextEdit,
     pub revision: TextEdit,
     pub patterns: TextEdit,
-    pub name: TextEdit,
-    pub session: TextEdit,
-    pub csv: TextEdit,
-    pub task: TextEdit,
     pub project_name: TextEdit,
     pub kind: usize,
     pub model_file: TextEdit,
     pub inputs: TextEdit,
     pub model_path: String,
-    pub dataset: Option<Value>,
     pub preview: Option<Value>,
     pub models: Vec<Value>,
     pub library: Value,
     pub jobs: Vec<Value>,
     pub message: String,
+    /// The last message of a Hugging Face token action, shown on Settings → Model access (the
+    /// shared `message` there would show unrelated Data prompts).
+    pub credential_note: String,
     pub pending: bool,
+    /// What the pending `start_model` or `retry_model` starts, while it is still with its
+    /// helper: a close then stops the helper and the download may not start (`setup::close`).
+    pub starting: Option<String>,
     pub selected_job: Option<String>,
-    /// Lazy Data & models loads already requested (`models`, `credential_status`, `data_library`).
+    /// Lazy Data & models loads already requested (`models`, `credential_status`, `data_library`,
+    /// `pipe_list`).
     pub loaded: Vec<&'static str>,
+    /// Data → Pipelines (extraction, inference on replay, runs).
+    pub pipes: pipelines::Pipes,
     tx: Sender<Value>,
     rx: Receiver<Value>,
     last_refresh: Instant,
@@ -45,46 +51,48 @@ impl Default for Studio {
             repo: TextEdit::new(""),
             revision: TextEdit::new("main"),
             patterns: TextEdit::new("*.json,*.safetensors,*.onnx,*.gguf,*.txt,tokenizer.*"),
-            name: TextEdit::new("flight-data"),
-            session: TextEdit::new(""),
-            csv: TextEdit::new(""),
-            task: TextEdit::new("classification"),
             project_name: TextEdit::new("drone-project"),
             kind: 0,
             model_file: TextEdit::new(""),
             inputs: TextEdit::new(""),
             model_path: String::new(),
-            dataset: None,
             preview: None,
             models: Vec::new(),
             library: json!({}),
             jobs: Vec::new(),
-            message: "Choose a model, recording dataset, or project workflow.".into(),
+            message: "Choose a model or project workflow.".into(),
+            credential_note: String::new(),
             pending: false,
+            starting: None,
             selected_job: None,
             loaded: Vec::new(),
+            pipes: pipelines::Pipes::default(),
             tx,
             rx,
             last_refresh: Instant::now(),
         }
     }
 }
+/// Hugging Face token actions; their messages also go to `Studio::credential_note`.
+const CREDENTIAL_ACTIONS: [&str; 4] = [
+    "credential_status",
+    "save_token",
+    "forget_token",
+    "validate_token",
+];
 pub(crate) fn request(s: &mut State, action: &str) {
+    let credential = CREDENTIAL_ACTIONS.contains(&action);
     if s.headless {
         s.studio.message = "Preview: external Studio actions disabled.".into();
+        if credential {
+            s.studio.credential_note = s.studio.message.clone();
+        }
         return;
     }
     if s.studio.pending {
         return;
     }
-    let linux = [
-        "data_library",
-        "dataset_create",
-        "dataset_verify",
-        "evaluate",
-        "project_create",
-    ]
-    .contains(&action);
+    let linux = ["data_library", "project_create"].contains(&action);
     if linux && !s.wsl_ready() {
         s.notice = "Select a working WSL 2 environment in Settings → Environment first.".into();
         s.navigate(crate::ui::Page::Settings);
@@ -121,43 +129,72 @@ pub(crate) fn request(s: &mut State, action: &str) {
             value["repo"] = model["repo"].clone();
             value["sha"] = model["sha"].clone();
         }
-        "dataset_create" => {
-            value["name"] = json!(r.name.text.trim());
-            value["session"] = json!(r.session.text.trim());
-        }
-        "dataset_verify" | "evaluate" => {
-            let Some(dataset) = &r.dataset else {
-                r.message = "Select a dataset version first.".into();
-                return;
-            };
-            value["name"] = dataset["name"].clone();
-            value["version"] = dataset["version"].clone();
-            value["csv"] = json!(r.csv.text.trim());
-            value["task"] = json!(r.task.text.trim());
-        }
         "project_create" => {
             value["name"] = json!(r.project_name.text.trim());
             value["kind"] = json!(["onnx", "ros2", "mavsdk"][r.kind.min(2)]);
-            value["model"] = json!(windows_to_linux(&r.model_path));
-            value["dataset"] = r
-                .dataset
-                .as_ref()
-                .map(|v| v["manifest"].clone())
-                .unwrap_or(json!(""));
+            let mount = s.agent.hello.as_ref().map(|h| h.automount_root.as_str());
+            match linux_model_path(&r.model_path, &s.config.distro, mount) {
+                Ok(model) => value["model"] = json!(model),
+                Err(e) => {
+                    r.message = e;
+                    return;
+                }
+            }
         }
         _ => {}
     }
+    r.starting = starting(r, action);
     r.pending = true;
     r.message = format!("{}…", action.replace('_', " "));
+    if credential {
+        r.credential_note = r.message.clone();
+    }
     bridge::request(value, s.config.distro.clone(), linux, r.tx.clone());
 }
-pub(crate) fn windows_to_linux(path: &str) -> String {
-    let path = path.replace('\\', "/");
-    if path.as_bytes().get(1) == Some(&b':') && path.as_bytes().get(2) == Some(&b'/') {
-        format!("/mnt/{}/{}", path[..1].to_lowercase(), &path[3..])
-    } else {
-        path
+/// What a request starts, named for the close warning: a model download, or its retry.
+pub(crate) fn starting(r: &Studio, action: &str) -> Option<String> {
+    let repo = r
+        .preview
+        .as_ref()
+        .and_then(|p| p["repo"].as_str())
+        .filter(|repo| !repo.is_empty())
+        .unwrap_or_else(|| r.repo.text.trim());
+    match action {
+        "start_model" => Some(format!("the model download of {repo}")),
+        "retry_model" => Some(match &r.selected_job {
+            Some(id) => format!("the retry of model download {id}"),
+            None => "the retry of a model download".into(),
+        }),
+        _ => None,
     }
+}
+/// The Linux path of a model path typed or browsed on Windows, inside `distro`: a drive path goes
+/// through the distro's drive mount (`automount_root` from the agent's `hello`, `/mnt/` when
+/// unknown), and a path on Explorer's `\\wsl.localhost\<distro>\…` or `\\wsl$\<distro>\…` share
+/// maps to the same file inside the distro. Anything else is taken as a Linux path already.
+pub(crate) fn linux_model_path(
+    path: &str,
+    distro: &str,
+    automount_root: Option<&str>,
+) -> Result<String, String> {
+    let slashed = path.replace('\\', "/");
+    let lower = slashed.to_ascii_lowercase();
+    for share in ["//wsl.localhost/", "//wsl$/"] {
+        if lower.starts_with(share) {
+            let rest = &slashed[share.len()..];
+            let (name, inner) = rest.split_once('/').unwrap_or((rest, ""));
+            if !name.eq_ignore_ascii_case(distro) {
+                return Err(format!(
+                    "The model is in the Linux distribution {name}, but Drone Deck uses {distro}. Copy the model into {distro} or choose another file."
+                ));
+            }
+            return Ok(format!("/{inner}"));
+        }
+    }
+    Ok(
+        crate::agent::linux_path(std::path::Path::new(path), automount_root.unwrap_or(""))
+            .unwrap_or_else(|| path.to_string()),
+    )
 }
 pub(crate) fn poll(s: &mut State) -> bool {
     let r = &mut s.studio;
@@ -169,15 +206,25 @@ pub(crate) fn poll(s: &mut State) -> bool {
             continue;
         }
         r.pending = false;
+        r.starting = None;
+        let credential = event["action"]
+            .as_str()
+            .is_some_and(|a| CREDENTIAL_ACTIONS.contains(&a));
         if event["ok"].as_bool() != Some(true) {
             r.message = event["error"]
                 .as_str()
                 .unwrap_or("Studio request failed")
                 .into();
+            if credential {
+                r.credential_note = r.message.clone();
+            }
             continue;
         }
         let data = event["data"].clone();
         r.message = data["message"].as_str().unwrap_or("Complete").into();
+        if credential {
+            r.credential_note = r.message.clone();
+        }
         match event["action"].as_str().unwrap_or("") {
             "credential_status" | "save_token" | "forget_token" | "validate_token" => {
                 r.stored = data["stored"].as_bool().unwrap_or(r.stored)
@@ -188,25 +235,6 @@ pub(crate) fn poll(s: &mut State) -> bool {
             "ports" => r.library["ports"] = data["ports"].clone(),
             "start_model" | "retry_model" => {
                 r.selected_job = data["id"].as_str().map(str::to_owned)
-            }
-            "dataset_create" => {
-                r.dataset = Some(data["dataset"].clone());
-                if !r.library["datasets"].is_array() {
-                    r.library["datasets"] = json!([]);
-                }
-                r.library["datasets"]
-                    .as_array_mut()
-                    .unwrap()
-                    .push(data["dataset"].clone());
-            }
-            "evaluate" => {
-                if !r.library["reports"].is_array() {
-                    r.library["reports"] = json!([]);
-                }
-                r.library["reports"]
-                    .as_array_mut()
-                    .unwrap()
-                    .push(data["report"].clone());
             }
             "project_create" => {
                 if !r.library["projects"].is_array() {
@@ -270,5 +298,5 @@ pub(crate) fn poll(s: &mut State) -> bool {
             changed = true;
         }
     }
-    changed | view::lazy_load(s)
+    changed | pipelines::poll(s) | view::lazy_load(s)
 }

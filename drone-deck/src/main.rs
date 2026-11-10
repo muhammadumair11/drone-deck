@@ -1,8 +1,11 @@
 #![windows_subsystem = "windows"]
 mod activity;
+mod agent;
 mod backend;
+mod diagnostics;
 mod guided;
 mod hardware;
+mod mavlink;
 mod process_output;
 mod profile_editor;
 mod qgc_launch;
@@ -13,7 +16,10 @@ mod store;
 mod studio;
 mod systems;
 mod ui;
+mod ulog;
+mod vehicle;
 mod window;
+mod winjob;
 use backend::{Backend, Config, Event, Request};
 use rune::{AppSpec, Color, Cx, El, ScrollSpec, TextEdit, Tx, col, el, row, spacer};
 use std::{
@@ -37,7 +43,6 @@ struct State {
     selected: usize,
     status: HashMap<String, String>,
     detected: HashMap<String, bool>,
-    metrics: HashMap<String, String>,
     logs: VecDeque<String>,
     notice: String,
     editor: TextEdit,
@@ -45,10 +50,12 @@ struct State {
     form: Option<profile_editor::Form>,
     headless: bool,
     confirm: Option<String>,
-    last_metric: Option<Instant>,
     readiness: HashMap<String, String>,
     session: Option<session::Launch>,
     qgc: qgc_launch::Watch,
+    flight_logs: ulog::FlightLogs,
+    agent: agent::AgentState,
+    vehicle: vehicle::Vehicle,
 }
 impl State {
     fn new() -> Self {
@@ -99,7 +106,6 @@ impl State {
             selected: 0,
             status: HashMap::new(),
             detected: HashMap::new(),
-            metrics: HashMap::new(),
             logs: VecDeque::new(),
             notice,
             editor: TextEdit::new(""),
@@ -107,10 +113,12 @@ impl State {
             form: None,
             headless,
             confirm: None,
-            last_metric: None,
             readiness: HashMap::new(),
             session: None,
             qgc: Default::default(),
+            flight_logs: Default::default(),
+            agent: Default::default(),
+            vehicle: Default::default(),
         };
         ui::restore_preferences(&mut state);
         let notices = if headless {
@@ -124,6 +132,7 @@ impl State {
                 activity::record(&mut state, notice);
             }
         }
+        diagnostics::startup(&mut state);
         state.setup.distro = TextEdit::new(&state.config.distro);
         state
     }
@@ -141,31 +150,30 @@ impl State {
         }
         self.page = page;
     }
-    /// Switches the active system. Refused while owned processes, captures or installs run,
-    /// so a session never outlives the context it was started in. Returns whether `kind` is
-    /// the active system afterwards.
-    fn select_system(&mut self, kind: usize) -> bool {
+    /// Switches the active system, by id or by kind (`systems::Pick`). Allowed while work
+    /// runs: processes stay with the system that started them and nothing is stopped.
+    /// Returns whether the named system is active afterwards (false when none exists).
+    fn select_system<'a>(&mut self, pick: impl Into<systems::Pick<'a>>) -> bool {
         self.ui.system_menu = false;
-        if kind == self.systems.active {
+        let Some(id) = self.systems.resolve(pick.into()) else {
+            self.notice = "No such system. Create one with New system… in the system list.".into();
+            return false;
+        };
+        if id == self.systems.active_id() {
             return true;
         }
-        if systems::active_work(self) || self.setup.batch.is_some() {
-            self.notice = "Stop the active session before changing systems.".into();
-            return false;
-        }
-        self.systems.active = kind.min(3);
+        self.systems.set_active(&id);
         self.ui.tools_filter = 0;
         self.ui.expanded = None;
-        if kind == systems::PHYSICAL {
-            self.hardware.mode = 1;
-        } else if self.hardware.mode == 1 {
-            self.hardware.mode = 0;
-        }
-        if let Err(e) = self.systems.save(self.headless) {
-            self.notice = format!("System changed, but it could not be saved: {e}");
+        systems::follow_active(self);
+        let name = self.systems.current().label().to_string();
+        self.notice = if let Err(e) = self.systems.save(self.headless) {
+            format!("System changed, but it could not be saved: {e}")
+        } else if systems::active_work(self) {
+            format!("Active system: {name}. Running work stays with the system that started it.")
         } else {
-            self.notice = format!("Active system: {}.", self.systems.name(kind));
-        }
+            format!("Active system: {name}.")
+        };
         true
     }
     fn log(&mut self, line: String) {
@@ -199,34 +207,97 @@ impl State {
         {
             return;
         }
+        // A stage of the staged launch keeps the owner `bundle` recorded; anything else
+        // belongs to the system active now.
+        if !systems::staged(self, &p.id) || self.systems.owner(&p.id).is_none() {
+            self.systems.claim(&p.id);
+        }
+        let owner = self
+            .systems
+            .owner(&p.id)
+            .unwrap_or(self.systems.active_id())
+            .to_string();
+        if let Some(conflict) = vehicle::start_conflict(self, &p.id, &owner) {
+            self.notice = conflict;
+            return;
+        }
+        let env = self
+            .systems
+            .get(&owner)
+            .map(|sys| backend::launch_env(&p.id, sys))
+            .unwrap_or_default();
         self.status.insert(p.id.clone(), "Starting".into());
         self.readiness.remove(&p.id);
         self.log(format!("[session] Starting {}", p.name));
-        self.send(Request::Start(p, self.config.distro.clone()));
+        self.send(Request::StartEnv(p, self.config.distro.clone(), env));
     }
-    /// Starts a staged workspace session (e.g. `systems::SESSIONS[k]`).
-    fn bundle(&mut self, stages: &'static [&'static str]) {
+    /// Starts a staged workspace session (e.g. `systems::session_stages(sys)`). Returns whether
+    /// a new launch began. A launch already in progress, for this or another system, is kept:
+    /// it is never replaced half-way, which would orphan its later stages. A simulator that
+    /// conflicts with one already running (`vehicle::simulator_conflict`) is refused.
+    fn bundle(&mut self, stages: impl Into<Vec<&'static str>>) -> bool {
+        let stages: Vec<&'static str> = stages.into();
         if stages.is_empty() {
-            return;
+            return false;
+        }
+        if let Some(launch) = &self.session {
+            let by = self
+                .systems
+                .owner("session")
+                .and_then(|id| self.systems.get(id))
+                .map_or_else(|| "another system".to_string(), |x| x.label().to_string());
+            self.notice = format!(
+                "A workspace launch for {by} is still starting {}. Wait for it, or stop the session first.",
+                launch.current()
+            );
+            return false;
         }
         if !self.headless && !self.wsl_ready() {
             self.navigate(Page::Settings);
             self.notice =
                 "Complete environment setup (Settings → Environment) before starting the workspace."
                     .into();
-            return;
+            return false;
         }
-        self.session = Some(session::Launch::new(stages));
+        let active = self.systems.active_id().to_string();
+        if let Some(conflict) = stages
+            .iter()
+            .find_map(|id| vehicle::simulator_conflict(self, id, &active))
+        {
+            self.notice = conflict;
+            return false;
+        }
+        if self.vehicle.connected() && !self.vehicle.owned_by(&active) && stages.contains(&"link") {
+            self.notice = format!(
+                "The live link belongs to {}. Stop that session before starting this one.",
+                self.vehicle
+                    .owner
+                    .as_deref()
+                    .and_then(|o| self.systems.get(o))
+                    .map_or("another system", |x| x.label())
+            );
+            return false;
+        }
+        self.session = Some(session::Launch::new(stages.clone()));
+        // Later stages start on later frames; they belong to the system that asked now.
+        for key in stages.iter().copied().chain(["session"]) {
+            if !systems::running(self, key) {
+                self.systems.claim(key);
+            }
+        }
         self.notice = format!(
             "Starting {} first; each later tool waits for the previous one's readiness.",
             stages[0]
         );
+        true
     }
     fn stop_all(&mut self) {
         self.session = None;
+        vehicle::stop(self);
         if self.recorder.recording || self.recorder.playing {
             recordings::send(self, "stop");
         }
+        studio::pipelines::cancel(self);
         for id in self.status.keys() {
             self.send(Request::Stop(id.clone()));
         }
@@ -260,7 +331,7 @@ impl State {
             Ok(c) => {
                 if c.distro != self.config.distro && self.busy() {
                     self.notice =
-                        "Stop active tools, installations, recording and replay before changing the WSL distribution.".into();
+                        "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) and installations before changing the WSL distribution.".into();
                     return;
                 }
                 if self.status.iter().any(|(id, status)| {
@@ -304,6 +375,8 @@ impl State {
         self.recorder.recording
             || self.recorder.playing
             || self.setup.jobs.iter().any(|j| j.alive)
+            || vehicle::active(self)
+            || self.studio.pipes.job.is_some()
             || self
                 .status
                 .values()
@@ -323,8 +396,12 @@ fn poll(s: &mut State, _: f64, tx: &mut Tx) -> bool {
         | recordings::poll(s)
         | setup::poll(s)
         | studio::poll(s)
+        | guided::poll(s)
+        | ulog::poll(s)
+        | agent::poll(s)
+        | vehicle::poll(s)
         | hardware::poll(s)
-        | guided::poll(s);
+        | diagnostics::poll(s);
     let events: Vec<_> = s
         .backend
         .as_ref()
@@ -337,10 +414,6 @@ fn poll(s: &mut State, _: f64, tx: &mut Tx) -> bool {
             Event::Log(id, line) => s.log(format!("[{id}] {line}")),
             Event::Status(id, status) => {
                 s.log(format!("[{id}] {status}"));
-                if id == "telemetry" && status != "Running" {
-                    s.metrics.clear();
-                    s.last_metric = None;
-                }
                 if status != "Running" && status != "Starting" {
                     s.readiness.remove(&id);
                 }
@@ -349,26 +422,15 @@ fn poll(s: &mut State, _: f64, tx: &mut Tx) -> bool {
             Event::Detected(id, found) => {
                 s.detected.insert(id, found);
             }
-            Event::Metric(k, v) => {
-                s.metrics.insert(k, v);
-                s.last_metric = Some(Instant::now());
-            }
             Event::Readiness(id, value) => {
                 s.readiness.insert(id, value);
             }
-            Event::Hardware(value) => hardware::event(s, value),
         }
     }
-    if s.last_metric
-        .is_some_and(|t| t.elapsed() > Duration::from_secs(5))
-        && s.metrics.get("link").is_some_and(|v| v != "Stale")
-    {
-        s.metrics.insert("link".into(), "Stale".into());
-        changed = true;
-    }
-    changed | session::poll(s)
+    changed | session::poll(s) | systems::poll(s)
 }
 fn main() {
+    diagnostics::install_panic_hook();
     if std::env::args().len() == 1 && !rune::single_instance("local.drone-deck") {
         return;
     }
@@ -394,8 +456,12 @@ fn main() {
     let handle = app.handle();
     app.on_ready(move |native| {
         window::fit_native_window(native);
-        handle.update(|s, tx| {
+        let handle = handle.clone();
+        handle.clone().update(move |s, tx| {
             if !s.headless && s.backend.is_none() {
+                agent::enable();
+                let wake = handle.clone();
+                s.vehicle.waker = Some(std::sync::Arc::new(move || wake.wake()));
                 s.backend = Some(backend::spawn());
                 setup::request(s, "scan");
                 tx.wake_after(Duration::from_millis(300));
@@ -404,10 +470,31 @@ fn main() {
     })
     .on_close(|s, _| {
         setup::save_workflow(s);
+        // A setup or model start still with its helper dies with it: say what may not start.
+        setup::close::warn_on_close(s);
         recordings::shutdown(s);
+        // Like Stop session: a running pipeline job is cancelled. If the cancel reaches the agent
+        // after its shutdown began, the shutdown stops the job's processes instead.
+        studio::pipelines::cancel(s);
+        // The window cannot refuse to close, so a bridged physical link is at least recorded:
+        // QGroundControl and scripts lose the vehicle with it.
+        let bridged = s.vehicle.link.is_some()
+            && !s.vehicle.sim
+            && s.vehicle
+                .owner
+                .as_deref()
+                .and_then(|id| s.systems.get(id))
+                .is_some_and(systems::physical_bridge);
+        if bridged {
+            let text = "Closing Drone Deck closed a physical vehicle link that QGroundControl or scripts were bridged through; they lost the vehicle";
+            diagnostics::log("warn", text);
+            activity::record(s, text);
+        }
+        vehicle::stop(s);
         if let Some(b) = s.backend.take() {
             b.shutdown();
         }
+        agent::shutdown_all();
     })
     .run();
 }
@@ -437,14 +524,16 @@ const SCENES: &[Scene] = &[
         s.ui.data_tab = 1;
         s.navigate(Page::Data)
     }),
-    ("datasets", |s| {
+    ("pipelines", |s| {
         s.ui.data_tab = 2;
         s.navigate(Page::Data)
     }),
+    ("pipelines-demo", studio::pipelines::preview),
     ("projects", |s| {
         s.ui.data_tab = 3;
         s.navigate(Page::Data)
     }),
+    ("flight-logs", ulog::preview),
     ("activity", |s| s.navigate(Page::Activity)),
     ("process-output", |s| {
         s.activity.tab = 1;
@@ -464,6 +553,17 @@ const SCENES: &[Scene] = &[
     ("physical", |s| {
         s.select_system(systems::PHYSICAL);
     }),
+    ("system-menu", |s| {
+        s.systems.claim("sih");
+        s.status.insert("sih".into(), "Running".into());
+        s.ui.system_menu = true;
+    }),
+    ("systems-settings", |s| {
+        s.navigate(Page::Settings);
+        let id = s.systems.create(systems::ROS, "Gazebo camera lab");
+        s.systems.editor = s.systems.get(&id).map(systems::Draft::of);
+    }),
+    ("system-new", guided::new_system),
     ("setup", |s| guided_at(s, 0)),
     ("setup-system", |s| guided_at(s, 1)),
     ("setup-prep", |s| guided_at(s, 2)),
@@ -518,7 +618,7 @@ const SCENES: &[Scene] = &[
             "[session] Starting PX4 SIH",
             "[sih] INFO  [px4] startup script: /bin/sh etc/init.d-posix/rcS 0",
             "[sih] WARN  [health_and_arming_checks] Preflight: GPS fix too low",
-            "[relay] Forwarding 127.0.0.1:14560 -> 127.0.0.1:14550",
+            "[link] Connected to tcp:127.0.0.1:5760",
             "[sih] ERROR [simulator_sih] lockstep timeout",
         ] {
             s.log(line.into());
@@ -575,29 +675,34 @@ const SCENES: &[Scene] = &[
         s.status.insert("sih".into(), "Starting".into());
     }),
     ("system-live-demo", |s| {
-        for id in ["sih", "relay", "jmavsim", "telemetry"] {
+        for id in ["sih", "qgc"] {
+            s.systems.claim(id);
             s.status.insert(id.into(), "Running".into());
         }
         s.readiness.insert("sih".into(), "Ready".into());
-        s.readiness.insert("relay".into(), "Forwarding".into());
-        for (k, v) in [
-            ("link", "Connected"),
-            ("altitude", "12.4 m"),
-            ("mode", "Hold"),
-        ] {
-            s.metrics.insert(k.into(), v.into());
-        }
+        let id = s.systems.active_id().to_string();
+        vehicle::preview(s, &id, true, true);
     }),
     ("physical-live-demo", |s| {
         s.select_system(systems::PHYSICAL);
-        s.status.insert("hardware".into(), "Running".into());
-        hardware::event(
-            s,
-            serde_json::json!({"kind":"packet","system":1,"component":1,"message_id":0,
-                "path":"workspace/hardware/capture","fields":{"type":2,"autopilot":12,"base_mode":81}}),
-        );
-        s.hardware.selected = Some("1:1".into());
+        let id = s.systems.active_id().to_string();
+        vehicle::preview(s, &id, true, false);
     }),
+    ("vehicle-live", vehicle::view::scene_live),
+    ("vehicle-stale", vehicle::view::scene_stale),
+    ("vehicle-actions", vehicle::view::scene_actions),
+    ("vehicle-health-checks", vehicle::view::scene_health_checks),
+    ("vehicle-console", vehicle::view::scene_console),
+    ("vehicle-gated", vehicle::view::scene_gated),
+    ("vehicle-readonly", vehicle::view::scene_readonly),
+    ("vehicle-launching", vehicle::view::scene_launching),
+    (
+        "vehicle-ardupilot-console",
+        vehicle::view::scene_ardupilot_console,
+    ),
+    ("vehicle-link-retrying", vehicle::view::scene_link_retrying),
+    ("physical-params", hardware::preview_params),
+    ("physical-logs", hardware::preview_logs),
     ("setup-recipe", |s| {
         setup::preview(s);
         guided_at(s, 1);
@@ -608,6 +713,12 @@ const SCENES: &[Scene] = &[
     ("setup-run-physical", |s| {
         s.select_system(systems::PHYSICAL);
         guided_at(s, 3);
+    }),
+    ("setup-run-ai", |s| {
+        studio::pipelines::preview(s);
+        s.select_system(systems::AI);
+        guided_at(s, 3);
+        s.guided.task = 2;
     }),
     ("setup-receipt", |s| {
         guided_at(s, 3);

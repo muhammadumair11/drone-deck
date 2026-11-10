@@ -209,31 +209,6 @@
     "verification": "Recipe implementation and non-installing tests are included. A clean-machine installation has not yet been exercised on this laptop."
   },
   {
-    "id": "jmavsim",
-    "name": "jMAVSim visualizer",
-    "version": "PX4 v1.17 submodule / native Java 21",
-    "target": "WSL",
-    "docs": "https://docs.px4.io/main/en/sim_jmavsim/",
-    "summary": "Build the pinned PX4 1.17 visualizer in WSL and package its native Windows distribution. Reuse existing native Java/jMAVSim; otherwise install Microsoft OpenJDK 21 through winget. Windows approval/license steps may be required.",
-    "steps": [
-      "Reuse native installation or check PX4 source",
-      "Install Ant / Linux Java build prerequisites",
-      "Build pinned distributable",
-      "Prepare native Windows package and Java 21",
-      "Verify JAR/runtime"
-    ],
-    "automatic": true,
-    "destination": "WSL tools/jMAVSim source; Windows LocalAppData/DroneDeck/tools/jmavsim",
-    "privileges": "WSL root for build packages; Windows Java installer may request elevation",
-    "packages": [
-      "ant",
-      "openjdk-17-jdk",
-      "Microsoft.OpenJDK.21 if missing",
-      "pinned jMAVSim source/submodule"
-    ],
-    "verification": "Recipe implementation and non-installing tests are included. A clean-machine installation has not yet been exercised on this laptop."
-  },
-  {
     "id": "gazebo",
     "name": "Gazebo Harmonic",
     "version": "Harmonic",
@@ -255,6 +230,46 @@
       "curl",
       "gnupg",
       "lsb-release"
+    ],
+    "verification": "Recipe implementation and non-installing tests are included. A clean-machine installation has not yet been exercised on this laptop."
+  },
+  {
+    "id": "ros-gz",
+    "name": "ROS–Gazebo bridge",
+    "version": "ros-jazzy-ros-gz / Harmonic",
+    "target": "WSL",
+    "docs": "https://gazebosim.org/docs/harmonic/ros_installation/",
+    "summary": "Install the ROS 2 Jazzy Gazebo bridge from the ROS apt repository, so the camera of a Gazebo model reaches ROS topics. Install ROS 2 Jazzy first. Shared apt packages are affected.",
+    "steps": [
+      "Check Ubuntu and ROS 2 Jazzy",
+      "Install ros-jazzy-ros-gz",
+      "Verify the ros_gz_bridge package"
+    ],
+    "automatic": true,
+    "destination": "/opt/ros/jazzy (shared ROS apt packages)",
+    "privileges": "Selected WSL root account for shared apt packages",
+    "packages": [
+      "ros-jazzy-ros-gz"
+    ],
+    "verification": "Recipe implementation and non-installing tests are included. A clean-machine installation has not yet been exercised on this laptop."
+  },
+  {
+    "id": "foxglove-bridge",
+    "name": "Foxglove bridge",
+    "version": "ros-jazzy-foxglove-bridge",
+    "target": "WSL",
+    "docs": "https://docs.foxglove.dev/docs/connecting-to-data/ros-foxglove-bridge",
+    "summary": "Install the ROS 2 Jazzy Foxglove WebSocket bridge from the ROS apt repository for live topics in Foxglove (port 8765). Install ROS 2 Jazzy first. Shared apt packages are affected.",
+    "steps": [
+      "Check Ubuntu and ROS 2 Jazzy",
+      "Install ros-jazzy-foxglove-bridge",
+      "Verify the foxglove_bridge package"
+    ],
+    "automatic": true,
+    "destination": "/opt/ros/jazzy (shared ROS apt packages)",
+    "privileges": "Selected WSL root account for shared apt packages",
+    "packages": [
+      "ros-jazzy-foxglove-bridge"
     ],
     "verification": "Recipe implementation and non-installing tests are included. A clean-machine installation has not yet been exercised on this laptop."
   },

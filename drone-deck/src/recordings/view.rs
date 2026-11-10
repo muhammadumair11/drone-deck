@@ -262,12 +262,13 @@ fn readiness(s: &State, idle: bool) -> El {
             "PX4 sensor capture needs a running PX4 → ROS 2 bridge (DDS Agent) and matching message packages.",
             11.,
         ));
-    if s.systems.active != systems::ROS {
+    let sys = s.systems.current();
+    if !(sys.consumers.ros.agent || sys.consumers.ros.recorder) {
         col = col.child(
             body(
                 format!(
-                    "The active system is {}. Live capture is planned for the ROS & sensor capture system; prepare its dependencies first.",
-                    systems::KINDS[s.systems.active]
+                    "The active system is {}. Live capture needs a system with the ROS 2 bridge and recorder enabled (Settings → Systems) or the ROS & sensor capture template; prepare its dependencies first.",
+                    sys.label()
                 ),
                 11.,
                 warn(),
@@ -332,9 +333,9 @@ fn library(s: &State, vp: &Viewport) -> El {
             "recordings-empty",
             "No finalized recordings",
             if r.ready {
-                "Completed recordings appear here. Dataset versions reference the originals; they do not copy the files."
+                "Completed recordings appear here. Pipelines write their outputs next to a recording; the original files are never changed."
             } else {
-                "Completed recordings appear here once dependencies are checked. Dataset versions reference the originals; they do not copy the files."
+                "Completed recordings appear here once dependencies are checked. Pipelines write their outputs next to a recording; the original files are never changed."
             },
         ));
     }
@@ -393,12 +394,26 @@ fn detail(session: &Session, vp: &Viewport) -> El {
             .wrap(),
         )
         .child(topics)
-        .child(row().child(ghost(
-            "open-recording-folder",
-            "Open folder ↗",
-            true,
-            open_selected,
-        )))
+        .child(
+            row()
+                .gaps(4., 20.)
+                .flex_wrap()
+                .child(ghost(
+                    "open-recording-folder",
+                    "Open folder ↗",
+                    true,
+                    open_selected,
+                ))
+                .child(ghost(
+                    "open-recording-foxglove",
+                    "Open in Foxglove ↗",
+                    session.status.eq_ignore_ascii_case("finalized"),
+                    {
+                        let path = session.path.clone();
+                        move |s| crate::studio::foxglove::open(s, path.clone())
+                    },
+                )),
+        )
 }
 
 fn replay(s: &State, active: bool, idle: bool, vp: &Viewport) -> El {

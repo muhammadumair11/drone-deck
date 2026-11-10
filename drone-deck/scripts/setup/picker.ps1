@@ -7,12 +7,12 @@ function Select-ToolLocation([string]$Tool,[string]$Distro) {
         try {$value=if($dialog.ShowDialog() -eq 'OK'){$dialog.SelectedPath}else{''}}finally{$dialog.Dispose()}
     }else{
         $dialog=New-Object Windows.Forms.OpenFileDialog
-        $dialog.Title='Select existing tool executable or visualizer JAR'
+        $dialog.Title='Select existing tool executable'
         $dialog.CheckFileExists=$true
-        $dialog.Filter=if($Tool -eq 'qgc'){'QGroundControl executable|*.exe'}elseif($Tool -eq 'jmavsim'){'jMAVSim visualizer|*.jar'}else{'Executable|*'}
+        $dialog.Filter=if($Tool -eq 'qgc'){'QGroundControl executable|*.exe'}else{'Executable|*'}
         try {$value=if($dialog.ShowDialog() -eq 'OK'){$dialog.FileName}else{''}}finally{$dialog.Dispose()}
     }
-    if($value -and $Tool -notin @('qgc','jmavsim')) {
+    if($value -and $Tool -ne 'qgc') {
         $prefix='\\wsl.localhost\' + $Distro + '\'
         $legacy='\\wsl$\' + $Distro + '\'
         if($value.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)){$value='/' + $value.Substring($prefix.Length).Replace('\','/')}

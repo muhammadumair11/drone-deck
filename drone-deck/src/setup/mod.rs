@@ -1,5 +1,6 @@
 pub(crate) mod batch;
 mod bridge;
+pub(crate) mod close;
 pub(crate) mod profiles;
 #[cfg(test)]
 mod tests;
@@ -76,8 +77,6 @@ pub(crate) struct Candidate {
     pub build_target: String,
     #[serde(default)]
     pub environment: String,
-    #[serde(default)]
-    pub runtime: String,
 }
 #[derive(Clone, Default, Deserialize)]
 pub(crate) struct Job {
@@ -111,6 +110,9 @@ pub(crate) struct Setup {
     pub jobs: Vec<Job>,
     pub selected_job: Option<String>,
     pub pending: bool,
+    /// What the pending request starts (`start`), while it is still with its helper: a close
+    /// then stops the helper and the job may not start (`close`).
+    pub starting: Option<String>,
     pub review: bool,
     pub message: String,
     pub tx: Sender<Result<Value, String>>,
@@ -169,6 +171,7 @@ impl Default for Setup {
             jobs: Vec::new(),
             selected_job: None,
             pending: false,
+            starting: None,
             review: false,
             message: "Scan this computer to choose or install its tool environment.".into(),
             tx,
@@ -214,12 +217,13 @@ pub(crate) fn request(s: &mut State, action: &str) {
     }
     if action == "start" && s.busy() {
         s.setup.message =
-            "Stop active tools and recordings before installing shared dependencies.".into();
+            "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) before installing shared dependencies.".into();
         return;
     }
     let r = &mut s.setup;
     let tool = &r.recipes[r.selected].id;
     let value = json!({"action":action,"tool":tool,"distro":r.distro.text.trim(),"location":r.location.text.trim(),"id":r.selected_job,"configure_after":r.configure_after});
+    r.starting = starting(r, action);
     r.pending = true;
     r.review = false;
     r.message = match action {
@@ -233,16 +237,22 @@ pub(crate) fn request(s: &mut State, action: &str) {
     .into();
     bridge::request(value, r.tx.clone());
 }
+/// What a request starts, named for the close warning: only `start` hands work to a worker.
+pub(crate) fn starting(r: &Setup, action: &str) -> Option<String> {
+    (action == "start").then(|| format!("the setup job for {}", r.recipes[r.selected].name))
+}
 pub(crate) fn poll(s: &mut State) -> bool {
+    let mut changed = false;
     if !s.setup.checkpoint_loaded {
         s.setup.checkpoint_loaded = true;
         batch::restore(s);
+        changed = close::notice_at_start(s);
     }
-    let mut changed = false;
     let events: Vec<_> = s.setup.rx.try_iter().collect();
     for event in events {
         changed = true;
         s.setup.pending = false;
+        s.setup.starting = None;
         match event {
             Err(e) => s.setup.message = e,
             Ok(value) => apply_event(s, value),
@@ -401,7 +411,6 @@ pub(crate) fn use_distro(s: &mut State) {
     s.config = next;
     s.detected.clear();
     s.setup.checks.clear();
-    s.metrics.clear();
     s.setup.message =
         "Workspace distribution saved. Detect/reuse tools to configure their actual paths.".into();
     let distro = s.config.distro.clone();

@@ -403,7 +403,7 @@ pub(crate) fn install_review(s: &State) -> El {
         .child(if s.headless {
             notice("Headless preview: installations are disabled.")
         } else if s.busy() {
-            notice("Stop running tools, recordings and installations before installing.")
+            notice("Stop the session (owned tools, vehicle link, recordings, pipeline jobs) and installations before installing.")
         } else {
             el()
         })

@@ -451,10 +451,12 @@ pub(crate) fn station(
         .child(p(desc, 11.).max_w(420.))
         .child(
             row()
+                .w_full()
+                .min_w(0.)
                 .gap(8.)
                 .center_y()
                 .child(dot(state_color))
-                .child(meta_sized(state, 10., fg()).wrap()),
+                .child(meta_sized(state, 10., fg()).wrap().grow(1.)),
         )
 }
 

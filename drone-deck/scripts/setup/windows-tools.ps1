@@ -6,14 +6,11 @@ function Find-WindowsTool([string]$Tool,[string]$Location) {
         $paths += @((Join-Path $env:ProgramFiles 'QGroundControl\bin\QGroundControl.exe'),
                     (Join-Path $env:ProgramFiles 'QGroundControl\QGroundControl.exe'),
                     (Join-Path $env:LOCALAPPDATA 'QGroundControl\bin\QGroundControl.exe'))
-    } elseif (-not $Location -and $Tool -eq 'jmavsim') {
-        $paths += (Join-Path $env:LOCALAPPDATA 'DroneDeck\tools\jmavsim\jmavsim_run.jar')
-        $paths += (Join-Path $env:USERPROFILE 'Desktop\Simulator Launchers\jMAVSim-Windows\jmavsim_run.jar')
     }
     foreach ($path in $paths) {
         if (Test-Path -LiteralPath $path -PathType Leaf) {
             $compatible=$false; $version=''; $runtime=''
-            $reason='The selected file is not a verified tool. Choose the actual executable or JAR.'
+            $reason='The selected file is not a verified tool. Choose the actual executable.'
             if ($Tool -eq 'qgc' -and [IO.Path]::GetExtension($path) -eq '.exe') {
                 $info=[Diagnostics.FileVersionInfo]::GetVersionInfo($path)
                 $version=[string]$info.ProductVersion
@@ -21,32 +18,13 @@ function Find-WindowsTool([string]$Tool,[string]$Location) {
                 try { $pe=($stream.ReadByte() -eq 77 -and $stream.ReadByte() -eq 90) } finally {$stream.Dispose()}
                 $compatible=$pe -and $info.ProductName -eq 'QGroundControl' -and $version -match '^\d+\.'
                 if ($compatible) {$reason='QGroundControl executable and product version verified. Vehicle connection remains a separate check.'}
-            } elseif ($Tool -eq 'jmavsim' -and [IO.Path]::GetExtension($path) -eq '.jar') {
-                Add-Type -AssemblyName System.IO.Compression.FileSystem
-                try {
-                    $jar=[IO.Compression.ZipFile]::OpenRead($path)
-                    try { $valid=$null -ne $jar.GetEntry('me/drton/jmavsim/Simulator.class') } finally {$jar.Dispose()}
-                    $javaCandidates=@(Get-ChildItem -Path (Join-Path $env:ProgramFiles 'Microsoft\jdk-21*\bin\java.exe') -ErrorAction SilentlyContinue | ForEach-Object {$_.FullName})
-                    $javaCandidates+=@((Get-Command java.exe -ErrorAction SilentlyContinue).Source)
-                    $javaCandidates+=@(Get-ChildItem -Path (Join-Path $env:ProgramFiles 'Microsoft\*\bin\java.exe') -ErrorAction SilentlyContinue | ForEach-Object {$_.FullName})
-                    foreach($candidate in @($javaCandidates | Where-Object {$_} | Select-Object -Unique)){
-                        $checked=Invoke-Native $candidate @('-version') 15
-                        if($checked.code -eq 0 -and ($checked.err+$checked.out) -match 'version "([0-9]+)' -and [int]$Matches[1] -ge 21){$runtime=$candidate;break}
-                    }
-                    if($valid -and $runtime) {
-                        $checked=Invoke-Native $runtime @('-version') 15
-                        $compatible=$checked.code -eq 0
-                        $version='jMAVSim / ' + ($checked.err -split "`n")[0]
-                        $reason='Visualizer JAR and Java runtime verified. Relay/data delivery is checked when the workspace starts.'
-                    } elseif($valid) {$reason='jMAVSim JAR found. This native adapter requires Java 21 or newer; install/reuse a compatible runtime.'}
-                } catch {$reason='Could not verify the visualizer JAR: ' + $_.Exception.Message}
             }
             $result=@{tool=$Tool;found=$true;compatible=[bool]$compatible;path=$path;executable=$path;version=$version;runtime=$runtime;managed=$false;reason=$reason}
             if($compatible -or $Location){return $result};$fallback=$result
         }
     }
     if($fallback){return $fallback}
-    return @{tool=$Tool;found=$false;compatible=$false;path='';executable='';version='';managed=$false;reason='No executable/JAR found. Select its full path manually.'}
+    return @{tool=$Tool;found=$false;compatible=$false;path='';executable='';version='';managed=$false;reason='No executable found. Select its full path manually.'}
 }
 function Wait-ReviewedInstaller($Installer) {
     $Installer.WaitForExit()

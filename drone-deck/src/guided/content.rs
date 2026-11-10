@@ -21,7 +21,7 @@ pub(crate) const STORIES: [Story; 4] = [
         desc: "See an autopilot, a simulated vehicle and a ground station working together.",
         tag: "Start here / no hardware",
         title: "A flight lab on your laptop.",
-        result: "A virtual drone you can observe, with flight controls in a separate ground-station window.",
+        result: "A virtual drone you can observe and command from the System page (this simulation only), with missions and vehicle setup in QGroundControl.",
         steps: [
             (
                 "PX4 / SIH",
@@ -30,33 +30,33 @@ pub(crate) const STORIES: [Story; 4] = [
                 "Ubuntu / WSL",
             ),
             (
-                "Display relay",
+                "MAVLink router",
                 "Move state to Windows",
-                "Forwards vehicle state across the Linux-to-Windows boundary.",
-                "WSL / UDP 19410",
+                "Bridges PX4's UDP 14550 to TCP 5760, which Windows reaches through WSL.",
+                "WSL / TCP 5760",
             ),
             (
-                "jMAVSim",
+                "Vehicle link",
                 "See the result",
-                "A separate Windows window displays the simulated movement.",
-                "Windows / Java",
+                "Drone Deck shows the live vehicle and feeds QGroundControl on UDP 14550.",
+                "Windows native",
             ),
         ],
-        extra: "QGroundControl opens separately for vehicle setup and flight controls. MAVSDK is optional for read-only telemetry on UDP 14540.",
+        extra: "QGroundControl opens separately for vehicle setup and missions. Your own scripts on Windows (MAVSDK, pymavlink) can use UDP 14540 through the same link.",
         tasks: [
             (
                 "Start the virtual vehicle",
-                "Drone Deck starts PX4, waits for SIH readiness, starts the relay, then opens jMAVSim.",
-                "Confirm that live state reaches the visualizer.",
+                "Drone Deck starts PX4, waits for SIH readiness, starts the router, then opens the vehicle link.",
+                "Confirm a fresh heartbeat reaches the live view.",
             ),
             (
                 "Open the ground station",
-                "QGroundControl opens as a separate window. Drone Deck does not arm or fly the vehicle.",
+                "QGroundControl opens as a separate window and connects through the vehicle link. Missions and vehicle setup happen there.",
                 "Confirm a vehicle appears in QGroundControl.",
             ),
             (
                 "Read the result",
-                "Start read-only MAVSDK telemetry and compare it with the vehicle shown in the visualizer and the ground station.",
+                "Compare the live view on the System page with the vehicle shown in the ground station.",
                 "Process running and vehicle readiness remain separate checks.",
             ),
         ],
@@ -64,10 +64,10 @@ pub(crate) const STORIES: [Story; 4] = [
     },
     Story {
         name: "Capture sensor data",
-        desc: "Connect ROS streams, record them, and keep a dataset you can return to.",
+        desc: "Connect ROS streams, record them, and replay or extract them later.",
         tag: "ROS / recordings",
         title: "From live messages to a reusable recording.",
-        result: "A finalized MCAP recording, ready for isolated replay and a versioned dataset.",
+        result: "A finalized MCAP recording, ready for isolated replay, frame extraction and inference on replay.",
         steps: [
             (
                 "PX4 + matching messages",
@@ -103,17 +103,17 @@ pub(crate) const STORIES: [Story; 4] = [
             (
                 "Finalize and keep the recording",
                 "Stop gracefully, then inspect the message count of the finalized recording.",
-                "Keep originals; dataset versions do not copy MCAP files.",
+                "Pipelines write extracted frames and inference runs next to the recording and never change it.",
             ),
         ],
         builtin: &[],
     },
     Story {
         name: "Test a model offline",
-        desc: "Use prepared inputs to inspect a local model and retain its outputs.",
+        desc: "Run a local model on prepared inputs, then on a replayed recording.",
         tag: "AI / no vehicle needed",
         title: "Test the model before connecting it to flight.",
-        result: "Local output tensors and a reproducible run record; evaluation requires supplied labels.",
+        result: "Output tensors from prepared inputs, then detections recorded from a replayed recording, each with a run record. No accuracy is computed.",
         steps: [
             (
                 "Model + prepared input",
@@ -128,10 +128,10 @@ pub(crate) const STORIES: [Story; 4] = [
                 "Ubuntu / WSL",
             ),
             (
-                "Artifacts + evaluation",
-                "Inspect the evidence",
-                "Retain hashes and outputs. Use a predictions CSV for labeled evaluation.",
-                "Local results",
+                "Pipelines",
+                "Infer on replay",
+                "Replays a finalized recording on an isolated ROS domain and records the model's detections with model and source hashes.",
+                "Ubuntu / WSL",
             ),
         ],
         extra: "Hugging Face downloads are optional. Downloaded weights do not supply a sensor adapter, calibration, preprocessing or flight capability.",
@@ -147,9 +147,9 @@ pub(crate) const STORIES: [Story; 4] = [
                 "Model and input hashes and runtime versions are recorded.",
             ),
             (
-                "Inspect artifacts",
-                "Read output tensors; evaluate a predictions CSV only when labels are available.",
-                "No accuracy score is invented when targets are absent.",
+                "Infer on replay",
+                "In Data & models → Pipelines, select a finalized recording with an image topic, enter the ONNX model and run Infer on replay.",
+                "Detections are model output, not a measured accuracy.",
             ),
         ],
         builtin: &[(
@@ -163,7 +163,7 @@ pub(crate) const STORIES: [Story; 4] = [
         desc: "Connect a flight controller for read-only monitoring and local logs.",
         tag: "Hardware / Windows native",
         title: "Know what is connected before doing anything.",
-        result: "An identified vehicle with fresh telemetry and a local tlog. Flight controls stay in the ground station.",
+        result: "An identified vehicle with fresh telemetry and a local tlog. Drone Deck sends it no flight commands; flight control stays in the ground station.",
         steps: [
             (
                 "Serial / UDP / TCP",
@@ -172,7 +172,7 @@ pub(crate) const STORIES: [Story; 4] = [
                 "Windows native",
             ),
             (
-                "MAVLink monitor",
+                "Vehicle link",
                 "Identify the vehicle",
                 "Look for a fresh autopilot heartbeat and select its identity.",
                 "Read-only monitoring",
@@ -184,7 +184,7 @@ pub(crate) const STORIES: [Story; 4] = [
                 "Windows local storage",
             ),
         ],
-        extra: "This route does not need PX4 simulation or WSL. Parameter requests are read-only; direct flight commands and parameter writes are not implemented.",
+        extra: "This route does not need PX4 simulation or WSL. Drone Deck's link is read-only: it sends no flight commands, parameter writes or ground-station heartbeat. If you enable QGroundControl or scripts for this system, the link forwards their messages, so those programs can command the vehicle.",
         tasks: [
             (
                 "Choose an endpoint",
@@ -193,18 +193,18 @@ pub(crate) const STORIES: [Story; 4] = [
             ),
             (
                 "Identify the vehicle",
-                "Start read-only monitoring and wait for a fresh autopilot heartbeat.",
-                "Select the actual vehicle identity before requesting parameters.",
+                "Connect and wait for a fresh autopilot heartbeat.",
+                "Check the vehicle identity before reading parameters.",
             ),
             (
                 "Inspect and retain",
                 "Review freshness and open the local tlog folder.",
-                "Signatures are not authenticated; signed parameter links are refused.",
+                "Signatures are not authenticated by the read-only link.",
             ),
         ],
         builtin: &[
             (
-                "Windows MAVLink monitor",
+                "Native vehicle link",
                 "Built into Drone Deck / read-only",
                 "No simulation install",
             ),
