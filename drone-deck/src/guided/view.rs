@@ -318,6 +318,24 @@ fn locked_note(s: &State) -> String {
     }
 }
 
+/// Which saved system this preparation creates or updates.
+fn scope_note(s: &State) -> String {
+    let base = s.guided.base.as_deref().and_then(|id| s.systems.get(id));
+    match (base, target(s)) {
+        (Some(b), Some(t)) if b.id == t.id => format!(
+            "Preparing {}. Choosing another outcome prepares a new system; {} stays as it is.",
+            t.label(),
+            t.label()
+        ),
+        (_, Some(t)) => format!("Preparing {}.", t.label()),
+        (Some(b), None) => format!(
+            "Creates a new system from this template when you name it. {} stays as it is.",
+            b.label()
+        ),
+        (None, None) => "Creates a new system from this template when you name it.".into(),
+    }
+}
+
 fn intention(s: &State, f: &Frame) -> El {
     let mut list = col()
         .key("intent-list")
@@ -328,16 +346,15 @@ fn intention(s: &State, f: &Frame) -> El {
     for i in 0..4 {
         list = list.child(intent_row(s, i, f));
     }
-    let content = if s.setup.active() {
-        col()
-            .w_full()
-            .min_w(0.)
-            .gap(12.)
-            .child(list)
-            .child(notice(locked_note(s)))
-    } else {
-        list
-    };
+    let mut content = col()
+        .w_full()
+        .min_w(0.)
+        .gap(12.)
+        .child(list)
+        .child(notice(scope_note(s)).key("intent-scope"));
+    if s.setup.active() {
+        content = content.child(notice(locked_note(s)));
+    }
     frame(
         s,
         f,
@@ -467,7 +484,7 @@ fn recipe_controls(s: &State, f: &Frame) -> El {
         .setup
         .recipes
         .iter()
-        .find(|r| r.id == primary_tool(g.choice))
+        .find(|r| r.id == primary_tool(s))
         .map(|r| r.name.as_str())
         .unwrap_or("tool");
     let text = g.path.text.trim();
@@ -521,15 +538,13 @@ fn recipe_controls(s: &State, f: &Frame) -> El {
 }
 
 fn advance_system(s: &mut State) {
-    let name = s.guided.name.text.trim().to_string();
-    if name.is_empty() {
-        s.guided.name_error = "Give this system a name so you can return to it.".into();
-        return;
-    }
-    if name.chars().count() > 60 {
-        s.guided.name_error = "Keep the name to 60 characters or fewer.".into();
-        return;
-    }
+    let name = match systems::clean_name(&s.guided.name.text) {
+        Ok(name) => name,
+        Err(e) => {
+            s.guided.name_error = e;
+            return;
+        }
+    };
     s.guided.name_error.clear();
     let path = s.guided.path.text.trim().to_string();
     if !path.is_empty() && !valid_path(&path) {
@@ -538,15 +553,16 @@ fn advance_system(s: &mut State) {
         return;
     }
     s.guided.path_error = false;
-    let tool = primary_tool(s.guided.choice).to_string();
+    let tool = primary_tool(s).to_string();
     if path.is_empty() {
         s.setup.overrides.remove(&tool);
     } else {
         s.setup.overrides.insert(tool, path);
     }
     let kind = s.guided.choice;
-    if s.systems.records[kind].name != name {
-        s.systems.records[kind].name = name;
+    let id = ensure_target(s);
+    if s.systems.get(&id).is_some_and(|x| x.name != name) {
+        let _ = s.systems.rename(&id, &name);
         if let Err(e) = s.systems.save(s.headless) {
             s.notice = format!("The system name could not be saved: {e}");
         }
@@ -591,7 +607,8 @@ fn the_system(s: &State, f: &Frame) -> El {
             body(s.guided.name_error.clone(), 11., danger())
                 .key("nameerror")
                 .role("status"),
-        );
+        )
+        .child(notice(scope_note(s)).key("system-scope"));
     let content = col()
         .w_full()
         .min_w(0.)
@@ -635,7 +652,7 @@ fn footer(s: &State, f: &Frame) -> El {
                 if s.headless {
                     "Headless preview / no processes start and nothing installs"
                 } else {
-                    "Changes need your review / flight controls stay in QGroundControl"
+                    "Changes need your review / missions and vehicle setup stay in QGroundControl"
                 },
                 9.,
                 muted(),

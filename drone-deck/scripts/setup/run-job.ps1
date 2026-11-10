@@ -68,11 +68,6 @@ try {
             Install-Qgc $Job
         }
         default {
-            if($plan.tool -eq 'jmavsim') {
-                . (Join-Path $PSScriptRoot 'windows-tools.ps1')
-                $native=Find-WindowsTool 'jmavsim' ([string]$plan.location)
-                if($native.compatible){$script:state.result=$native;Phase 'Existing installation' 'Native visualizer and Java verified. Reuse is available without installation.' $recipe.steps.Count;break}
-            }
             $probeUser = Invoke-Native (Get-Wsl) @('-d',[string]$plan.distro,'--exec','id','-u') 20
             Check-Result $probeUser
             if ($probeUser.out.Trim() -eq '0') { throw 'Initialize a regular Linux user before creating project tools.' }
@@ -86,7 +81,7 @@ try {
             }
             $found = Probe-Linux
             Cancel-Point
-            if ($found.found -and $found.compatible -and $plan.tool -ne 'jmavsim') {
+            if ($found.found -and $found.compatible) {
                 $script:state.result=$found
                 Phase 'Existing installation' 'Compatible launch candidate found. Nothing was updated. Detect and apply its configuration to reuse it.' $recipe.steps.Count
                 break
@@ -107,10 +102,6 @@ try {
             Phase 'Checking' 'Verifying the installed tool and version' $recipe.steps.Count
             $result = (Linux @('verify',[string]$plan.tool)).out | ConvertFrom-Json
             if (-not $result.found -or -not $result.compatible) { throw ('Installation completed but verification needs attention: ' + $result.reason) }
-            if($plan.tool -eq 'jmavsim') {
-                . (Join-Path $PSScriptRoot 'native-visualizer.ps1')
-                $result=Install-NativeVisualizer $result $plan.distro $Job
-            }
             $script:state.result=$result
             Phase 'Ready' 'Verified. Apply configuration to connect this installation to your workspace profiles.' $recipe.steps.Count
         }

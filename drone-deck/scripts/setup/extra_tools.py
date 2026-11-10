@@ -5,9 +5,18 @@ from pathlib import Path
 import shutil
 import subprocess
 import urllib.request
-import zipfile
 
-TOOLS={'gazebo','ardupilot','jmavsim','ros-workspace','onnx'}
+TOOLS={'gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge'}
+# ROS 2 Jazzy apt packages: recipe id -> (package, ROS package directory under /opt/ros/jazzy/share).
+ROS_PACKAGES={'ros-gz':('ros-jazzy-ros-gz','ros_gz_bridge'),'foxglove-bridge':('ros-jazzy-foxglove-bridge','foxglove_bridge')}
+def ros_package(base,tool,share=Path('/opt/ros/jazzy/share')):
+    """Probe an apt-installed ROS 2 Jazzy package: its package.xml and dpkg version."""
+    package,folder=ROS_PACKAGES[tool]
+    manifest=share/folder/'package.xml'
+    version=base.output(['dpkg-query','-W','-f=${Version}',package])
+    found=manifest.is_file()
+    return dict(found=found,compatible=found,path=str(share/folder),executable=str(manifest),version=version or ('installed' if found else ''),
+                reason=(f'{package} installed; a running bridge is checked when its profile starts.' if found else f'Install {package} from the ROS 2 apt repository.'))
 def probe(base,tool,location=''):
     root=base.ROOT
     result=dict(tool=tool,found=False,compatible=False,path='',executable='',version='',reason='Not detected',managed=False,environment=os.environ.get('WSL_DISTRO_NAME',''))
@@ -26,15 +35,8 @@ def probe(base,tool,location=''):
                 compatible=binary.is_file() and os.access(binary,os.X_OK)
                 result.update(found=True,compatible=compatible,path=str(path),executable=str(binary),version=base.output(['git','-C',str(path),'describe','--tags','--always']),reason='Built multirotor SITL; ground-station connection uses TCP 5760.' if compatible else 'Checkout found; build the Copter SITL target before reuse.')
                 if compatible:break
-    elif tool=='jmavsim':
-        path=requested or root/'jMAVSim'
-        jar=path/'out/production/jmavsim_run.jar'
-        valid=False
-        if jar.is_file():
-            try:
-                with zipfile.ZipFile(jar) as archive:valid='me/drton/jmavsim/Simulator.class' in archive.namelist()
-            except zipfile.BadZipFile:pass
-        result.update(found=jar.is_file(),compatible=valid,path=str(path),executable=str(jar),version=base.output(['git','-C',str(path),'rev-parse','HEAD']),reason='Built distributable; the Windows setup stage installs/verifies its native Java launch.' if valid else 'No built jMAVSim distribution.')
+    elif tool in ROS_PACKAGES:
+        result.update(ros_package(base,tool))
     elif tool=='ros-workspace':
         path=requested or root/'px4_ros_ws'
         setup=path/'install/setup.bash'
@@ -64,7 +66,11 @@ def dependencies(base,tool):
         source.write_text(f'deb [arch={architecture} signed-by={key}] https://packages.osrfoundation.org/gazebo/ubuntu-stable noble main\n')
         base.run(['apt-get','update']);base.run(['apt-get','install','-y','--no-install-recommends','gz-harmonic'])
         return
-    if tool=='jmavsim':packages+=['ant','openjdk-17-jdk','zip']
+    if tool in ROS_PACKAGES:
+        if not Path('/opt/ros/jazzy/setup.bash').is_file():raise RuntimeError('Install ROS 2 Jazzy in Setup first; it configures the ROS apt repository.')
+        env={**os.environ,'DEBIAN_FRONTEND':'noninteractive'}
+        base.run(['apt-get','update'],env=env);base.run(['apt-get','install','-y','--no-install-recommends',ROS_PACKAGES[tool][0]],env=env)
+        return
     if tool=='ardupilot':packages+=['build-essential','ccache','gawk','pkg-config','python3-dev','libexpat1-dev','libsqlite3-dev','zlib1g-dev']
     if tool=='ros-workspace':
         if not Path('/opt/ros/jazzy/setup.bash').is_file():raise RuntimeError('Install ROS 2 Jazzy in Setup before its message workspace.')
@@ -80,7 +86,7 @@ def clone(base,path,url,revision):
 def install(base,tool):
     base.require_noble()
     if os.geteuid()==0:raise RuntimeError('Build user tools as a regular Linux user.')
-    if tool=='gazebo':return
+    if tool=='gazebo' or tool in ROS_PACKAGES:return
     if tool=='onnx':
         path=base.owned_target('onnx')
         if not (path/'bin/python').is_file():base.run(['python3','-m','venv',str(path)])
@@ -100,16 +106,4 @@ def install(base,tool):
         clone(base,path/'src/px4_msgs','https://github.com/PX4/px4_msgs.git','v1.17.0')
         base.run(['bash','-c','source /opt/ros/jazzy/setup.bash && colcon build --packages-select px4_msgs --executor sequential'],cwd=path)
         (path/'drone-deck-workspace.json').write_text(json.dumps(dict(firmware='v1.17.0',messages='v1.17.0',ros='jazzy')))
-    elif tool=='jmavsim':
-        parent=base.probe('px4')
-        if not parent['found']:raise RuntimeError('Install/reuse PX4 1.17 before building its visualizer.')
-        source=Path(parent['path'])
-        revision=base.output(['git','-C',str(source),'rev-parse','v1.17.0:Tools/simulation/jmavsim/jMAVSim'])
-        if len(revision)!=40:raise RuntimeError('Could not read the pinned PX4 1.17 visualizer revision.')
-        path=base.owned_target('jMAVSim')
-        if not (path/'.git').exists():
-            base.run(['git','clone','https://github.com/PX4/jMAVSim.git',str(path)])
-            base.run(['git','-C',str(path),'checkout','--detach',revision])
-        if base.output(['git','-C',str(path),'rev-parse','HEAD'])!=revision:raise RuntimeError('Managed visualizer revision changed; review it manually.')
-        base.run(['git','-C',str(path),'submodule','update','--init','--recursive'])
-        base.run(['ant','distro'],cwd=path)
+

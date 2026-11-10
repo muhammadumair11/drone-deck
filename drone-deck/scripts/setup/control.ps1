@@ -26,7 +26,7 @@ try {
             $data=Select-ToolLocation $request.tool $request.distro
         }
         'detect' {
-            if ($request.tool -in @('qgc','jmavsim')) {
+            if ($request.tool -eq 'qgc') {
                 . (Join-Path $PSScriptRoot 'windows-tools.ps1')
                 $data = Find-WindowsTool $request.tool $request.location
                 break

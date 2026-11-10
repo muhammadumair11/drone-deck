@@ -184,7 +184,6 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
             .child(meta(label))
             .child(p(hint, 11.)),
     };
-    let dataset = r.dataset.as_ref().and_then(|d| d["name"].as_str());
     let model = (!r.model_path.is_empty()).then_some(r.model_path.as_str());
     let right = col()
         .w_full()
@@ -195,11 +194,6 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
             "Model",
             model,
             "None selected / choose one under Models",
-        ))
-        .child(linked(
-            "Dataset",
-            dataset,
-            "None selected / choose a version under Datasets & evaluation",
         ))
         .child(meta("Run inputs"))
         .child(labeled(

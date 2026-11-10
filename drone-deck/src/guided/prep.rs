@@ -19,7 +19,7 @@ pub(super) enum Phase {
 
 pub(super) fn phase(s: &State) -> Phase {
     let g = &s.guided;
-    let preset = s.setup.workflow == PRESET[g.choice];
+    let preset = s.setup.workflow == super::preset(s);
     if s.setup.batch.is_some() {
         Phase::Applying
     } else if g.applied && preset && workflow::verified_all(s) {
@@ -109,7 +109,7 @@ fn plan_summary(s: &State) -> String {
 fn close_app(s: &State) -> El {
     disclosure(s, "close-app", "What happens if I close the app?", || {
         p(
-            "Installation jobs continue and recover their status when you return. Cancel at a safe boundary from the job controls. Simulation and recording processes stop on normal application close. Stopping a session does not land a vehicle.",
+            "Installation jobs continue and recover their status when you return. Cancel at a safe boundary from the job controls. Simulation and recording processes, the vehicle link and a running pipeline job stop on normal application close; a cancelled pipeline keeps its partial output. Stopping a session does not land a vehicle.",
             12.,
         )
         .max_w(860.)
@@ -117,7 +117,7 @@ fn close_app(s: &State) -> El {
 }
 
 fn location_note(s: &State) -> El {
-    let tool = primary_tool(s.guided.choice);
+    let tool = primary_tool(s);
     match s.setup.overrides.get(tool) {
         Some(path) => notice(format!(
             "Requested existing location: {path}. Discovery validates it before reuse."
@@ -296,7 +296,7 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
                 .child(jobs(s));
         }
         Phase::Applying => {
-            if s.setup.workflow != PRESET[g.choice] {
+            if s.setup.workflow != super::preset(s) {
                 let preset = workflow::PRESETS[s.setup.workflow.min(workflow::PRESETS.len() - 1)].0;
                 content = content.child(notice(format!(
                     "This queue was started for {preset}. It must finish or be cancelled before this system can be prepared."

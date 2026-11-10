@@ -25,11 +25,11 @@ const FIELDS: [(&str, &str); 7] = [
     ("Display name", "Name shown throughout the workspace"),
     (
         "Program",
-        "wsl for an Ubuntu command, java for native jMAVSim, or a Windows executable path",
+        "wsl for an Ubuntu command, or a Windows executable path",
     ),
     (
         "Command / arguments",
-        "WSL: one Linux command. Windows or Java: one argument per line, without JSON or surrounding quotes.",
+        "WSL: one Linux command. Windows: one argument per line, without JSON or surrounding quotes.",
     ),
     (
         "Windows working directory",
@@ -161,7 +161,7 @@ fn save(s: &mut State) {
     if fields[5] != s.config.distro && (s.busy() || s.setup.batch.is_some()) {
         return refuse(
             s,
-            "Stop active tools, recordings and installations before changing the WSL distribution.",
+            "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) and installations before changing the WSL distribution.",
         );
     }
     let mut next = s.config.clone();

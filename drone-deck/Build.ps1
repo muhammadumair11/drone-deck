@@ -13,10 +13,15 @@
 
 .PARAMETER NoLocalDeploy
     Skip the copy beside the repository root (used by CI).
+
+.PARAMETER Installer
+    Also compile installer\drone-deck.iss with Inno Setup 6 into dist\DroneDeck-<version>-setup.exe. When ISCC.exe
+    is not found the installer step is skipped with a message and the package and zip are still produced.
 #>
 [CmdletBinding()]
 param(
-    [switch]$NoLocalDeploy
+    [switch]$NoLocalDeploy,
+    [switch]$Installer
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,6 +78,19 @@ function Test-ResourceCompiler {
     $kits = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
     if (-not (Test-Path -LiteralPath $kits)) { return $false }
     return [bool](Get-ChildItem -Path (Join-Path $kits '*\x64\rc.exe') -ErrorAction SilentlyContinue)
+}
+
+function Find-Iscc {
+    $onPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+    if ($onPath) { return $onPath.Source }
+    foreach ($base in @(${env:ProgramFiles(x86)}, $env:ProgramFiles, $env:LOCALAPPDATA)) {
+        if (-not $base) { continue }
+        foreach ($relative in @('Inno Setup 6\ISCC.exe', 'Programs\Inno Setup 6\ISCC.exe')) {
+            $candidate = Join-Path $base $relative
+            if (Test-Path -LiteralPath $candidate) { return $candidate }
+        }
+    }
+    return $null
 }
 
 function Get-PackageVersion {
@@ -210,4 +228,22 @@ try {
 
 Write-Host "Packaged $package"
 Write-Host "Zipped   $zip"
+
+if ($Installer) {
+    $iscc = Find-Iscc
+    if (-not $iscc) {
+        Write-Host ''
+        Write-Host 'Installer skipped: Inno Setup 6 (ISCC.exe) was not found.' -ForegroundColor Yellow
+        Write-Host '  Install it with "winget install JRSoftware.InnoSetup" or from https://jrsoftware.org/isdl.php,'
+        Write-Host '  then run Build.ps1 -Installer again. The package folder and zip above are complete without it.'
+        exit 0
+    }
+    $setup = Join-Path $dist "$name-setup.exe"
+    if (Test-Path -LiteralPath $setup) { Remove-Item -LiteralPath $setup -Force }
+    $code = Invoke-Native $iscc @('/Qp', "/DAppVersion=$version", "/DSourceDir=$package", "/DOutputDir=$dist",
+        (Join-Path $project 'installer\drone-deck.iss'))
+    if ($code -ne 0) { Fail "Inno Setup (ISCC.exe) exited with code $code." }
+    if (-not (Test-Path -LiteralPath $setup)) { Fail "Expected $setup after the installer build." }
+    Write-Host "Installer $setup (unsigned)"
+}
 exit 0

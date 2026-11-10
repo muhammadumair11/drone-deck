@@ -1,7 +1,15 @@
-//! 03 Data & models: recordings, models, datasets & evaluation, projects.
+//! 03 Data & models: recordings, models, pipelines, projects, flight logs.
 use super::*;
+mod logs;
+mod plot;
 
-const TABS: [&str; 4] = ["Recordings", "Models", "Datasets & evaluation", "Projects"];
+const TABS: [&str; 5] = [
+    "Recordings",
+    "Models",
+    "Pipelines",
+    "Projects",
+    "Flight logs",
+];
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
     let kind = s.systems.active;
@@ -14,7 +22,7 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
             "Preparation required"
         }
     );
-    let tab = s.ui.data_tab.min(3);
+    let tab = s.ui.data_tab.min(TABS.len() - 1);
     col()
         .key("data-page")
         .w_full()
@@ -29,7 +37,9 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
         .child(tabs("data-tab", &TABS, tab, |s: &mut State, i: usize| {
             s.ui.data_tab = i
         }))
-        .child(if tab == 0 {
+        .child(if tab == crate::ulog::LOGS_TAB {
+            logs::tab(s, vp)
+        } else if tab == 0 {
             crate::recordings::page(s, vp)
         } else {
             crate::studio::page(s, vp)

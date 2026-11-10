@@ -6,7 +6,6 @@ use crate::ui::theme::*;
 #[cfg(test)]
 #[path = "batch_tests.rs"]
 mod tests;
-#[derive(serde::Serialize, serde::Deserialize)]
 pub(crate) struct Batch {
     remaining: Vec<usize>,
     waiting: Option<String>,
@@ -23,6 +22,76 @@ impl Batch {
             .as_deref()
             .filter(|id| !id.starts_with("starting:"))
     }
+}
+/// What `workflow-state.json` keeps of a [`Batch`]: recipe ids, never catalog positions, so a
+/// catalog that changed between builds cannot resume a recipe nobody reviewed.
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Saved {
+    remaining: Vec<String>,
+    waiting: Option<String>,
+    distro: String,
+}
+/// The checkpoint of the running queue: the batch by recipe id and the preset by name.
+fn checkpoint(s: &State) -> Value {
+    let batch = s.setup.batch.as_ref().map(|b| Saved {
+        remaining: b
+            .remaining
+            .iter()
+            .map(|i| s.setup.recipes[*i].id.clone())
+            .collect(),
+        waiting: b.waiting.clone(),
+        distro: b.distro.clone(),
+    });
+    let preset = workflow::PRESETS[s.setup.workflow.min(workflow::PRESETS.len() - 1)].0;
+    json!({"app_version":env!("CARGO_PKG_VERSION"),"batch":batch,"workflow":preset,"message":s.setup.batch_message})
+}
+/// Resumes the queue of `value` when every recipe id and the preset name are still known and
+/// automatic; anything else (another version, a changed catalog, the older format that kept
+/// positions) asks for a review instead.
+fn resume(s: &mut State, value: &Value) {
+    if value["batch"].is_null() {
+        return;
+    }
+    let review = "A previous workflow used another app version or tool catalog. Recheck/review it before continuing.";
+    if value["app_version"].as_str() != Some(env!("CARGO_PKG_VERSION")) {
+        s.setup.batch_message = review.into();
+        return;
+    }
+    let Ok(saved) = serde_json::from_value::<Saved>(value["batch"].clone()) else {
+        s.setup.batch_message = review.into();
+        return;
+    };
+    let preset = workflow::PRESETS
+        .iter()
+        .position(|(name, _)| Some(*name) == value["workflow"].as_str());
+    let remaining: Option<Vec<usize>> = saved
+        .remaining
+        .iter()
+        .map(|id| {
+            s.setup
+                .recipes
+                .iter()
+                .position(|r| &r.id == id && r.automatic)
+        })
+        .collect();
+    let (Some(preset), Some(remaining)) = (preset, remaining) else {
+        s.setup.batch_message = review.into();
+        return;
+    };
+    let valid_wait = saved.waiting.as_ref().is_none_or(|id| {
+        id.starts_with("starting:") || id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+    });
+    if !valid_wait {
+        return;
+    }
+    s.setup.workflow = preset;
+    s.setup.batch = Some(Batch {
+        remaining,
+        waiting: saved.waiting,
+        distro: saved.distro,
+    });
+    s.setup.batch_message =
+        "Resuming the previously reviewed workflow; job state is checked first.".into();
 }
 pub(super) fn restore(s: &mut State) {
     if s.headless {
@@ -45,38 +114,13 @@ pub(super) fn restore(s: &mut State) {
             return;
         }
     };
-    if value["batch"].is_null() {
-        return;
-    }
-    if value["app_version"].as_str() != Some(env!("CARGO_PKG_VERSION")) {
-        s.setup.batch_message =
-            "A previous workflow used another app version. Recheck/review it before continuing."
-                .into();
-        return;
-    }
-    if let Ok(batch) = serde_json::from_value::<Batch>(value["batch"].clone()) {
-        let valid_wait = batch.waiting.as_ref().is_none_or(|id| {
-            id.starts_with("starting:") || id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
-        });
-        if valid_wait
-            && batch
-                .remaining
-                .iter()
-                .all(|i| *i < s.setup.recipes.len() && s.setup.recipes[*i].automatic)
-        {
-            s.setup.workflow =
-                (value["workflow"].as_u64().unwrap_or(0) as usize).min(workflow::PRESETS.len() - 1);
-            s.setup.batch = Some(batch);
-            s.setup.batch_message =
-                "Resuming the previously reviewed workflow; job state is checked first.".into();
-        }
-    }
+    resume(s, &value);
 }
 pub(super) fn persist(s: &mut State) -> bool {
     if s.headless || (s.setup.batch.is_none() && s.setup.batch_message.is_empty()) {
         return false;
     }
-    let value=json!({"app_version":env!("CARGO_PKG_VERSION"),"batch":s.setup.batch,"workflow":s.setup.workflow,"message":s.setup.batch_message}).to_string();
+    let value = checkpoint(s).to_string();
     if value == s.setup.checkpoint_cache {
         return false;
     }
@@ -98,7 +142,7 @@ pub(crate) fn begin(s: &mut State) {
     }
     if s.busy() || s.setup.pending {
         s.setup.message =
-            "Stop running tools, recordings and installations before applying the plan.".into();
+            "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) and installations before applying the plan.".into();
         return;
     }
     if workflow::needs_wsl(s) && (!s.wsl_ready() || s.setup.distro.text.trim() != s.config.distro) {
@@ -202,7 +246,7 @@ pub(super) fn poll(s: &mut State) -> bool {
     }
     if s.busy() {
         s.setup.batch_message =
-            "Workflow waiting for active tools/recordings to stop before changing dependencies."
+            "Workflow waiting for the session (owned tools, vehicle link, recordings, pipeline jobs) to stop before changing dependencies."
                 .into();
         s.setup.batch = Some(batch);
         return false;

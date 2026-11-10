@@ -290,7 +290,7 @@ fn integration_form_validates_arguments_and_persists_in_state() {
 }
 
 #[test]
-fn active_system_selector_switches_context_and_refuses_while_running() {
+fn active_system_selector_switches_context_while_work_keeps_running() {
     let mut rt = runtime(State::new(), (1440., 900.));
     tap(&mut rt, "system-select");
     assert!(rt.state.ui.system_menu);
@@ -307,26 +307,154 @@ fn active_system_selector_switches_context_and_refuses_while_running() {
 
     rt.update(|s, _| {
         s.select_system(systems::SIMULATION);
+        s.systems.claim("sih");
         s.status.insert("sih".into(), "Running".into());
-        s.select_system(systems::ROS);
     });
-    assert_eq!(rt.state.systems.active, systems::SIMULATION);
-    assert!(rt.state.notice.starts_with("Stop the active session"));
-    rt.update(|s, _| {
-        s.status.insert("sih".into(), "Exited 0".into());
-        s.recorder.recording = true;
-        s.select_system(systems::AI);
-    });
+    let sim = rt.state.systems.active_id().to_string();
+    tap(&mut rt, "system-select");
+    assert!(rt.find("system-option-1").is_some());
+    tap(&mut rt, "system-option-1");
+    assert_eq!(rt.state.systems.active, systems::ROS);
     assert_eq!(
-        rt.state.systems.active,
-        systems::SIMULATION,
-        "capture blocks switching"
+        rt.state.status.get("sih").map(String::as_str),
+        Some("Running"),
+        "switching never stops processes"
+    );
+    assert!(systems::owns_work(&rt.state, &sim));
+    assert!(
+        rt.state
+            .notice
+            .contains("stays with the system that started it")
+    );
+    tap(&mut rt, "stop-all");
+    assert_eq!(rt.state.confirm.as_deref(), Some("stop"));
+
+    rt.update(|s, _| s.confirm = None);
+    tap(&mut rt, "system-select");
+    tap(&mut rt, "system-new");
+    assert_eq!(rt.state.page, Page::Setup);
+    assert_eq!(rt.state.guided.chapter, 0);
+    assert!(
+        rt.state.guided.existing.is_none(),
+        "New system… creates a system"
+    );
+}
+
+#[test]
+fn new_system_from_guided_setup_is_created_from_its_template() {
+    let mut rt = runtime(State::new(), (1440., 900.));
+    rt.update(|s, _| crate::guided::new_system(s));
+    rt.frame(0.1);
+    tap(&mut rt, "intent-1");
+    tap(&mut rt, "next");
+    rt.update(|s, _| s.guided.name = TextEdit::new("Camera rig"));
+    rt.frame(0.1);
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, 2);
+    assert_eq!(rt.state.systems.list.len(), 5);
+    let sys = rt.state.systems.get("camera-rig").expect("created");
+    assert_eq!(sys.template, "ros-sensor-capture");
+    assert!(matches!(sys.source, systems::Source::Gazebo { .. }));
+    assert!(!sys.prepared);
+    assert_eq!(
+        crate::guided::preset(&rt.state),
+        1,
+        "preset from source and consumers"
     );
     rt.update(|s, _| {
-        s.recorder.recording = false;
-        s.select_system(systems::AI);
+        crate::guided::open_workspace(s);
     });
-    assert_eq!(rt.state.systems.active, systems::AI);
+    rt.frame(0.1);
+    assert_eq!(rt.state.systems.active_id(), "camera-rig");
+    assert!(rt.state.systems.current().prepared);
+    assert_eq!(rt.state.page, Page::System);
+    assert!(rt.find("station-gazebo").is_some());
+}
+
+#[test]
+fn settings_systems_rename_duplicate_and_delete_with_confirmation() {
+    let mut s = State::new();
+    s.navigate(Page::Settings);
+    let mut rt = runtime(s, (1440., 900.));
+    tap(&mut rt, "system-edit-0");
+    assert!(rt.find("system-editor").is_some());
+    rt.update(|s, _| s.systems.editor.as_mut().unwrap().name = TextEdit::new(""));
+    rt.frame(0.1);
+    tap(&mut rt, "system-save");
+    assert!(
+        rt.state
+            .systems
+            .editor
+            .as_ref()
+            .unwrap()
+            .error
+            .contains("name")
+    );
+    rt.update(|s, _| s.systems.editor.as_mut().unwrap().name = TextEdit::new("Desk sim"));
+    rt.frame(0.1);
+    tap(&mut rt, "system-source-2");
+    tap(&mut rt, "system-save");
+    assert!(rt.state.systems.editor.is_none());
+    let first = &rt.state.systems.list[0];
+    assert_eq!(first.name, "Desk sim");
+    assert_eq!(first.id, "local-simulation", "renaming keeps the id");
+    assert!(matches!(first.source, systems::Source::ArduPilot { .. }));
+
+    tap(&mut rt, "system-duplicate-0");
+    assert_eq!(rt.state.systems.list.len(), 5);
+    assert_eq!(rt.state.systems.list[1].name, "Desk sim copy");
+    assert!(
+        rt.state.systems.editor.is_some(),
+        "the copy opens for editing"
+    );
+
+    tap(&mut rt, "system-delete-1");
+    assert!(rt.find("system-delete-confirm").is_some());
+    tap(&mut rt, "cancel-delete-system");
+    assert_eq!(rt.state.systems.list.len(), 5);
+    tap(&mut rt, "system-delete-1");
+    tap(&mut rt, "confirm-delete-system");
+    assert_eq!(rt.state.systems.list.len(), 4);
+
+    // A system with running work is not deleted.
+    rt.update(|s, _| {
+        s.systems.claim("ardupilot");
+        s.status.insert("ardupilot".into(), "Running".into());
+    });
+    tap(&mut rt, "system-delete-0");
+    assert!(rt.find("confirm-delete-system").is_some());
+    tap(&mut rt, "confirm-delete-system");
+    assert_eq!(rt.state.systems.list.len(), 4);
+
+    // Deleting the active physical system that guided setup is preparing: the next active
+    // system is not physical, and guided setup forgets the deleted system.
+    rt.update(|s, _| {
+        s.status.clear();
+        assert!(s.select_system("physical-vehicle"));
+        crate::guided::open(s);
+        s.navigate(Page::Settings);
+    });
+    rt.frame(0.1);
+    assert_eq!(rt.state.hardware.mode, 1);
+    assert_eq!(
+        rt.state.guided.existing.as_deref(),
+        Some("physical-vehicle")
+    );
+    let i = rt.state.systems.position("physical-vehicle").unwrap();
+    tap(&mut rt, &format!("system-delete-{i}"));
+    tap(&mut rt, "confirm-delete-system");
+    assert!(rt.state.systems.get("physical-vehicle").is_none());
+    assert_ne!(rt.state.systems.active, systems::PHYSICAL);
+    assert_eq!(
+        rt.state.hardware.mode, 0,
+        "the monitor follows the new active system"
+    );
+    assert!(rt.state.guided.existing.is_none() && rt.state.guided.base.is_none());
+    rt.update(|s, _| crate::guided::open(s));
+    assert_ne!(
+        rt.state.guided.existing.as_deref(),
+        Some("physical-vehicle")
+    );
 }
 
 #[test]
@@ -379,16 +507,8 @@ fn component_states_never_promote_process_state_to_readiness() {
     assert_eq!(systems::profile_state(&s, "sih").0, "Running");
     s.readiness.insert("sih".into(), "Ready".into());
     assert_eq!(systems::profile_state(&s, "sih").0, "Ready");
-    s.status.insert("telemetry".into(), "Running".into());
-    assert_eq!(
-        systems::profile_state(&s, "telemetry").0,
-        "Running / no data"
-    );
-    s.metrics.insert("link".into(), "Stale".into());
-    assert_eq!(
-        systems::profile_state(&s, "telemetry").1,
-        systems::Tone::Warn
-    );
+    let link = systems::component("link").unwrap();
+    assert_eq!(systems::state(&s, link).0, "Not connected");
     assert_eq!(systems::profile_state(&s, "missing").0, "Not configured");
 }
 
@@ -477,4 +597,39 @@ fn existing_installation_can_be_detected_and_adopted_from_a_tool_row() {
     settle(&mut rt);
     assert!(rt.find("tool-onnx").is_some());
     assert!(rt.find("start-onnx").is_some(), "adopted tool can start");
+}
+
+#[test]
+fn an_open_vehicle_link_is_session_work_the_rail_and_the_system_page_agree_on() {
+    let mut s = State::new();
+    assert!(s.select_system(systems::PHYSICAL));
+    assert_eq!(ui::session_label(&s), "No active session");
+    let physical = s.systems.active_id().to_string();
+    vehicle::preview(&mut s, &physical, true, false);
+    assert!(systems::active_work(&s));
+    assert_eq!(ui::session_label(&s), "read-only vehicle link");
+    // The preview link opens on the system's own endpoint, like a real one.
+    assert_eq!(
+        s.systems.current().source,
+        systems::Source::Physical {
+            endpoint: "serial:COM4:57600".into()
+        }
+    );
+    assert_eq!(s.vehicle.endpoint, "serial:COM4:57600");
+    assert_eq!(s.hardware.endpoint.text, "serial:COM4:57600");
+    let rt = runtime(s, (1440., 900.));
+    assert!(
+        rt.find("stop-all").is_some(),
+        "the rail offers Stop session"
+    );
+    assert!(rt.find("start-session").is_some());
+
+    let mut s = State::new();
+    let sim = s.systems.active_id().to_string();
+    vehicle::preview(&mut s, &sim, true, true);
+    assert_eq!(
+        ui::session_label(&s),
+        "MAVLink router / vehicle link",
+        "a simulation's link arrives through the app's router"
+    );
 }

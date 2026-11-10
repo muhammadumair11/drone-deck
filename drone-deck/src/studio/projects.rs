@@ -38,7 +38,7 @@ pub(super) fn run(s: &mut State, project: Value) {
     let profile_id = match kind {
         "onnx" => "onnx",
         "ros2" => "ros-workspace",
-        "mavsdk" => "telemetry",
+        "mavsdk" => "mavsdk",
         "training" => {
             s.studio.message = "Drone Deck no longer runs PyTorch training projects. The project files are kept; run its main.py in your own environment.".into();
             return;
@@ -49,16 +49,11 @@ pub(super) fn run(s: &mut State, project: Value) {
         }
     };
     let Some(profile) = s.config.profiles.iter().find(|p| p.id == profile_id) else {
-        let recipe = if profile_id == "telemetry" {
-            "mavsdk"
-        } else {
-            profile_id
-        };
         let name = s
             .setup
             .recipes
             .iter()
-            .find(|r| r.id == recipe)
+            .find(|r| r.id == profile_id)
             .map_or(profile_id, |r| r.name.as_str());
         s.studio.message = format!(
             "Install or adopt {profile_id} first: Tools & config → All registered tools → {name} → Review installation."
@@ -93,7 +88,8 @@ pub(super) fn run(s: &mut State, project: Value) {
             format!("{environment} && python3 {script}")
         }
         _ => {
-            let Some((python, _)) = configured.split_once(" -u ") else {
+            // The adopted MAVSDK profile checks its interpreter with `<python> -c 'import mavsdk…'`.
+            let Some((python, _)) = configured.split_once(" -c ") else {
                 s.studio.message =
                     "Apply the verified MAVSDK interpreter configuration first.".into();
                 return;

@@ -20,12 +20,21 @@ pub(super) fn eyebrow(s: &State) -> String {
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
     let compact = vp.compact();
     let tab = s.activity.tab.min(TABS.len() - 1);
-    let export = pill(
-        "export-history",
-        "Export history",
-        !s.activity.entries.is_empty(),
-        export_history,
-    );
+    let export = row()
+        .gap(12.)
+        .flex_wrap()
+        .child(pill(
+            "export-history",
+            "Export history",
+            !s.activity.entries.is_empty(),
+            export_history,
+        ))
+        .child(pill(
+            "export-diagnostics",
+            "Export diagnostics",
+            true,
+            export_diagnostics,
+        ));
     let export = if compact { export.self_start() } else { export };
     let body = match tab {
         1 => output(s, vp),
@@ -43,6 +52,7 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
             Some(export),
             compact,
         ))
+        .children(crash_notice(compact))
         .child(tabs("activity-tab", &TABS, tab, |s, i| s.activity.tab = i))
         .child(body)
         .child(disclosure(
@@ -78,13 +88,67 @@ fn export_history(s: &mut State) {
     };
 }
 
+fn export_diagnostics(s: &mut State) {
+    if s.headless {
+        s.notice = "Headless preview: diagnostics export is disabled.".into();
+        return;
+    }
+    match crate::diagnostics::export(s) {
+        Ok(path) => {
+            s.notice = format!(
+                "Diagnostics saved to {}. User names and home folders are replaced; review the files before sharing them.",
+                path.display()
+            );
+            activity::record(s, "Exported diagnostics");
+            if let Some(dir) = path.parent() {
+                s.open(dir.display().to_string());
+            }
+        }
+        Err(e) => s.notice = format!("Could not export diagnostics: {e}"),
+    }
+}
+
+/// Shown for the session after a launch that found a crash report from the previous one.
+fn crash_notice(compact: bool) -> Option<El> {
+    let report = crate::diagnostics::pending_crash()?;
+    let name = report
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let actions = row()
+        .gap(16.)
+        .flex_wrap()
+        .center_y()
+        .child(ghost("crash-open", "Open logs folder ↗", true, |s| {
+            s.open(crate::diagnostics::logs_dir().display().to_string())
+        }))
+        .child(ghost("crash-dismiss", "Dismiss", true, |s| {
+            crate::diagnostics::dismiss_crash();
+            s.notice =
+                "Crash report dismissed. It stays in the logs folder and in diagnostics exports."
+                    .into();
+        }));
+    Some(helpstrip(
+        "crash-notice",
+        Some("The last session hit an internal error"),
+        &format!(
+            "Drone Deck saved a crash report as {name}. Export diagnostics to attach it to a bug report; it includes this report, recent app logs and redacted profiles."
+        ),
+        actions,
+        compact,
+    ))
+}
+
 fn plural(n: usize, word: &str) -> String {
     format!("{n} {word}{}", if n == 1 { "" } else { "s" })
 }
 
 /// A coarse category for an entry, from the wording `activity::record` callers use.
 fn kind(text: &str) -> &'static str {
-    let t = text.to_ascii_lowercase().replace("from guided setup", "");
+    let t = text
+        .to_ascii_lowercase()
+        .replace("from guided setup", "")
+        .replace("(not a vehicle command)", "");
     let has = |words: &[&str]| words.iter().any(|w| t.contains(w));
     if has(&[
         "install",
@@ -96,12 +160,15 @@ fn kind(text: &str) -> &'static str {
         "this computer",
     ]) {
         "Setup"
+    } else if has(&["vehicle", "parameter", "onboard log"]) {
+        "Vehicle"
     } else if has(&[
         "record",
         "replay",
-        "dataset",
+        "extraction",
+        "inference",
+        "foxglove",
         "model",
-        "evaluation",
         "project",
     ]) {
         "Data"

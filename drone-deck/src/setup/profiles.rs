@@ -1,7 +1,7 @@
 use super::*;
 pub(super) fn can_reconfigure(s: &mut State) -> bool {
     if s.busy() {
-        s.setup.message="Stop the active workspace/recording before changing its environment or launch configuration.".into();
+        s.setup.message="Stop the session (owned tools, vehicle link, recordings, pipeline jobs) before changing its environment or launch configuration.".into();
         false
     } else {
         true
@@ -9,6 +9,13 @@ pub(super) fn can_reconfigure(s: &mut State) -> bool {
 }
 fn quote(text: &str) -> String {
     format!("'{}'", text.replace('\'', "'\\''"))
+}
+/// The command and probe of the `mavsdk` profile for the (quoted) interpreter `exe`.
+pub(crate) fn mavsdk_command(exe: &str) -> (Vec<String>, String) {
+    (
+        vec![format!("{exe} -c 'import mavsdk; print(mavsdk.__file__)'")],
+        format!("test -x {exe}"),
+    )
 }
 pub(crate) fn adopt(s: &mut State) {
     s.setup.last_applied = None;
@@ -23,7 +30,7 @@ pub(crate) fn adopt(s: &mut State) {
         s.setup.message = "Select and detect the matching tool before applying this result.".into();
         return;
     }
-    if !["qgc", "jmavsim"].contains(&candidate.tool.as_str())
+    if candidate.tool != "qgc"
         && (candidate.environment.is_empty()
             || !candidate
                 .environment
@@ -37,19 +44,23 @@ pub(crate) fn adopt(s: &mut State) {
     }
     let id = match candidate.tool.as_str() {
         "px4" => "sih",
-        "mavsdk" => "telemetry",
+        "ros-gz" => "rosgz",
+        "foxglove-bridge" => "foxglove",
         other => other,
     };
     let mut config = s.config.clone();
-    if !config.profiles.iter().any(|p| p.id == id) && ["ros-workspace", "onnx"].contains(&id) {
+    if !config.profiles.iter().any(|p| p.id == id)
+        && ["ros-workspace", "onnx", "mavsdk"].contains(&id)
+    {
         config.profiles.push(backend::Profile {
             id: id.into(),
             name: match id {
                 "onnx" => "ONNX CPU runtime",
+                "mavsdk" => "MAVSDK Python",
                 _ => "PX4 ROS 2 workspace",
             }
             .into(),
-            category: if id != "ros-workspace" {
+            category: if id == "onnx" {
                 "AI & data".into()
             } else {
                 "Development".into()
@@ -78,8 +89,7 @@ pub(crate) fn adopt(s: &mut State) {
         }
         "mavsdk" => {
             profile.program = "wsl".into();
-            profile.args = vec![format!("{exe} -u \"$DRONE_DECK_SCRIPTS/telemetry.py\"")];
-            profile.probe = format!("test -x {exe}");
+            (profile.args, profile.probe) = mavsdk_command(&exe);
         }
         "px4" => {
             profile.program = "wsl".into();
@@ -115,8 +125,10 @@ pub(crate) fn adopt(s: &mut State) {
         }
         "ardupilot" => {
             profile.program = "wsl".into();
+            // The adopted build is the Copter binary: a system naming another vehicle is
+            // refused with a reason instead of silently flying a copter.
             profile.args = vec![format!(
-                "cd {} && test -z \"$(pgrep -x arducopter)\" && exec {exe} --model + --defaults Tools/autotest/default_params/copter.parm",
+                "{{ [ \"${{DRONE_DECK_AP_VEHICLE:-ArduCopter}}\" = ArduCopter ] || {{ echo \"This ArduPilot profile runs the adopted Copter build only, not $DRONE_DECK_AP_VEHICLE. Edit its command in Tools & config.\" >&2; exit 2; }}; }} && cd {} && test -z \"$(pgrep -x arducopter)\" && exec {exe} --model + --defaults Tools/autotest/default_params/copter.parm",
                 quote(&candidate.path)
             )];
             profile.probe = format!("test -x {exe}");
@@ -125,40 +137,16 @@ pub(crate) fn adopt(s: &mut State) {
             profile.program = "wsl".into();
             profile.probe = format!("test -x {exe}");
         }
+        "ros-gz" | "foxglove-bridge" => {
+            profile.program = "wsl".into();
+            profile.probe = format!("test -f {exe}");
+        }
         "qgc" => {
             profile.program = candidate.executable.clone();
             profile.args =
                 crate::qgc_launch::with_gpu_safe(&[], crate::qgc_launch::gpu_safe(profile));
             profile.probe = candidate.executable.clone();
             profile.cwd = String::new();
-        }
-        "jmavsim" => {
-            profile.program = if candidate.runtime.is_empty() {
-                "java".into()
-            } else {
-                candidate.runtime.clone()
-            };
-            profile.cwd = std::path::Path::new(&candidate.executable)
-                .parent()
-                .unwrap()
-                .to_string_lossy()
-                .into_owned();
-            let jar = profile.args.iter().position(|a| a == "-jar");
-            if let Some(i) = jar {
-                if i + 1 < profile.args.len() {
-                    profile.args[i + 1] = candidate.executable.clone();
-                }
-            } else {
-                profile.args = backend::defaults()
-                    .profiles
-                    .into_iter()
-                    .find(|p| p.id == "jmavsim")
-                    .unwrap()
-                    .args;
-                let i = profile.args.iter().position(|a| a == "-jar").unwrap();
-                profile.args[i + 1] = candidate.executable.clone();
-            }
-            profile.probe = candidate.executable.clone();
         }
         _ => {
             s.setup.message = "Use manual integration settings for this tool.".into();

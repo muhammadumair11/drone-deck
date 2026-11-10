@@ -76,8 +76,6 @@ pub(crate) struct Candidate {
     pub build_target: String,
     #[serde(default)]
     pub environment: String,
-    #[serde(default)]
-    pub runtime: String,
 }
 #[derive(Clone, Default, Deserialize)]
 pub(crate) struct Job {
@@ -214,7 +212,7 @@ pub(crate) fn request(s: &mut State, action: &str) {
     }
     if action == "start" && s.busy() {
         s.setup.message =
-            "Stop active tools and recordings before installing shared dependencies.".into();
+            "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) before installing shared dependencies.".into();
         return;
     }
     let r = &mut s.setup;
@@ -401,7 +399,6 @@ pub(crate) fn use_distro(s: &mut State) {
     s.config = next;
     s.detected.clear();
     s.setup.checks.clear();
-    s.metrics.clear();
     s.setup.message =
         "Workspace distribution saved. Detect/reuse tools to configure their actual paths.".into();
     let distro = s.config.distro.clone();
