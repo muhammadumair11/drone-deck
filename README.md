@@ -1,64 +1,39 @@
-# Rune
+# Drone Deck
 
-A native GPU-rendered Rust UI framework for macOS, Windows, Linux and the web, with its own renderer, text, layout and springs.
+A Windows desktop workspace for autonomous drone development, built with the Rune UI framework. Drone Deck connects simulation, vehicle telemetry, ROS 2, recordings, models and inference workflows in one place.
 
-Every app can run headless, so an agent can render to PNG, dump the element tree and drive it with scripted input.
+Repository: [muhammadumair11/drone-deck](https://github.com/muhammadumair11/drone-deck).
 
-<p align="center">
-  <a href="demo/rune.mp4">
-    <img src="demo/rune-poster.png" alt="Rune in motion: real apps, rune-kit components and GPU effects" width="100%">
-  </a>
-</p>
+## Install and run
 
-<p align="center">
-  <img src="demo/opencode/session-top.png" alt="A coding agent app built with Rune" width="100%">
-</p>
+Download `DroneDeck-<version>-setup.exe` from [Releases](https://github.com/muhammadumair11/drone-deck/releases). The per-user installer provides a Start menu shortcut and an uninstaller; user data stays under `%LOCALAPPDATA%\DroneDeck`. The installer and executable are currently unsigned.
 
-<p align="center">
-  <img src="demo/light/chat.png" alt="Lit chat interface" width="49%">
-  <img src="demo/kit/diff-split-dark.png" alt="Split diff component" width="49%">
-</p>
-<p align="center">
-  <img src="demo/fx/liquid-metal.png" alt="Liquid metal effect" width="49%">
-  <img src="demo/settings-dark.png" alt="Settings window" width="49%">
-</p>
+The ZIP is a portable program package: keep `Drone Deck.exe`, `runtime/` and `assets/` together. Application data still uses LocalAppData unless portable mode is explicitly enabled.
 
-```rust
-fn view(s: &State, _: &mut Cx<State>) -> El {
-    let t = tok::theme(true);
-    let label = text(if s.on { "Lights on" } else { "Lights off" })
-        .font(type_::TITLE).color(t.text);
-    let knob = el().key("knob").size(18.0, 18.0).radius(9.0).fill(t.knob)
-        .absolute(if s.on { 18.0 } else { 2.0 }, 2.0);
-    let switch = el().key("switch").role("switch").label("Lights").checked(s.on)
-        .focusable(true).size(38.0, 22.0).radius(11.0)
-        .fill(if s.on { tok::accent(0, true) } else { t.control_off })
-        .motion(motion::SNAPPY)
-        .on_press(|s: &mut State| s.on = !s.on)
-        .child(knob);
-    col().w_full().h_full().center().gap(16.0).fill(t.bg).child(label).child(switch)
-}
+Linux flight tools run in WSL 2, with Ubuntu 24.04 as the initial supported environment. Guided setup detects existing tools and reviews missing prerequisites before installation.
+
+## Build from source
+
+Use Windows 10/11 x64, the Rust toolchain pinned in `rust-toolchain.toml`, and Microsoft C++ Build Tools with a Windows SDK. Inno Setup 6.3 or newer is needed for the setup executable.
+
+```powershell
+git clone https://github.com/muhammadumair11/drone-deck.git "Drone Deck"
+cd "Drone Deck"
+cargo test --locked --manifest-path drone-deck/Cargo.toml
+drone-deck\Build.ps1 -Installer
 ```
 
-## Use it with your agent
+The build creates a local executable and `dist/DroneDeck-<version>/`, ZIP and installer outputs. Version tags matching the manifest trigger the release workflow after its checks pass.
 
-Give your coding agent this repo. Have it start from [`examples/hello`](examples/hello) and [`crates/rune/README.md`](crates/rune/README.md), then check its own work headlessly by rendering PNGs and inspecting the element tree.
+## Documentation
 
-> Build me a <thing> with Rune (github.com/anomalyco/rune). Start from examples/hello and check your work headlessly.
+- [Application README](drone-deck/README.md)
+- [User guide](drone-deck/docs/user-guide.md)
+- [Known issues and validation limits](drone-deck/docs/known-issues.md)
+- [Architecture](drone-deck/docs/architecture.md)
+- [Release packaging](drone-deck/docs/release.md)
+- [Changelog](drone-deck/CHANGELOG.md)
 
-## Add it
+Flight commands inside Drone Deck are restricted to app-owned simulations. Physical connections support monitoring and read tools; an enabled QGroundControl/scripts bridge can forward those programs' commands to the vehicle. Real-environment acceptance remains documented in Known issues.
 
-```toml
-rune = { git = "https://github.com/anomalyco/rune", rev = "<dev rev>" }
-```
-
-Rune is pre-release. Pin a rev of `dev`; `dev` is never rewritten.
-
-[Docs](crates/rune/README.md) · [Components](crates/rune-kit/README.md) · [Examples](examples) · [Changelog](CHANGELOG.md)
-
-## Contributing
-
-We don't take pull requests. Have your agent [open an issue](https://github.com/anomalyco/rune/issues)
-describing the bug or idea, and our agents usually turn it around fast.
-
-MIT, © Anomaly.
+The bundled Rune framework retains its own identity and licensing. Its original repository introduction is preserved in [RUNE-README.md](RUNE-README.md); the app's pinned framework revision is recorded in [RUNE_REVISION.md](drone-deck/RUNE_REVISION.md).

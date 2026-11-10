@@ -241,8 +241,8 @@ fn unavailable_agents_fail_fast_and_headless_never_spawns() {
 fn linux_paths_follow_the_automount_rule() {
     let path = |p: &str, root: &str| linux_path(Path::new(p), root);
     assert_eq!(
-        path("D:\\drone-control-center\\runtime\\agent\\agent.py", "").as_deref(),
-        Some("/mnt/d/drone-control-center/runtime/agent/agent.py")
+        path("D:\\Drone Deck\\runtime\\agent\\agent.py", "").as_deref(),
+        Some("/mnt/d/Drone Deck/runtime/agent/agent.py")
     );
     assert_eq!(
         path("\\\\?\\C:\\Programs\\Drone Deck\\runtime", "/mnt/").as_deref(),

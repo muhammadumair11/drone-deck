@@ -328,7 +328,10 @@ class ProcessTests(unittest.TestCase):
         self.assertNotIn('left', {row['key'] for row in later.call('list')})
 
     def test_a_group_whose_leader_died_is_still_listed_and_stopped(self):
-        self.agent.call('run', key='orphan', bash='sleep 60 & sleep 60')
+        self.agent.call('run', key='orphan', bash='sleep 60 & echo ORPHAN_READY; sleep 60')
+        # run replies after spawning bash, before it has necessarily spawned the background child.
+        # Wait for that child to exist before killing its leader; otherwise there is no orphan.
+        self.output('orphan', 'ORPHAN_READY')
         record = json.loads(Path(self.state, 'orphan.json').read_text())
         self.agent.close()
         os.kill(record['pid'], signal.SIGKILL)
@@ -343,6 +346,9 @@ class ProcessTests(unittest.TestCase):
         self.assertTrue(rows['orphan']['alive'], 'the background sleep still holds the key')
         self.assertEqual(later.call('stop', key='orphan', grace_s=2),
                          {'key': 'orphan', 'stopped': True, 'running': False})
+        # An unattached stopped pidfile is reported dead once while list prunes it.
+        stopped_rows = {row['key']: row for row in later.call('list')}
+        self.assertFalse(stopped_rows.get('orphan', {}).get('alive', False))
         self.assertNotIn('orphan', {row['key'] for row in later.call('list')})
         self.assertEqual(later.call('run', key='orphan', bash='true')['key'], 'orphan')
 

@@ -59,11 +59,33 @@ jobs:
         run: |
           $exe = 'drone-deck/target/debug/drone-deck.exe'
           New-Item -ItemType Directory -Path snapshots -Force | Out-Null
-          & $exe --size 1280x800 --snap snapshots/system.png
-          if ($LASTEXITCODE -ne 0) { throw "Snapshot of the default view failed ($LASTEXITCODE)" }
+          function Invoke-Snapshot([string]$name, [string]$scene = '') {
+            $snapshot = "snapshots/$name.png"
+            $info = [Diagnostics.ProcessStartInfo]::new((Resolve-Path $exe).Path)
+            $info.UseShellExecute = $false
+            $info.WorkingDirectory = (Get-Location).Path
+            $info.CreateNoWindow = $true
+            $info.RedirectStandardOutput = $true
+            $info.RedirectStandardError = $true
+            if ($scene) { $info.ArgumentList.Add('--scene'); $info.ArgumentList.Add($scene) }
+            foreach ($argument in '--size', '1280x800', '--snap', $snapshot) { $info.ArgumentList.Add($argument) }
+            $process = [Diagnostics.Process]::Start($info)
+            try {
+              $stdout = $process.StandardOutput.ReadToEndAsync()
+              $stderr = $process.StandardError.ReadToEndAsync()
+              if (-not $process.WaitForExit(120000)) {
+                $process.Kill($true)
+                throw "Snapshot '$name' timed out"
+              }
+              Write-Host $stdout.Result
+              Write-Host $stderr.Result
+              if ($process.ExitCode -ne 0) { throw "Snapshot '$name' failed ($($process.ExitCode))" }
+              if (-not (Test-Path -LiteralPath $snapshot)) { throw "Snapshot '$name' was not written" }
+            } finally { $process.Dispose() }
+          }
+          Invoke-Snapshot 'system'
           foreach ($scene in 'tools', 'data', 'activity', 'settings', 'ros', 'ai', 'physical', 'setup') {
-            & $exe --scene $scene --size 1280x800 --snap "snapshots/$scene.png"
-            if ($LASTEXITCODE -ne 0) { throw "Snapshot of scene '$scene' failed ($LASTEXITCODE)" }
+            Invoke-Snapshot $scene $scene
           }
           Get-ChildItem snapshots
 

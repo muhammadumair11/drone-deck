@@ -2,7 +2,13 @@
 
 Drone Deck's user-visible changes. Older entries were reconstructed from the per-version guides and verification reports that this file replaces. Open problems are tracked in [docs/known-issues.md](docs/known-issues.md).
 
-## 0.9 (unreleased)
+## 0.9.1 — release checks
+
+- Standardize the project and repository name as Drone Deck, including the project README and path examples.
+- Wait for each Windows headless snapshot process to exit and verify its output before checking success.
+- Synchronize the Linux orphan-process test with child startup so it tests a surviving process group reliably.
+
+## 0.9.0
 
 This release replaces the relay, jMAVSim, MAVSDK telemetry and PowerShell monitor with Drone Deck's own MAVLink link, adds a live vehicle view, simulation-only flight actions, physical-vehicle tools, flight logs, pipelines and user-created systems, and moves data to a per-user folder. None of it has run against a real WSL distribution, PX4, Gazebo, ArduPilot, ROS 2 graph, QGroundControl session, Foxglove or flight controller yet, and the installer has never been built: it is tested with fake agents, a loopback fake vehicle and generated files. What is unverified is listed in [known issues](docs/known-issues.md).
 

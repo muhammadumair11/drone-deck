@@ -1,0 +1,1 @@
+- Standardize the Drone Deck project name and make release checks wait for Windows snapshot processes and for the Linux orphan fixture's background child before asserting their results; publish the CI repair as 0.9.1.
