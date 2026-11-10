@@ -23,14 +23,10 @@ fn adoption_changes_only_selected_profile_and_requires_no_active_processes() {
         "/home/user/project with spaces/bin/python",
     ));
     profiles::adopt(&mut s);
-    let p = s
-        .config
-        .profiles
-        .iter()
-        .find(|p| p.id == "telemetry")
-        .unwrap();
+    let p = s.config.profiles.iter().find(|p| p.id == "mavsdk").unwrap();
     assert!(p.args[0].contains("'/home/user/project with spaces/bin/python'"));
-    for profile in before.profiles.iter().filter(|p| p.id != "telemetry") {
+    assert_eq!(before.profiles.len() + 1, s.config.profiles.len());
+    for profile in &before.profiles {
         let after = s
             .config
             .profiles
@@ -46,7 +42,7 @@ fn adoption_changes_only_selected_profile_and_requires_no_active_processes() {
     choose(&mut s, 4);
     s.setup.candidate = Some(candidate("px4", "/new/px4", "/new/px4/bin/px4"));
     profiles::adopt(&mut s);
-    assert!(s.setup.message.contains("Stop the active"));
+    assert!(s.setup.message.contains("Stop the session"));
 }
 
 #[test]
@@ -146,7 +142,7 @@ fn default_profiles_do_not_embed_the_original_linux_username() {
         config
             .profiles
             .iter()
-            .find(|p| p.id == "telemetry")
+            .find(|p| p.id == "gazebo")
             .unwrap()
             .args[0]
             .contains("$HOME")
@@ -182,7 +178,7 @@ fn advanced_editor_cannot_switch_distribution_with_active_processes() {
     s.editor = TextEdit::new(&serde_json::to_string(&next).unwrap());
     s.apply();
     assert_eq!(s.config.distro, original);
-    assert!(s.notice.contains("Stop active"));
+    assert!(s.notice.contains("Stop the session"));
 }
 #[test]
 fn retry_retains_original_target_location_and_distribution() {
@@ -281,10 +277,10 @@ fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
     assert_eq!(
         names,
         [
-            "Lightweight visual simulation",
-            "PX4 with ROS 2 and recordings",
+            "PX4 SIH simulation",
+            "PX4 + Gazebo with ROS 2 and recordings",
             "Offline CPU inference",
-            "Native vehicle monitoring",
+            "Physical vehicle (read-only link)",
         ]
     );
 }
@@ -309,4 +305,31 @@ fn adopting_qgroundcontrol_keeps_gpu_safe_mode_opt_in() {
         assert_eq!(s.config.profiles[i].args, after);
         assert_eq!(s.config.profiles[i].program, exe);
     }
+}
+
+#[test]
+fn an_adopted_copter_build_refuses_another_ardupilot_vehicle() {
+    let mut s = State::new();
+    let ardupilot = s.setup.recipe_index("ardupilot").unwrap();
+    choose(&mut s, ardupilot);
+    s.setup.candidate = Some(candidate(
+        "ardupilot",
+        "/home/user/ardupilot",
+        "/home/user/ardupilot/build/sitl/bin/arducopter",
+    ));
+    profiles::adopt(&mut s);
+    assert_eq!(s.setup.last_applied.as_deref(), Some("ardupilot"));
+    let p = s
+        .config
+        .profiles
+        .iter()
+        .find(|p| p.id == "ardupilot")
+        .unwrap();
+    let command = &p.args[0];
+    assert!(
+        command.starts_with("{ [ \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" = ArduCopter ] ||"),
+        "{command}"
+    );
+    assert!(command.contains("exit 2; }; } && cd '/home/user/ardupilot' && "));
+    assert!(command.ends_with("copter.parm"));
 }

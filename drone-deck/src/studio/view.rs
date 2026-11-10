@@ -1,8 +1,8 @@
-//! Data & models tabs backed by Studio: models, datasets & evaluation, projects, plus the
-//! Hugging Face access block that Settings also embeds.
+//! Data & models tabs backed by Studio: models, pipelines, projects, plus the Hugging Face
+//! access block that Settings also embeds.
 use super::*;
 use crate::ui::{Page, kit::*, theme::*};
-mod library;
+mod pipelines;
 mod runs;
 
 /// Sends a Studio request and records it in Activity once the request is in flight.
@@ -66,11 +66,14 @@ pub(super) fn kv(label: &str, value: impl Into<String>, compact: bool) -> El {
 
 /// The shared Studio status line (`#feedback` in the design).
 pub(super) fn status(s: &State) -> El {
-    let r = &s.studio;
+    status_row("studio-status", &s.studio.message, s.studio.pending)
+}
+
+fn status_row(key: &str, message: &str, working: bool) -> El {
     row()
-        .key("studio-status")
+        .key(key)
         .role("status")
-        .label(r.message.clone())
+        .label(message.to_string())
         .w_full()
         .min_w(0.)
         .gap(14.)
@@ -78,28 +81,32 @@ pub(super) fn status(s: &State) -> El {
         .items_start()
         .child(
             meta_sized(
-                if r.pending { "Working" } else { "Status" },
+                if working { "Working" } else { "Status" },
                 9.,
-                if r.pending { fg() } else { muted() },
+                if working { fg() } else { muted() },
             )
             .w(64.)
             .pt(4.),
         )
-        .child(body(r.message.clone(), 11., fg()).grow(1.))
+        .child(body(message.to_string(), 11., fg()).grow(1.))
 }
 
 /// The Data & models tabs Studio owns (`ui.data_tab` 1–3).
 pub(crate) fn page(s: &State, vp: &Viewport) -> El {
     let content = match s.ui.data_tab {
         1 => models(s, vp),
-        2 => library::datasets(s, vp),
+        2 => pipelines::tab(s, vp),
         _ => runs::projects(s, vp),
     };
     col()
         .key("studio-tab")
         .w_full()
         .min_w(0.)
-        .child(status(s))
+        .child(if s.ui.data_tab == 2 {
+            pipelines::status(s)
+        } else {
+            status(s)
+        })
         .child(content)
 }
 
@@ -110,9 +117,17 @@ pub(super) fn lazy_load(s: &mut State) -> bool {
     }
     // The System page shows project and artifact counts for the offline AI system.
     let on_system = s.page == Page::System && s.systems.active == crate::systems::AI;
+    if (s.page, s.ui.data_tab) == (Page::Data, 2)
+        && !s.studio.loaded.contains(&"pipe_list")
+        && s.wsl_ready()
+    {
+        s.studio.loaded.push("pipe_list");
+        super::pipelines::refresh(s);
+        return true;
+    }
     let wanted: &[&'static str] = match (s.page, s.ui.data_tab) {
         (Page::Data, 1) => &["models", "credential_status"],
-        (Page::Data, 2 | 3) => &["data_library"],
+        (Page::Data, 3) => &["data_library"],
         _ if on_system => &["data_library"],
         _ => &[],
     };
@@ -148,7 +163,9 @@ fn credential(s: &mut State, action: &str, record: bool) {
     }
 }
 
-fn hf_access(s: &State, with_status: bool) -> El {
+/// The token controls. `with_note` adds the last token action's result (Settings, where the
+/// shared Studio status line would show unrelated Data prompts).
+fn hf_access(s: &State, with_note: bool) -> El {
     let r = &s.studio;
     let checked = r.loaded.contains(&"credential_status");
     let state = if r.stored {
@@ -210,8 +227,10 @@ fn hf_access(s: &State, with_status: bool) -> El {
         .child(notice(
             "Removing the saved token does not revoke it on Hugging Face. Manage access and license requests on the model's official page.",
         ));
-    if with_status {
-        block = block.child(status(s));
+    if with_note && !r.credential_note.is_empty() {
+        // Working only while the pending request is the token action itself.
+        let working = r.pending && r.credential_note == r.message;
+        block = block.child(status_row("hf-status-note", &r.credential_note, working));
     }
     block
 }

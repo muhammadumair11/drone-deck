@@ -1,111 +1,117 @@
-//! The physical-vehicle monitor on the System page: a native endpoint, identified vehicles and
-//! read-only parameter backups. The active system decides that this monitor is shown.
-use super::{parameters, start};
+//! The physical-vehicle connection on the System page: the system's endpoint, connect, serial
+//! devices and link status (state, receive rate, bad frames, `.tlog`, bridged peers).
+//! The active system decides that this panel is shown.
+use super::{DEFAULT_MESSAGE, connected, save_endpoint, saved_endpoint, toggle};
+use crate::mavlink::{LinkState, VehicleSnapshot};
 use crate::ui::{kit::*, theme::*};
 use crate::*;
+use rune::Color;
 
-const FRESH: Duration = Duration::from_secs(10);
-
-/// Starts or stops the native monitor and records the request.
-pub(crate) fn toggle(s: &mut State) {
-    if systems::running(s, "hardware") {
-        s.send(Request::Stop("hardware".into()));
-        s.notice = "Stopping the vehicle monitor. No command is sent to the vehicle.".into();
-        activity::record(s, "Stopped the native vehicle monitor");
-        return;
-    }
-    if s.setup.batch.is_some() || s.setup.jobs.iter().any(|j| j.alive) {
-        s.hardware.message =
-            "Finish or cancel the running installation before monitoring starts.".into();
-        return;
-    }
-    s.hardware.mode = 1;
-    start(s);
-    if systems::running(s, "hardware") {
-        let endpoint = s.hardware.endpoint.text.trim().to_string();
-        activity::record(s, format!("Started vehicle monitoring on {endpoint}"));
+/// A file size in the unit that keeps small files from reading as 0.0 MiB.
+pub(crate) fn size(bytes: u64) -> String {
+    if bytes < 1024 {
+        format!("{bytes} B")
+    } else if bytes < 1024 * 1024 {
+        format!("{:.0} KiB", bytes as f64 / 1024.)
+    } else {
+        format!("{:.1} MiB", bytes as f64 / 1_048_576.)
     }
 }
 
-fn autopilot(vehicle: &serde_json::Value) -> &'static str {
-    match vehicle["fields"]["autopilot"].as_u64() {
-        Some(12) => "PX4",
-        Some(3) => "ArduPilot",
-        _ => "Other autopilot",
-    }
-}
-
-fn fields(vehicle: &serde_json::Value) -> String {
-    let Some(map) = vehicle["fields"].as_object() else {
-        return String::new();
+fn saved(s: &State) -> El {
+    let name = s.systems.current().label().to_string();
+    let typed = s.hardware.endpoint.text.trim();
+    let text = match saved_endpoint(s) {
+        Some(e) if !e.is_empty() => format!("Saved with {name}: {e}"),
+        _ => format!("No endpoint saved with {name}"),
     };
-    map.iter()
-        .map(|(k, v)| match v.as_str() {
-            Some(t) => format!("{k} {t}"),
-            None => format!("{k} {v}"),
+    let differs = saved_endpoint(s).is_some_and(|e| e != typed) && !typed.is_empty();
+    row()
+        .w_full()
+        .min_w(0.)
+        .gaps(4., 20.)
+        .center_y()
+        .flex_wrap()
+        .child(meta_sized(text, 9., muted()).wrap_anywhere())
+        .child(if differs {
+            ghost(
+                "hardware-save-endpoint",
+                "Save to system",
+                true,
+                save_endpoint,
+            )
+            .help("Keeps this endpoint with the system for the next connection")
+        } else {
+            el()
         })
-        .collect::<Vec<_>>()
-        .join("   ")
 }
 
-fn source(s: &State, running: bool, compact: bool) -> El {
+fn source(s: &State, on: bool, compact: bool) -> El {
     let h = &s.hardware;
+    let bridged = systems::physical_bridge(s.systems.current());
     let actions = row()
         .gaps(8., 20.)
         .center_y()
         .flex_wrap()
         .child(pill(
             "monitor-start",
-            if running {
-                "Stop monitor"
+            if on {
+                "Disconnect"
+            } else if bridged {
+                "Connect (bridged)"
             } else {
-                "Start monitoring"
+                "Connect read-only"
             },
             true,
             toggle,
         ))
-        .child(ghost("scan-serial", "Find serial devices", true, |s| {
+        .child(ghost("scan-serial", "Find serial devices", !on, |s| {
             crate::studio::request(s, "ports")
         }));
+    let endpoint = field(&h.endpoint, "hardware-endpoint", "udp:127.0.0.1:14555");
     col()
         .w_full()
         .min_w(0.)
         .gap(14.)
         .child(p(
-            "Listen without sending flight commands. Use a dedicated telemetry endpoint; another app may already own the serial port. A signed packet's signature is not authenticated by this monitor.",
+            if bridged {
+                "Drone Deck itself sends no flight commands, parameter writes or ground-station heartbeat, but QGroundControl and scripts enabled for this system are bridged both ways and can. Use a dedicated telemetry endpoint; another app may already own the serial port."
+            } else {
+                "Listen without sending flight commands, parameter writes or a ground-station heartbeat. Use a dedicated telemetry endpoint; another app may already own the serial port."
+            },
             11.,
         ))
         .child(labeled(
             "Vehicle endpoint",
-            field(&h.endpoint, "hardware-endpoint", "udp:127.0.0.1:14555")
-                .on_edit(|s: &mut State| &mut s.hardware.endpoint),
+            if on {
+                endpoint.read_only(true).dim(0.6)
+            } else {
+                endpoint.on_edit(|s: &mut State| &mut s.hardware.endpoint)
+            },
         ))
+        .child(saved(s))
         .child(
             code(
-                "serial:COM4:115200   udp:127.0.0.1:14555   tcp:localhost:5760",
+                "serial:COM4:115200   udp:0.0.0.0:14550   tcp:192.168.1.10:5760",
                 10.,
                 muted(),
             )
             .wrap_anywhere(),
         )
-        .child(if running {
-            meta_sized("Endpoint changes apply the next time monitoring starts", 9., muted()).wrap()
-        } else {
-            el()
-        })
         .child(actions)
-        .child(if h.message != super::Hardware::default().message {
+        .child(if h.message != DEFAULT_MESSAGE {
             body(&h.message, 11., fg())
                 .key("hardware-message")
                 .role("status")
+                .wrap()
                 .max_w(if compact { 10_000. } else { 620. })
         } else {
             el()
         })
 }
 
-fn ports(s: &State, running: bool) -> El {
-    let mut list = col()
+fn ports(s: &State, on: bool) -> El {
+    let list = col()
         .key("serial-ports")
         .w_full()
         .min_w(0.)
@@ -123,6 +129,7 @@ fn ports(s: &State, running: bool) -> El {
             11.,
         ));
     }
+    let mut list = list;
     for port in ports {
         let id = port["DeviceID"].as_str().unwrap_or("").to_string();
         let name = port["Name"].as_str().unwrap_or("Unnamed device");
@@ -131,7 +138,7 @@ fn ports(s: &State, running: bool) -> El {
             ghost(
                 format!("port-{id}"),
                 &format!("Use {id} / {name}"),
-                !running,
+                !on,
                 move |s| s.hardware.endpoint = TextEdit::new(endpoint.clone()),
             )
             .help(format!("Sets the endpoint to serial:{id}:115200")),
@@ -140,155 +147,189 @@ fn ports(s: &State, running: bool) -> El {
     list
 }
 
-fn vehicle(key: &str, v: &serde_json::Value, age: Option<Duration>, selected: bool) -> El {
-    let fresh = age.is_some_and(|a| a < FRESH);
-    let (system, component) = key.split_once(':').unwrap_or((key, "?"));
-    let heard = match age {
-        Some(a) => format!("Heartbeat {}s ago", a.as_secs()),
-        None => "No heartbeat".into(),
-    };
-    let pick = key.to_string();
-    let title = format!("System {system} / component {component} / {}", autopilot(v));
+fn stat(key: &str, label: &str, value: String, color: Color) -> El {
     col()
-        .key(format!("vehicle-{key}"))
-        .role("button")
-        .label(title.clone())
-        .focusable(true)
-        .focus_selected(selected)
-        .cursor(rune::Cursor::Pointer)
-        .w_full()
+        .key(key)
+        .w(150.)
         .min_w(0.)
-        .px(8.)
-        .py(14.)
-        .gap(8.)
-        .border_sides([1., 0., 0., 0.], soft())
-        .fill(if selected { soft() } else { Color::TRANSPARENT })
-        .hover(soft())
-        .focus_ring(2., 2., fg())
-        .on_press(move |s: &mut State| s.hardware.selected = Some(pick.clone()))
-        .child(
-            row()
-                .w_full()
-                .min_w(0.)
-                .gaps(6., 16.)
-                .center_y()
-                .flex_wrap()
-                .child(h3(title, 15.).grow(1.))
-                .child(
-                    row()
-                        .gap(8.)
-                        .center_y()
-                        .child(dot(if fresh { success() } else { warn() }))
-                        .child(meta_sized(heard, 9., fg())),
-                ),
-        )
-        .child(code(fields(v), 10., muted()).wrap_anywhere())
+        .gap(6.)
+        .child(meta_sized(label, 9., muted()))
+        .child(meta_sized(value, 11., color).wrap_anywhere())
 }
 
-fn vehicles(s: &State, running: bool, compact: bool) -> El {
-    let h = &s.hardware;
-    let mut list = col()
-        .key("hardware-vehicles")
+fn heartbeat(snap: &VehicleSnapshot) -> (String, Color) {
+    match &snap.vehicle {
+        None => ("None yet".into(), muted()),
+        Some(_) if snap.fresh => ("Fresh".into(), success()),
+        Some(v) => (
+            format!("None for {}", crate::vehicle::view::silence(v)),
+            warn(),
+        ),
+    }
+}
+
+/// What QGroundControl and scripts can do through the link, for the peers `to`.
+fn peers_notice(to: &[String], connected: bool) -> El {
+    notice(format!(
+        "{} {}. Drone Deck itself sends only read requests (one home-position request at link-up, and the parameter and log downloads you start), but an application there (QGroundControl, a script) can send anything to the vehicle through this link, including commands and parameter writes.",
+        if connected { "Forwarded to" } else { "Once connected, the link forwards to" },
+        to.join(", ")
+    ))
+    .key("hardware-peers")
+}
+
+/// The peers the active system's consumers name, before a link reports its own.
+fn configured_peers(s: &State) -> Vec<String> {
+    let c = &s.systems.current().consumers;
+    let mut out = Vec::new();
+    if c.qgc {
+        out.push(format!("QGroundControl ({})", vehicle::QGC_PEER));
+    }
+    if let Some(addr) = &c.scripts_udp {
+        out.push(format!("scripts ({addr})"));
+    }
+    out
+}
+
+fn status(s: &State, on: bool, compact: bool) -> El {
+    let block = col()
+        .key("hardware-link")
         .w_full()
         .min_w(0.)
-        .mt(8.)
-        .child(
-            row()
-                .w_full()
-                .min_w(0.)
-                .gaps(6., 24.)
-                .flex_wrap()
-                .justify_between()
-                .pb(10.)
-                .child(h3("Identified vehicles", 16.))
-                .child(meta(format!("{} identified", h.vehicles.len()))),
-        );
-    if h.vehicles.is_empty() {
-        return list.child(if running {
-            empty(
-                "vehicles-empty",
-                "Listening / no heartbeat",
-                "No autopilot heartbeat on this endpoint yet. Ground stations and companion computers are ignored; only autopilots identify a vehicle.",
-            )
+        .gap(12.)
+        .pb(8.);
+    let Some(snap) = s.vehicle.shown_for(s.systems.active_id()).filter(|_| on) else {
+        let block = block.child(notice(match &s.vehicle.error {
+            Some(e) if s.vehicle.owner.as_deref() == Some(s.systems.active_id()) => {
+                format!("Not connected. Last error: {e}")
+            }
+            _ => "Not connected.".to_string(),
+        }));
+        let peers = configured_peers(s);
+        return if peers.is_empty() {
+            block
         } else {
-            empty(
-                "vehicles-empty",
-                "Not monitoring",
-                "Start monitoring to listen for an autopilot heartbeat. A vehicle is identified only after its heartbeat arrives.",
+            block.child(peers_notice(&peers, false))
+        };
+    };
+    let l = &snap.link;
+    let (state, state_color) = match &l.state {
+        LinkState::Connecting => ("Connecting".to_string(), warn()),
+        LinkState::Connected => ("Up".to_string(), success()),
+        LinkState::Down(reason) => (format!("Down / {reason}"), danger()),
+    };
+    let (beat, beat_color) = heartbeat(snap);
+    let rate = snap.vehicle.as_ref().map_or_else(
+        || "Not measured yet".to_string(),
+        |v| {
+            let total: f32 = v.message_rates.iter().map(|(_, r)| r).sum();
+            format!("{total:.0} msg/s")
+        },
+    );
+    // Everything written to the vehicle counts in `tx_frames`: the read requests made here
+    // and what forwarding peers (QGroundControl, scripts) sent through the bridge, which the
+    // service counts in `peer_to_vehicle_frames`. Each number shows only its own part.
+    let bridged = l.peer_to_vehicle_frames;
+    let sent = match l.tx_frames.saturating_sub(bridged) {
+        0 => "Nothing".to_string(),
+        n => format!("{n} read requests"),
+    };
+    let readings = row()
+        .key("hardware-readings")
+        .w_full()
+        .min_w(0.)
+        .gaps(16., if compact { 16. } else { 24. })
+        .flex_wrap()
+        .py(16.)
+        .border_sides([1., 0., 1., 0.], soft())
+        .child(stat("link-state", "Link", state, state_color))
+        .child(stat(
+            "link-heartbeat",
+            "Autopilot heartbeat",
+            beat,
+            beat_color,
+        ))
+        .child(stat("link-rate", "Receive rate", rate, fg()))
+        .child(stat(
+            "link-frames",
+            "Frames received",
+            format!("{} / {}", l.rx_frames, size(l.rx_bytes)),
+            fg(),
+        ))
+        .child(stat(
+            "link-bad",
+            "Bad frames",
+            l.bad_frames.to_string(),
+            if l.bad_frames > 0 { warn() } else { fg() },
+        ))
+        .child(stat("link-sent", "Sent by Drone Deck", sent, fg()))
+        .child(if l.peers.is_empty() {
+            el()
+        } else {
+            stat(
+                "link-peer-to-vehicle",
+                "Sent by QGroundControl/scripts",
+                format!("{bridged} frames"),
+                if bridged > 0 { warn() } else { fg() },
             )
         });
-    }
-    let mut keys: Vec<&String> = h.vehicles.keys().collect();
-    keys.sort();
-    for key in keys {
-        let age = h.seen.get(key).map(|t| t.elapsed());
-        list = list.child(vehicle(
-            key,
-            &h.vehicles[key],
-            age,
-            h.selected.as_ref() == Some(key),
-        ));
-    }
-    let fresh = h
-        .selected
+    let tlog = l.tlog.clone();
+    let folder = tlog
         .as_ref()
-        .is_some_and(|key| h.seen.get(key).is_some_and(|t| t.elapsed() < FRESH));
-    let hint = if h.selected.is_none() {
-        "Select a vehicle to read its parameters."
-    } else if !fresh {
-        "The selected vehicle's heartbeat is stale. Parameters need a fresh heartbeat."
-    } else {
-        "Reads every parameter once and saves a raw backup. Nothing is written to the vehicle."
-    };
-    let actions = if compact {
-        col().gap(4.).items_start()
-    } else {
-        row().gap(20.).center_y()
-    };
-    list.child(
-        actions
-            .w_full()
-            .min_w(0.)
-            .pt(12.)
-            .border_sides([1., 0., 0., 0.], soft())
-            .child(ghost(
-                "read-parameters",
-                "Read parameters",
-                running && fresh,
-                parameters,
-            ))
-            .child(p(hint, 11.).grow(if compact { 0. } else { 1. })),
-    )
+        .and_then(|p| p.parent())
+        .map(|p| p.display().to_string());
+    let capture = col()
+        .key("hardware-capture")
+        .w_full()
+        .min_w(0.)
+        .gap(6.)
+        .child(meta_sized("Telemetry capture (.tlog)", 9., muted()))
+        .child(match &tlog {
+            Some(p) => code(
+                format!("{} / {}", p.display(), size(l.tlog_bytes)),
+                10.,
+                fg(),
+            )
+            .wrap_anywhere(),
+            None => meta_sized("No capture", 9., muted()),
+        })
+        .child(match &l.tlog_error {
+            Some(e) => body(format!("Capture stopped: {e}"), 11., warn()).wrap(),
+            None => el(),
+        })
+        .child(ghost(
+            "open-hardware-capture",
+            "Open capture folder ↗",
+            folder.is_some(),
+            move |s| {
+                if let Some(f) = &folder {
+                    s.open(f.clone())
+                }
+            },
+        ));
+    let mut block = block.child(readings).child(capture);
+    if !l.peers.is_empty() {
+        let peers: Vec<String> = l
+            .peers
+            .iter()
+            .filter_map(|p| p.addr.map(|a| a.to_string()))
+            .collect();
+        block = block.child(peers_notice(&peers, true));
+    }
+    if let Some(e) = &s.vehicle.error {
+        block = block.child(
+            body(e, 11., warn())
+                .key("hardware-error")
+                .role("status")
+                .wrap(),
+        );
+    }
+    block
 }
 
 pub(crate) fn monitor(s: &State, vp: &Viewport) -> El {
     let compact = vp.compact();
-    let running = systems::running(s, "hardware");
-    let capture = s.hardware.path.clone();
-    let capture_row = col()
-        .w_full()
-        .min_w(0.)
-        .gap(8.)
-        .child(
-            row()
-                .gaps(4., 20.)
-                .center_y()
-                .flex_wrap()
-                .child(ghost(
-                    "open-hardware-capture",
-                    "Open capture folder ↗",
-                    !capture.is_empty(),
-                    move |s| s.open(capture.clone()),
-                ))
-                .child(if s.hardware.path.is_empty() {
-                    meta_sized("No capture this session", 9., muted())
-                } else {
-                    code(&s.hardware.path, 10., muted()).wrap_anywhere()
-                }),
-        )
-        .child(notice(
-            "Captures are native MAVLink .tlog files. Parameter backups keep raw wire values and types. Edit parameters and retrieve onboard flight logs in QGroundControl or Mission Planner.",
-        ));
+    let on = connected(s);
     col()
         .key("hardware-workspace")
         .w_full()
@@ -296,15 +337,15 @@ pub(crate) fn monitor(s: &State, vp: &Viewport) -> El {
         .pt(18.)
         .pb(8.)
         .child(section_head(
-            "Vehicle monitor",
-            meta("Windows serial / UDP / TCP / read-only").wrap(),
+            "Vehicle connection",
+            meta(if systems::physical_bridge(s.systems.current()) {
+                "Serial / UDP / TCP / Drone Deck sends no GCS heartbeat"
+            } else {
+                "Serial / UDP / TCP / read-only, no GCS heartbeat"
+            })
+            .wrap(),
             compact,
         ))
-        .child(asset(
-            source(s, running, compact),
-            ports(s, running),
-            compact,
-        ))
-        .child(vehicles(s, running, compact))
-        .child(capture_row)
+        .child(asset(source(s, on, compact), ports(s, on), compact))
+        .child(status(s, on, compact))
 }

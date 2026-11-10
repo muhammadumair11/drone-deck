@@ -4,6 +4,8 @@ use super::*;
 pub(crate) mod kit;
 mod pages;
 mod settings;
+#[cfg(test)]
+mod tests;
 pub(crate) mod theme;
 use kit::*;
 pub(crate) use settings::{restore as restore_preferences, set_zoom, shortcuts as zoom_shortcuts};
@@ -42,7 +44,7 @@ pub(crate) struct UiState {
     pub tools_all: bool,
     /// Tools & config: the expanded tool row (profile id).
     pub expanded: Option<String>,
-    /// Data & models tab: 0 recordings, 1 models, 2 datasets & evaluation, 3 projects.
+    /// Data & models tab: 0 recordings, 1 models, 2 pipelines, 3 projects, 4 flight logs.
     pub data_tab: usize,
 }
 impl Default for UiState {
@@ -62,28 +64,10 @@ impl Default for UiState {
     }
 }
 
-fn owned_processes(s: &State) -> usize {
-    s.status
-        .values()
-        .filter(|v| v.as_str() == "Running" || v.as_str() == "Starting")
-        .count()
-}
-
-/// Owned processes plus recording or replay, which do not appear in `status`.
-fn session_label(s: &State, processes: usize) -> String {
-    let mut parts = Vec::new();
-    if processes > 0 {
-        parts.push(format!(
-            "{processes} owned process{}",
-            if processes == 1 { "" } else { "es" }
-        ));
-    }
-    if s.recorder.recording {
-        parts.push("recording".to_string());
-    }
-    if s.recorder.playing {
-        parts.push("replay".to_string());
-    }
+/// Everything `Stop session` would stop (`systems::work_labels`), so the rail and the
+/// System page's session button always agree.
+pub(crate) fn session_label(s: &State) -> String {
+    let parts = crate::systems::work_labels(s);
     if parts.is_empty() {
         if s.session.is_some() {
             "Workspace starting".into()
@@ -92,6 +76,57 @@ fn session_label(s: &State, processes: usize) -> String {
         }
     } else {
         parts.join(" / ")
+    }
+}
+
+/// The environment line of the rail and (with `top`, longer) the top bar, so both always say
+/// the same thing: Windows native for a physical vehicle, else the WSL state.
+pub(crate) fn env_label(s: &State, top: bool) -> String {
+    if s.systems.active == systems::PHYSICAL {
+        if top {
+            "Windows native / no WSL required".into()
+        } else {
+            "Windows native".into()
+        }
+    } else if s.wsl_ready() {
+        if top {
+            format!("Windows + {} / WSL 2", s.config.distro)
+        } else {
+            format!("{} / WSL 2", s.config.distro)
+        }
+    } else if s.setup.host.is_none() {
+        "Environment not checked".into()
+    } else {
+        "WSL environment not ready".into()
+    }
+}
+
+/// The body of the Stop session question. An open vehicle link is named, first when it runs to
+/// a physical vehicle: programs bridged through it lose the vehicle.
+pub(crate) fn stop_body(s: &State) -> String {
+    let all = "It stops the work of every system: managed tools, simulators, recordings and replay started by Drone Deck, and a running pipeline job.";
+    let tail = "It does not land or disarm a vehicle, and it does not cancel installation jobs.";
+    // A headless scene's preview link counts, as in `systems::work_labels`.
+    if s.vehicle.link.is_none() && !(s.headless && s.vehicle.preview.is_some()) {
+        return format!("{all} {tail}");
+    }
+    let owner = s.vehicle.owner.as_deref().and_then(|id| s.systems.get(id));
+    let name = owner.map_or("another system", |x| x.label());
+    let qgc = if systems::running(s, "qgc") {
+        ", and QGroundControl, which Drone Deck started"
+    } else {
+        ""
+    };
+    let physical = !s.vehicle.sim
+        && owner.is_some_and(|x| matches!(x.source, systems::Source::Physical { .. }));
+    if physical {
+        format!(
+            "It closes the vehicle link of {name}{qgc}. On a physical vehicle, programs bridged through that link (QGroundControl, scripts) lose it, which can trigger the vehicle's own link-loss failsafe. {all} {tail}"
+        )
+    } else {
+        format!(
+            "{all} It also closes the vehicle link of {name}{qgc}, so QGroundControl and scripts connected through Drone Deck lose the vehicle. {tail}"
+        )
     }
 }
 
@@ -130,17 +165,8 @@ fn rail(s: &State, width: f32, drawer: bool, height: f32) -> El {
                 ),
         );
     }
-    let processes = owned_processes(s);
     let active = crate::systems::active_work(s);
-    let env = if s.systems.active == systems::PHYSICAL {
-        "Windows native".to_string()
-    } else if s.wsl_ready() {
-        format!("{} / WSL 2", s.config.distro)
-    } else if s.setup.host.is_none() {
-        "Environment not checked".into()
-    } else {
-        "WSL environment not ready".into()
-    };
+    let env = env_label(s, false);
     let mut foot = col()
         .key("railfoot")
         .w_full()
@@ -150,11 +176,7 @@ fn rail(s: &State, width: f32, drawer: bool, height: f32) -> El {
         .child(meta_sized("Local first", 9., muted()))
         .child(el().h(10.))
         .child(meta_sized(env, 9., muted()).wrap())
-        .child(meta_sized(
-            session_label(s, processes),
-            9.,
-            if active { fg() } else { muted() },
-        ));
+        .child(meta_sized(session_label(s), 9., if active { fg() } else { muted() }).wrap());
     if active {
         foot = foot.child(ghost("stop-all", "Stop session", true, |s| {
             s.confirm = Some("stop".into())
@@ -225,16 +247,26 @@ fn rail(s: &State, width: f32, drawer: bool, height: f32) -> El {
 }
 
 fn system_select(s: &State, compact: bool) -> El {
-    let kind = s.systems.active;
+    let current = s.systems.current();
+    let mut label = row()
+        .grow(1.)
+        .min_w(0.)
+        .gap(8.)
+        .center_y()
+        .child(caps(current.label(), 11., 500., 0.045, fg()).truncate());
+    if systems::owns_work(s, s.systems.active_id()) {
+        label = label.child(dot(success()));
+    }
     row()
         .key("system-select")
         .role("button")
         .label("Active system")
-        .a11y_value(systems::KINDS[kind])
+        .a11y_value(current.label())
         .expanded(s.ui.system_menu)
         .focusable(true)
         .cursor(rune::Cursor::Pointer)
         .min_w(if compact { 0. } else { 200. })
+        .max_w(if compact { f32::INFINITY } else { 360. })
         .grow(if compact { 1. } else { 0. })
         .min_h(44.)
         .px(12.)
@@ -248,7 +280,7 @@ fn system_select(s: &State, compact: bool) -> El {
         .hover(soft())
         .focus_ring(2., 0., fg())
         .on_press(|s: &mut State| s.ui.system_menu = !s.ui.system_menu)
-        .child(caps(systems::KINDS[kind], 11., 500., 0.045, fg()).truncate())
+        .child(label)
         .child(meta_sized(
             if s.ui.system_menu { "▴" } else { "▾" },
             11.,
@@ -256,52 +288,112 @@ fn system_select(s: &State, compact: bool) -> El {
         ))
 }
 
-fn system_menu(s: &State) -> El {
-    let mut list = col()
+fn menu_option(key: String, label: &str, current: bool, on: impl Fn(&mut State) + 'static) -> El {
+    col()
+        .key(key)
+        .role("option")
+        .label(label)
+        .focusable(true)
+        .focus_selected(current)
+        .cursor(rune::Cursor::Pointer)
+        .w_full()
+        .min_w(0.)
+        .px(12.)
+        .py(10.)
+        .gap(4.)
+        .radius(2.)
+        .fill(if current { soft() } else { Color::TRANSPARENT })
+        .hover(soft())
+        .focus_ring(2., 0., fg())
+        .on_press(on)
+}
+
+/// The ACTIVE SYSTEM list: every saved system (a dot marks one whose work runs), then
+/// "New system…" and the way to manage them.
+fn system_menu(s: &State, vp: &Viewport) -> El {
+    let mut options = col().w_full().min_w(0.).gap(2.);
+    for (i, sys) in s.systems.list.iter().enumerate() {
+        let current = sys.id == s.systems.active_id();
+        let running = systems::owns_work(s, &sys.id);
+        let mut detail = format!(
+            "{} / {}",
+            sys.source.summary(),
+            if sys.prepared {
+                "prepared"
+            } else {
+                "preparation required"
+            }
+        );
+        if running {
+            detail = format!("Running / {detail}");
+        }
+        let mut name = row()
+            .w_full()
+            .min_w(0.)
+            .gap(8.)
+            .center_y()
+            .child(caps(sys.label(), 11., 500., 0.045, fg()).grow(1.).wrap());
+        if running {
+            name = name.child(dot(success()));
+        }
+        let id = sys.id.clone();
+        options = options.child(
+            menu_option(
+                format!("system-option-{i}"),
+                sys.label(),
+                current,
+                move |s| {
+                    s.select_system(&id);
+                },
+            )
+            .child(name)
+            .child(meta_sized(detail, 9., muted()).wrap()),
+        );
+    }
+    let foot = col()
+        .w_full()
+        .min_w(0.)
+        .mt(4.)
+        .pt(4.)
+        .gap(2.)
+        .border_sides([1., 0., 0., 0.], soft())
+        .child(
+            menu_option("system-new".into(), "New system…", false, |s| {
+                s.ui.system_menu = false;
+                crate::guided::new_system(s)
+            })
+            .child(caps("New system…", 11., 500., 0.045, fg()))
+            .child(meta_sized("Guided setup from a template", 9., muted())),
+        )
+        .child(
+            menu_option("system-manage".into(), "Manage systems", false, |s| {
+                s.ui.system_menu = false;
+                s.navigate(Page::Settings)
+            })
+            .child(caps("Manage systems ↗", 11., 500., 0.045, fg()))
+            .child(meta_sized(
+                "Rename, duplicate, delete, source details",
+                9.,
+                muted(),
+            )),
+        );
+    col()
         .key("system-list")
         .role("listbox")
         .label("Active system")
         .anchored("system-select", rune::Side::Bottom, rune::Align::Start, 4.)
         .modal(true, |s: &mut State| s.ui.system_menu = false)
-        .w(280.)
+        .w((vp.w - 32.).clamp(240., 320.))
+        .max_h((vp.h - 120.).max(160.))
         .fill(bg())
         .border(1., rule())
         .radius(4.)
         .padding(4.)
-        .gap(2.);
-    for (i, kind) in systems::KINDS.iter().enumerate() {
-        let current = i == s.systems.active;
-        let saved = &s.systems.records[i];
-        let detail = match (saved.name.trim(), saved.prepared) {
-            ("", false) => "Preparation required".to_string(),
-            ("", true) => "Prepared".to_string(),
-            (n, true) => format!("{n} / prepared"),
-            (n, false) => format!("{n} / preparation required"),
-        };
-        list = list.child(
-            col()
-                .key(format!("system-option-{i}"))
-                .role("option")
-                .label(*kind)
-                .focusable(true)
-                .focus_selected(current)
-                .cursor(rune::Cursor::Pointer)
-                .w_full()
-                .px(12.)
-                .py(10.)
-                .gap(4.)
-                .radius(2.)
-                .fill(if current { soft() } else { Color::TRANSPARENT })
-                .hover(soft())
-                .focus_ring(2., 0., fg())
-                .on_press(move |s: &mut State| {
-                    s.select_system(i);
-                })
-                .child(caps(*kind, 11., 500., 0.045, fg()))
-                .child(meta_sized(detail, 9., muted())),
-        );
-    }
-    list
+        .scroll(ScrollSpec {
+            stick_bottom: false,
+        })
+        .child(options)
+        .child(foot)
 }
 
 fn topbar(s: &State, vp: &Viewport) -> El {
@@ -320,15 +412,7 @@ fn topbar(s: &State, vp: &Viewport) -> El {
             .child(ghost("open-menu", "Menu", true, |s| s.ui.menu = true))
             .child(system_select(s, true));
     }
-    let env = if s.systems.active == systems::PHYSICAL {
-        "Windows native / no WSL required".to_string()
-    } else {
-        format!(
-            "Windows + {} / WSL{}",
-            s.config.distro,
-            if s.wsl_ready() { " 2" } else { " / not ready" }
-        )
-    };
+    let env = env_label(s, true);
     let context = row()
         .key("system-context")
         .gap(18.)
@@ -380,10 +464,41 @@ fn foot(vp: &Viewport) -> El {
         .child(meta_sized("Configuration ≠ connection ≠ data health", 9., muted()).wrap())
 }
 
-/// Confirms stopping owned processes (`s.confirm == Some("stop")`).
-fn confirm_dialog(w: f32, h: f32) -> [El; 2] {
+/// What the confirmation dialog asks (`s.confirm`): Stop session, or a flight action of an
+/// app-owned simulation (`vehicle::view::ask`).
+pub(crate) struct Ask {
+    pub eyebrow: &'static str,
+    pub title: String,
+    pub body: String,
+    /// The confirming pill's label.
+    pub action: String,
+    pub confirm: fn(&mut State),
+    pub cancel: fn(&mut State),
+}
+
+fn ask(s: &State) -> Option<Ask> {
+    match s.confirm.as_deref()? {
+        "stop" => Some(Ask {
+            eyebrow: "Owned processes",
+            title: "Stop owned processes?".into(),
+            body: stop_body(s),
+            action: "Stop session".into(),
+            confirm: |s| {
+                if s.confirm.take().as_deref() == Some("stop") {
+                    s.stop_all()
+                }
+            },
+            cancel: |s| s.confirm = None,
+        }),
+        "flight" => crate::vehicle::view::ask(s),
+        _ => None,
+    }
+}
+
+fn confirm_dialog(w: f32, h: f32, ask: Ask) -> [El; 2] {
     let dw = (w - 32.).min(560.);
-    let dh = (h - 32.).min(280.);
+    let dh = (h - 32.).min(320.);
+    let cancel = ask.cancel;
     [
         el().key("confirm-scrim")
             .absolute(0., 0.)
@@ -403,9 +518,9 @@ fn confirm_dialog(w: f32, h: f32) -> [El; 2] {
             .fill(bg())
             .border(1., rule())
             .radius(4.)
-            .modal(true, |s: &mut State| s.confirm = None)
-            .child(meta("Owned processes"))
-            .child(h2("Stop owned processes?", 22.))
+            .modal(true, move |s: &mut State| cancel(s))
+            .child(meta(ask.eyebrow))
+            .child(h2(ask.title, 22.))
             .child(
                 col()
                     .grow(1.)
@@ -414,21 +529,14 @@ fn confirm_dialog(w: f32, h: f32) -> [El; 2] {
                     .scroll(ScrollSpec {
                         stick_bottom: false,
                     })
-                    .child(p(
-                        "This closes managed tools, simulators, recordings and replay started by Drone Deck. It does not land or disarm a vehicle, and it does not cancel installation jobs.",
-                        12.,
-                    )),
+                    .child(p(ask.body, 12.)),
             )
             .child(
                 row()
                     .gap(12.)
                     .flex_wrap()
-                    .child(pill("confirm-action", "Stop session", true, |s| {
-                        if s.confirm.take().as_deref() == Some("stop") {
-                            s.stop_all()
-                        }
-                    }))
-                    .child(ghost("cancel-action", "Cancel", true, |s| s.confirm = None)),
+                    .child(pill("confirm-action", &ask.action, true, ask.confirm))
+                    .child(ghost("cancel-action", "Cancel", true, cancel)),
             ),
     ]
 }
@@ -497,6 +605,7 @@ pub(super) fn view(s: &State, cx: &mut Cx<State>) -> El {
                             .w_full()
                             .min_w(0.)
                             .px(vp.gutter())
+                            .children(crate::agent::leftovers(s, &vp))
                             .child(pages::page(s, &vp))
                             .child(foot(&vp)),
                     ),
@@ -523,10 +632,10 @@ pub(super) fn view(s: &State, cx: &mut Cx<State>) -> El {
             );
     }
     if s.page != Page::Setup && s.ui.system_menu {
-        root = root.child(system_menu(s));
+        root = root.child(system_menu(s, &vp));
     }
-    if s.confirm.as_deref() == Some("stop") {
-        for e in confirm_dialog(w, h) {
+    if let Some(ask) = ask(s) {
+        for e in confirm_dialog(w, h, ask) {
             root = root.child(e);
         }
     }

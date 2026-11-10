@@ -15,33 +15,44 @@ Start with **Activity → Process output** (the tool's own messages) and **Activ
 | "Stop active tools, installations, recording and replay before changing the WSL distribution." | Stop the session (rail foot), stop recordings/replay, and wait for or cancel installations first. |
 | Automatic Linux recipe says it supports Ubuntu 24.04 only | Use detection of an existing installation or a manual profile on other distributions. |
 
-## Simulation: relay, firewall and visualizer
+## Simulation: router and vehicle link
 
-The Local simulation chain is PX4 SIH (WSL) → display relay (WSL) → jMAVSim (Windows). PX4 publishes vehicle state to `127.0.0.1:19410` inside WSL; the relay forwards each packet to the Windows host (the WSL default gateway, found at start with `ip route`) on UDP 19410, where jMAVSim listens in display-only mode.
+The Local simulation chain is PX4 SIH (WSL) → MAVLink router (the Linux agent, UDP 14550 ⇄ TCP 5760 inside WSL) → Drone Deck's vehicle link on `tcp:127.0.0.1:5760` (WSL forwards localhost TCP to Windows) → QGroundControl on UDP 14550 and your scripts on UDP 14540. No firewall rule and no Java runtime are needed. ArduPilot SITL serves TCP 5760 itself, without the router.
 
-- **jMAVSim shows "waiting for first message from: /0.0.0.0:19410"**: no state is reaching Windows. Check, in order: PX4 reached **Ready** (SIH status), the relay shows **Forwarding** (it only does after its first packet), and Windows Defender Firewall allows inbound UDP 19410 from the WSL virtual network. Drone Deck never creates or edits firewall rules. Add an inbound rule yourself, for example from an elevated PowerShell (narrow it further with `-RemoteAddress` or `-Program` if your policy requires):
-
-  ```powershell
-  New-NetFirewallRule -DisplayName "Drone Deck jMAVSim relay" -Direction Inbound -Protocol UDP -LocalPort 19410 -Action Allow
-  ```
-
-  The WSL address range can change after a restart; a rule bound to one remote address then stops matching. Relay **Forwarding** confirms UDP delivery was attempted, not that the firewall let it through or that jMAVSim renders.
-- **The relay exits immediately**: it needs `python3` in the distribution and a free UDP 19410 inside WSL (another relay or simulator may be bound to it).
-- **jMAVSim does not start**: it needs a native Java 21 runtime on Windows and its JAR. Expand jMAVSim in **Tools & config** and **Detect** it, or prepare it in Guided setup.
-- **"Workspace needs the … profile. Configure it in Tools & config."**: a profile the session uses (`sih`, `relay`, `jmavsim`, `dds`) was deleted or renamed. Add it back or restore defaults by editing the registry.
+- **The launch stops at router**: the Linux agent could not bind UDP 14550 or TCP 5760 inside WSL (another router, MAVProxy or ground station holds it), or the agent is not running (Activity → Process output, `[agent]` lines). The notice carries the agent's reason.
+- **"Something on Windows already listens on TCP 5760"**: before a simulator or the router starts, Drone Deck checks that nothing on Windows (MAVProxy, mavlink-router, Mission Planner, a bridge to a real flight controller) holds TCP 5760, because its link would reach that program instead of the simulator. Stop that program and start the session again. If the link still reaches something other than the app's router (the router reports no client), flight commands stay disabled with that reason.
+- **The launch waits at link, then times out**: Windows cannot reach `127.0.0.1:5760`. WSL localhost forwarding must be on (the default; `localhostForwarding=false` in `.wslconfig` turns it off). The timeout notice shows the link's last error.
+- **The link is up but shows "no heartbeat"**: the router listens but PX4 sends nothing to UDP 14550 inside WSL; check PX4's output for its MAVLink instances. Live values grey out after 5 seconds without a heartbeat; they are never shown as live when stale.
+- **"Workspace stopped at …: the … profile is missing"**: a profile the session uses (`sih`, `gazebo`, `ardupilot`, `dds`, `rosgz`, `qgc`) was deleted or renamed. Add it back or restore defaults by editing the registry. Upgrading from 0.8 removes the retired `relay`, `jmavsim`, `telemetry` and `hardware` profiles once, with a notice.
+- **"… is running for <system>"**: one simulator runs at a time (they share UDP 14550 and TCP 5760), and a running simulator belongs to the system that started it. Stop that session first.
 - **"Blocked" / "Another managed flight stack is running."**: only one exclusive flight stack (PX4 SIH, Gazebo, ArduPilot) runs at a time. Stop the other one first.
 - **PX4 exits at once**: the PX4 profiles refuse to start while any `px4` process already runs in the distribution, including one started outside Drone Deck (a terminal, another launcher, an earlier crashed session). Stop it (`pkill -x px4` in that distribution) and start again.
-- **Startup stops at SIH or relay with a timeout**: the staged launch waits for SIH vehicle status, then a relay packet. Read Process output for PX4 build or startup errors (a missing build is the usual cause on a new machine).
+- **Startup stops at SIH with a timeout**: the staged launch waits for SIH vehicle status. Read Process output for PX4 build or startup errors (a missing build is the usual cause on a new machine).
+- **Flight actions or the console are disabled**: they work only on a simulation Drone Deck started for this system, and the bar says which condition is missing. Start the system's workspace from Drone Deck (a PX4 or router started elsewhere does not count), wait for the router and the link, and use the page of the system that owns the link. Physical vehicles never get these controls. See [Flight actions and PX4 console](user-guide.md#flight-actions-and-px4-console-simulation-only).
+- **The flight-actions bar says "No live link. Start the workspace of a simulated system first." while the workspace is starting**: the bar shows the gate's general reason until the link stage is reached. Wait for the launch stages to finish.
+- **"Another program sends MAVLink to UDP 14550 inside WSL … datagrams ignored"**: the router keeps the first UDP sender as its vehicle for as long as it runs and ignores every other sender; flight commands stay disabled while that happens. Stop the other flight stack or forwarder, then **Stop session** and start the workspace again. The same applies when PX4 restarts and sends from a new source port while the router keeps running (PX4 SITL normally sends from a fixed port; not observed here).
+- **"Autopilots with system ids … share this link"**: more than one autopilot sends heartbeats on the link. Stop the other vehicle and restart the workspace.
+- **The router stopped but the simulation link stays open and retries**: a simulation link has no Disconnect button of its own; **Stop session** closes it with the rest of the session.
+- **A command shows "Timed out" or "Not sent / no vehicle heartbeat yet"**: the vehicle did not acknowledge, or no heartbeat has arrived on the link yet. Check the live view's heartbeat and PX4's output; QGroundControl may also be commanding the same simulated vehicle.
+
+## Physical vehicle link
+
+- **Connect fails on a serial port**: another program (often the ground station) already holds the COM port. Close it or give Drone Deck its own endpoint, for example a second telemetry radio or a UDP output of the ground station's forwarder. **Find serial devices** lists the ports Windows sees.
+- **Connected, but the live view stays empty**: no autopilot heartbeat arrived. Check the endpoint, the baud rate and that the vehicle (not only a radio or a companion computer) is sending MAVLink.
+- **A UDP-listen link went quiet after the vehicle or radio bridge restarted**: the link stays with the source address of the first autopilot heartbeat until it closes and ignores other senders. **Disconnect** and **Connect** again.
+- **Fetch parameters or List logs never completes on a vehicle that uses MAVLink signing**: Drone Deck does not sign its requests (and does not check signatures on what it receives), so a vehicle that requires signing may ignore them. Read parameters and logs with QGroundControl or Mission Planner there.
+- **The panel counts frames under "Sent by QGroundControl/scripts"**: QGroundControl or scripts are enabled for this system, so the link is a two-way bridge and what they send reaches the vehicle. For a strictly read-only session, turn both consumers off in **Settings → Systems** and connect again.
+- **Closing Drone Deck while a bridged link is open**: the window cannot ask first. QGroundControl and scripts lose the vehicle, and a warning is written to Activity and `app.log`.
 
 ## Ports
 
 | Port | Used by | Notes |
 |---|---|---|
-| UDP 14540 | MAVSDK telemetry (`udpin://0.0.0.0:14540` inside WSL) | PX4's API/offboard link. Only one listener can own it: stop another MAVSDK script, MAVROS or a project before starting telemetry. The MAVSDK project starter uses a different endpoint for this reason. "No PX4 heartbeat within 30 seconds" means the simulator is not running or another listener has the port. |
-| UDP 14550 | QGroundControl ↔ PX4 ground-station link | QGroundControl listens on 14550 by default. With PX4 inside WSL 2 it may not see the vehicle automatically. PX4's [WSL 2 guide](https://docs.px4.io/main/en/dev_setup/dev_env_windows_wsl.html) adds a UDP comm link in QGroundControl (Application Settings → Comm Links) to the WSL address (`ip addr | grep eth0` inside WSL) on port 18570; update it when WSL restarts with a new address. Close other ground stations that hold the port. |
-| UDP 19410 | PX4 SIH → relay → jMAVSim | Needs the Windows firewall rule above. Bound on `127.0.0.1` inside WSL by the relay. |
+| UDP 14540 | Your scripts (MAVSDK `udpin://0.0.0.0:14540`, pymavlink) on Windows | The vehicle link sends every packet to the system's scripts address (default `127.0.0.1:14540`) and forwards replies to the vehicle, on a physical system too, so a script can command a real vehicle through it. Only one listener can own the port. |
+| UDP 14550 | QGroundControl (Windows); the router inside WSL | The vehicle link sends to `127.0.0.1:14550`, where QGroundControl should auto-connect without a configured comm link (not yet observed with a live PX4; see ENV-02 in [known issues](known-issues.md)). Inside WSL the router listens on 14550 for PX4. Close other ground stations that hold the Windows port. |
+| TCP 5760 | The router inside WSL (or ArduPilot SITL) → the vehicle link | Reached from Windows as `127.0.0.1:5760` through WSL localhost forwarding. |
 | UDP 8888 | Micro XRCE-DDS Agent (`MicroXRCEAgent udp4 -p 8888`) | The PX4 uXRCE-DDS client connects here. Agent 2.4.3 matches DDS-v2 firmware; the firmware client, Agent and `px4_msgs` versions must match. Installation alone does not create ROS topics. |
-| UDP 14555 (example) | Physical vehicle monitor | Any free endpoint. Use a dedicated one so the monitor and QGroundControl do not compete. |
+| UDP 14555 (example) | Physical vehicle link | Any free endpoint. Use a dedicated one so the link and QGroundControl do not compete; the link never forwards a physical vehicle to QGroundControl on the same UDP port it listens on. |
 
 Find what holds a port: on Windows `Get-NetUDPEndpoint -LocalPort 14550 | Select-Object OwningProcess` then `Get-Process -Id <pid>`; inside WSL `ss -ulpn | grep 14540`.
 
@@ -75,20 +86,23 @@ Only one installation runs at a time, across app instances. Installation is refu
 | What | Location |
 |---|---|
 | Data root | `%LOCALAPPDATA%\DroneDeck\workspace\` |
-| Launch profiles (`"schema": 1`) | `profiles.json` |
-| Systems (names, prepared) | `systems.json` |
+| Launch profiles (`"schema": 2`) | `profiles.json` |
+| Systems (`"schema": 2`: each system's name, template, source, consumers and prepared state, and the active one) | `systems.json` |
 | Activity history / export | `activity.json` / `activity-export.json` |
 | Zoom and UI preferences | `ui-preferences.json` |
 | Exported process output | `session.log` (written by Activity → Process output → **Export log**) |
 | Installation jobs | `setup\jobs\<job id>\` with `plan.json`, `state.json`, `output.log` (and `output.log.waiting` while a step needs attention) |
 | Guided setup queue | `setup\workflow-state.json` |
 | Model download jobs | `studio\jobs\<job id>\` |
-| Vehicle `.tlog` captures and parameter backups | `hardware\` |
+| Vehicle link `.tlog` captures | `logs\tlog\` (`hardware\` holds captures and parameter backups from 0.8 and earlier) |
+| Onboard logs downloaded from a vehicle | `logs\vehicle\` |
+| Parameter exports | `exports\params\<system>-<stamp>.params` |
+| Diagnostics (Activity → **Export diagnostics**) | `exports\drone-deck-diagnostics-<stamp>.zip` |
 | Downloaded models | `%LOCALAPPDATA%\DroneDeck\models\` |
-| Application logs (reserved for a later release) | `%LOCALAPPDATA%\DroneDeck\logs\` |
+| Application logs (`app.log`, `app.1.log`, `app.2.log`) and crash reports (`crash-<stamp>.txt`) | `%LOCALAPPDATA%\DroneDeck\logs\`, or `logs\` in the data root when `DRONE_DECK_DATA_DIR` or portable mode moves it |
 | Hugging Face token | Windows Credential Manager (generic credential) |
 | Helper scripts | `runtime\` beside `Drone Deck.exe` (`drone-deck\scripts\` when run with `cargo run`) |
-| Linux-side tools, recordings, projects, datasets, evaluations | `~/.local/share/drone-deck/{tools,recordings,projects,datasets,evaluations}` in the selected distribution |
+| Linux-side tools, recordings (with pipeline outputs in `extract/` and `inference/`), projects | `~/.local/share/drone-deck/{tools,recordings,projects}` in the selected distribution |
 
 Overrides, checked in this order:
 
@@ -103,4 +117,5 @@ Overrides, checked in this order:
 
 - **Every button is disabled and the status bar says "Headless preview"**: the app was started with `--snap`, `--tree`, `--script` or a similar preview flag. Start it without arguments.
 - **The UI is too large or too small**: **Ctrl+0** resets zoom to 100 %.
-- **Closing the app**: owned simulators, telemetry, recordings (finalized gracefully) and projects stop; installation jobs continue.
+- **Drone Deck closed unexpectedly or hit an internal error**: the next start offers the crash report at the top of Activity. **Export diagnostics** there bundles it with the app log, profiles and recent job logs (redacted); review the zip before attaching it to a bug report.
+- **Closing the app**: owned simulators, the vehicle link and MAVLink router, recordings (finalized gracefully) and projects stop; installation jobs continue.

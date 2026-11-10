@@ -9,10 +9,11 @@ const DESC: &str = "Manage the tools behind your UAV workflow. Configuration, pr
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
     let kind = s.systems.active;
     let compact = vp.compact();
+    let current = s.systems.current();
     let eyebrow = format!(
         "{} / {}",
-        s.systems.name(kind),
-        if s.systems.prepared(kind) {
+        current.label(),
+        if current.prepared {
             "Configured"
         } else {
             "Preparation required"
@@ -33,22 +34,37 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
         .child(topology::section(s, vp));
     if kind == PHYSICAL {
         page = page.child(hardware::monitor(s, vp));
-    } else if kind != AI && (systems::running(s, "telemetry") || !s.metrics.is_empty()) {
-        page = page.child(telemetry(s, compact));
+    }
+    if kind != AI {
+        page = page.child(vehicle::view::live(s, vp));
+    }
+    // Flight actions and the console exist only for an app-owned simulation; a physical
+    // vehicle is read-only and never shows them.
+    if current.source.simulated() {
+        page = page
+            .child(vehicle::view::actions(s, vp))
+            .child(vehicle::view::console(s, vp));
+    }
+    if kind == PHYSICAL {
+        page = page.child(vehicle::view::tools(s, vp));
     }
     page.child(runtime::section(s, vp))
 }
 
 fn session_action(s: &State) -> El {
-    let kind = s.systems.active;
+    let current = s.systems.current();
     if systems::active_work(s) {
         return pill("start-session", "Stop session", true, |s| {
             s.confirm = Some("stop".into())
         });
     }
-    let name = match kind {
-        AI => "Open projects",
-        PHYSICAL => "Start monitoring",
+    let name = match &current.source {
+        systems::Source::Replay { .. } if current.consumers.inference.is_some() => "Open projects",
+        systems::Source::Replay { .. } => "Open recordings",
+        systems::Source::Physical { .. } if systems::physical_bridge(current) => {
+            "Connect (bridged)"
+        }
+        systems::Source::Physical { .. } => "Connect read-only",
         _ => "Start workspace",
     };
     // Direct controls stay available without guided preparation; `bundle` and `start` still
@@ -73,9 +89,8 @@ fn environment_note(s: &State) -> Option<String> {
 }
 
 fn guidance(s: &State, compact: bool) -> El {
-    let kind = s.systems.active;
     let env = environment_note(s);
-    if !s.systems.prepared(kind) {
+    if !s.systems.current().prepared {
         let mut text = "Choose what you want to do. Guided setup finds existing tools, explains the connections and prepares only what this system needs.".to_string();
         if let Some(e) = env {
             text = format!("{text} {e}");
@@ -109,8 +124,7 @@ fn guidance(s: &State, compact: bool) -> El {
 fn awaited(id: &str) -> &'static str {
     match id {
         "sih" => "vehicle status",
-        "relay" => "first forwarded packet",
-        _ => "process start",
+        _ => vehicle::awaited(id).unwrap_or("process start"),
     }
 }
 
@@ -123,9 +137,7 @@ fn launch_progress(s: &State, launch: &session::Launch, compact: bool) -> El {
         row().gap(32.).flex_wrap()
     };
     for (i, id) in stages.iter().enumerate() {
-        let name = systems::all_components()
-            .into_iter()
-            .find(|c| matches!(c.backing, systems::Backing::Profile(p) if p == *id))
+        let name = systems::component(id)
             .map(|c| c.name.to_string())
             .or_else(|| {
                 s.config
@@ -136,7 +148,9 @@ fn launch_progress(s: &State, launch: &session::Launch, compact: bool) -> El {
             })
             .unwrap_or_else(|| id.to_string());
         let (label, color) = if i < at {
-            let (label, tone) = systems::profile_state(s, id);
+            let (label, tone) = systems::component(id)
+                .map(|c| systems::state(s, c))
+                .unwrap_or_else(|| systems::profile_state(s, id));
             (label, systems::tone_color(tone))
         } else if i == at {
             (
@@ -182,81 +196,14 @@ fn launch_progress(s: &State, launch: &session::Launch, compact: bool) -> El {
                 .flex_wrap()
                 .justify_between()
                 .child(h3("Workspace launch", 15.))
-                .child(meta("Each tool waits for the previous one's readiness")),
+                .child(meta(match s.systems.owner("session") {
+                    // Switching never stops a launch; say whose it is when it is not this one.
+                    Some(id) if id != s.systems.active_id() => format!(
+                        "Started by {} / each tool waits for the previous one's readiness",
+                        s.systems.get(id).map_or("another system", |x| x.label())
+                    ),
+                    _ => "Each tool waits for the previous one's readiness".into(),
+                })),
         )
         .child(steps)
-}
-
-fn reading(label: &str, value: El) -> El {
-    col()
-        .w(140.)
-        .min_w(0.)
-        .gap(6.)
-        .child(meta_sized(label, 9., muted()))
-        .child(value)
-}
-
-fn telemetry(s: &State, compact: bool) -> El {
-    let link =
-        s.metrics
-            .get("link")
-            .map(String::as_str)
-            .unwrap_or(if systems::running(s, "telemetry") {
-                "No data yet"
-            } else {
-                "Offline"
-            });
-    let tone = match link {
-        "Connected" => success(),
-        "Stale" => warn(),
-        _ => muted(),
-    };
-    let value = |key: &str| {
-        meta_sized(
-            s.metrics
-                .get(key)
-                .cloned()
-                .unwrap_or_else(|| "No data".into()),
-            12.,
-            fg(),
-        )
-        .wrap()
-    };
-    let readings = row()
-        .key("telemetry-readings")
-        .w_full()
-        .min_w(0.)
-        .gaps(18., 24.)
-        .flex_wrap()
-        .py(18.)
-        .border_sides([1., 0., 1., 0.], soft())
-        .child(reading(
-            "Link",
-            row()
-                .gap(8.)
-                .center_y()
-                .child(dot(tone))
-                .child(meta_sized(link, 12., fg())),
-        ))
-        .child(reading("Altitude", value("altitude")))
-        .child(reading("Flight mode", value("mode")))
-        .child(reading("Latitude", value("latitude")))
-        .child(reading("Longitude", value("longitude")))
-        .child(reading("Local position", value("position")));
-    col()
-        .key("vehicle-telemetry")
-        .w_full()
-        .min_w(0.)
-        .pt(18.)
-        .pb(26.)
-        .gap(12.)
-        .child(section_head(
-            "Vehicle telemetry",
-            meta("Read-only MAVSDK / UDP 14540"),
-            compact,
-        ))
-        .child(readings)
-        .child(notice(
-            "Values become stale after five seconds without updates. Vehicle setup and flight control stay in QGroundControl.",
-        ))
 }

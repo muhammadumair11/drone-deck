@@ -6,7 +6,8 @@ use super::*;
 fn recipe_id(id: &str) -> &str {
     match id {
         "sih" => "px4",
-        "telemetry" => "mavsdk",
+        "rosgz" => "ros-gz",
+        "foxglove" => "foxglove-bridge",
         other => other,
     }
 }
@@ -199,10 +200,7 @@ fn existing(s: &State, i: usize) -> El {
     let selected = s.setup.selected == i;
     let idle = !s.setup.pending && !s.setup.active();
     let hint = match (r.target.as_str(), r.id.as_str()) {
-        ("Windows", _) => "Full Windows path to the .exe or .jar",
-        (_, "jmavsim") => {
-            "Linux path for WSL tools; full Windows .exe or .jar path for Windows tools"
-        }
+        ("Windows", _) => "Full Windows path to the .exe",
         _ => "Linux path inside the WSL environment",
     };
     let mut block = col()
@@ -309,7 +307,7 @@ fn existing(s: &State, i: usize) -> El {
     );
     if c.found && c.compatible && s.busy() {
         result = result.child(meta_sized(
-            "Stop active tools and recordings before changing a launch configuration.",
+            "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) before changing a launch configuration.",
             9.,
             muted(),
         ));

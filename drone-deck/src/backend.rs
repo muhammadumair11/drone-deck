@@ -1,3 +1,4 @@
+use crate::agent::Launcher;
 use crate::store::Read;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -42,7 +43,7 @@ pub struct Config {
     pub profiles: Vec<Profile>,
 }
 /// The current `profiles.json` schema. A file without `"schema"` is schema 0.
-pub const SCHEMA: u64 = 1;
+pub const SCHEMA: u64 = 2;
 #[derive(Serialize)]
 struct Stored<'a> {
     schema: u64,
@@ -224,9 +225,72 @@ fn migrate_v0(value: &mut Value) {
         });
     }
 }
+/// Schema 1 → 2: drops the retired built-in profiles (relay, jMAVSim, MAVSDK telemetry, the
+/// PowerShell monitor) and moves unedited Gazebo / ArduPilot commands to the system-driven
+/// ones. An adopted MAVSDK interpreter (written as `telemetry`) becomes the `mavsdk` profile
+/// that adopting it now writes. Profiles the user created are untouched. Returns the names
+/// of dropped profiles and whether an interpreter was kept.
+fn migrate_v1(value: &mut Value) -> (Vec<String>, bool) {
+    let mut dropped = Vec::new();
+    let Some(profiles) = value.get_mut("profiles").and_then(Value::as_array_mut) else {
+        return (dropped, false);
+    };
+    let kept = !profiles.iter().any(|p| p["id"] == "mavsdk")
+        && profiles.iter_mut().any(|p| {
+            let exe = p["args"][0]
+                .as_str()
+                .filter(|_| p["id"] == "telemetry")
+                .and_then(|a| a.strip_suffix(" -u \"$DRONE_DECK_SCRIPTS/telemetry.py\""))
+                .filter(|exe| *exe != OLD_MAVSDK_PYTHON)
+                .map(str::to_owned);
+            let Some(exe) = exe else { return false };
+            let (args, probe) = crate::setup::profiles::mavsdk_command(&exe);
+            p["id"] = "mavsdk".into();
+            p["name"] = "MAVSDK Python".into();
+            p["description"] = "MAVSDK Python interpreter adopted before this version".into();
+            p["args"] = serde_json::json!(args);
+            p["probe"] = probe.into();
+            true
+        });
+    profiles.retain(|p| {
+        let retired = p["id"].as_str().is_some_and(|id| RETIRED.contains(&id));
+        if retired {
+            dropped.push(
+                p["name"]
+                    .as_str()
+                    .or(p["id"].as_str())
+                    .unwrap_or("")
+                    .to_owned(),
+            );
+        }
+        !retired
+    });
+    for p in profiles.iter_mut() {
+        let new = match (p["id"].as_str(), p["args"][0].as_str()) {
+            (Some("gazebo"), Some(OLD_GAZEBO)) => GAZEBO_ARGS,
+            (Some("ardupilot"), Some(OLD_ARDUPILOT)) => ARDUPILOT_ARGS,
+            _ => continue,
+        };
+        p["args"] = serde_json::json!([new]);
+    }
+    // New built-ins that system sessions start.
+    for new in defaults()
+        .profiles
+        .into_iter()
+        .filter(|p| ["rosgz", "foxglove"].contains(&p.id.as_str()))
+    {
+        if !profiles.iter().any(|p| p["id"] == new.id.as_str()) {
+            profiles.extend(serde_json::to_value(new));
+        }
+    }
+    (dropped, kept)
+}
 /// Parses `profiles.json`. The outer error marks a damaged file; the inner one a readable
-/// file this version must not use (a newer schema, or no profiles). `true` means migrated.
-pub(crate) fn parse_config(bytes: &[u8]) -> Result<Result<(Config, bool), String>, String> {
+/// file this version must not use (a newer schema, or no profiles). `Some` is the notice of
+/// a migration (the file is then written back).
+pub(crate) fn parse_config(
+    bytes: &[u8],
+) -> Result<Result<(Config, Option<String>), String>, String> {
     let mut value: Value = serde_json::from_slice(bytes).map_err(|e| e.to_string())?;
     let schema = match value.get("schema") {
         None => 0,
@@ -240,13 +304,33 @@ pub(crate) fn parse_config(bytes: &[u8]) -> Result<Result<(Config, bool), String
     if schema == 0 {
         migrate_v0(&mut value);
     }
+    let (dropped, kept) = if schema < 2 {
+        migrate_v1(&mut value)
+    } else {
+        (Vec::new(), false)
+    };
     let config: Config = serde_json::from_value(value).map_err(|e| e.to_string())?;
     if config.profiles.is_empty() || config.distro.is_empty() {
         return Ok(Err(
             "At least one profile and a WSL distribution are required".into(),
         ));
     }
-    Ok(Ok((config, schema < SCHEMA)))
+    let notice = (schema < SCHEMA).then(|| {
+        let mut text = format!(
+            "Launch profiles upgraded to schema {SCHEMA}; the previous file is kept as profiles.json.bak."
+        );
+        if !dropped.is_empty() {
+            text.push_str(&format!(
+                " Removed retired profiles ({}): the native vehicle link replaces them.",
+                dropped.join(", ")
+            ));
+        }
+        if kept {
+            text.push_str(" The adopted MAVSDK interpreter is kept as the MAVSDK Python profile.");
+        }
+        text
+    });
+    Ok(Ok((config, notice)))
 }
 pub fn load() -> Result<Config, String> {
     load_at(&config_path())
@@ -285,11 +369,9 @@ pub(crate) fn load_at(path: &Path) -> Result<Config, String> {
             return Err(e);
         }
     };
-    if migrated {
+    if let Some(notice) = migrated {
         save_at(path, &config)?;
-        crate::store::note(format!(
-            "Launch profiles upgraded to schema {SCHEMA}; the previous file is kept as profiles.json.bak."
-        ));
+        crate::store::note(notice);
     }
     Ok(config)
 }
@@ -305,11 +387,26 @@ pub(crate) fn save_at(path: &Path, c: &Config) -> Result<(), String> {
         },
     )
 }
+const PX4_DIR: &str = "cd \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\"";
+/// The PX4 + Gazebo command; world and model come from the system (`launch_env`).
+const GAZEBO_ARGS: &str = "cd \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\" && test -z \"$(pgrep -x px4)\" && PX4_GZ_WORLD=\"${DRONE_DECK_GZ_WORLD:-default}\" make px4_sitl \"gz_${DRONE_DECK_GZ_MODEL:-x500_mono_cam}\"";
+/// ArduPilot SITL serves MAVLink on TCP 5760 itself (`--no-mavproxy`).
+const ARDUPILOT_ARGS: &str = "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" --no-mavproxy";
+/// Camera image and camera_info of PX4's `x500_mono_cam` (sensor `camera` on `camera_link`,
+/// instance `_0`) into ROS as `/camera/image_raw` and `/camera/camera_info`.
+const ROSGZ_ARGS: &str = "source /opt/ros/jazzy/setup.bash && G=\"/world/${DRONE_DECK_GZ_WORLD:-default}/model/${DRONE_DECK_GZ_MODEL:-x500_mono_cam}_0/link/camera_link/sensor/camera\" && exec ros2 run ros_gz_bridge parameter_bridge \"$G/image@sensor_msgs/msg/Image[gz.msgs.Image\" \"$G/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo\" --ros-args -r \"$G/image:=/camera/image_raw\" -r \"$G/camera_info:=/camera/camera_info\"";
+const FOXGLOVE_ARGS: &str = "source /opt/ros/jazzy/setup.bash && exec ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765";
+/// Built-in profiles of earlier versions that the native vehicle link replaced. Stored
+/// profiles with these ids are dropped when `profiles.json` is upgraded to schema 2.
+pub(crate) const RETIRED: [&str; 4] = ["relay", "jmavsim", "telemetry", "hardware"];
+/// Earlier built-in commands that schema 2 replaces when they were never edited.
+/// The interpreter the built-in MAVSDK telemetry profile named before adoption.
+const OLD_MAVSDK_PYTHON: &str = "\"$HOME/.local/share/drone-deck/tools/mavsdk/bin/python\"";
+const OLD_GAZEBO: &str = "cd \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\" && test -z \"$(pgrep -x px4)\" && make px4_sitl gz_x500";
+const OLD_ARDUPILOT: &str =
+    "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v ArduCopter --no-mavproxy";
+
 pub fn defaults() -> Config {
-    // Where the managed jMAVSim recipe installs (scripts/setup/native-visualizer.ps1).
-    let local = std::env::var("LOCALAPPDATA")
-        .unwrap_or_else(|_| "C:\\Users\\Public\\AppData\\Local".into());
-    let jmavsim = format!("{local}\\DroneDeck\\tools\\jmavsim");
     let mut profiles = Vec::new();
     let mut add = |id: &str,
                    name: &str,
@@ -317,7 +414,6 @@ pub fn defaults() -> Config {
                    desc: &str,
                    program: &str,
                    args: Vec<String>,
-                   cwd: &str,
                    probe: &str,
                    docs: &str,
                    exclusive: bool| {
@@ -328,75 +424,46 @@ pub fn defaults() -> Config {
             description: desc.into(),
             program: program.into(),
             args,
-            cwd: cwd.into(),
+            cwd: String::new(),
             probe: probe.into(),
             docs: docs.into(),
             download_url: String::new(),
             exclusive,
         })
     };
-    add("sih","PX4 / SIH","Simulation","Lightweight internal flight physics · Quad X","wsl",vec!["cd \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\" && test -z \"$(pgrep -x px4)\" && make px4_sitl_sih sihsim_quadx".into()],"","test -x \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot/build/px4_sitl_sih/bin/px4\"","https://docs.px4.io/main/en/sim_sih/",true);
     add(
-        "relay",
-        "WSL display relay",
-        "Infrastructure",
-        "SIH state → native Windows visualizer · UDP 19410",
-        "wsl",
-        vec!["python3 -u \"$DRONE_DECK_SCRIPTS/relay.py\"".into()],
-        "",
-        "command -v python3",
-        "https://docs.px4.io/main/en/sim_sih/",
-        false,
-    );
-    add(
-        "jmavsim",
-        "jMAVSim",
+        "sih",
+        "PX4 / SIH",
         "Simulation",
-        "Native Java visualizer · display only",
-        "java",
-        vec![
-            "--add-exports".into(),
-            "java.base/java.lang=ALL-UNNAMED".into(),
-            "--add-exports".into(),
-            "java.desktop/sun.awt=ALL-UNNAMED".into(),
-            "--add-exports".into(),
-            "java.desktop/sun.java2d=ALL-UNNAMED".into(),
-            "-XX:GCTimeRatio=20".into(),
-            "-Djava.ext.dirs=".into(),
-            "-jar".into(),
-            "jmavsim_run.jar".into(),
-            "-udp".into(),
-            "19410".into(),
-            "-disponly".into(),
-        ],
-        &jmavsim,
-        &format!("{jmavsim}\\jmavsim_run.jar"),
-        "https://docs.px4.io/main/en/sim_jmavsim/",
-        false,
+        "Lightweight internal flight physics · Quad X",
+        "wsl",
+        vec![format!(
+            "{PX4_DIR} && test -z \"$(pgrep -x px4)\" && make px4_sitl_sih sihsim_quadx"
+        )],
+        "test -x \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot/build/px4_sitl_sih/bin/px4\"",
+        "https://docs.px4.io/main/en/sim_sih/",
+        true,
     );
-    add("gazebo","Gazebo Harmonic","Simulation","PX4 X500 · configure a compatible installed world","wsl",vec!["cd \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\" && test -z \"$(pgrep -x px4)\" && make px4_sitl gz_x500".into()],"","command -v gz && test -d \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\"","https://gazebosim.org/docs/harmonic/",true);
+    add(
+        "gazebo",
+        "Gazebo Harmonic",
+        "Simulation",
+        "PX4 with the system's Gazebo world and model",
+        "wsl",
+        vec![GAZEBO_ARGS.into()],
+        "command -v gz && test -d \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\"",
+        "https://docs.px4.io/main/en/sim_gazebo_gz/",
+        true,
+    );
     add(
         "qgc",
         "QGroundControl",
         "Flight operations",
         "Vehicle setup, missions and flight control",
-        "C:\\Program Files\\QGroundControl\\bin\\QGroundControl.exe",
+        r"C:\Program Files\QGroundControl\bin\QGroundControl.exe",
         vec![],
-        "",
-        "C:\\Program Files\\QGroundControl\\bin\\QGroundControl.exe",
+        r"C:\Program Files\QGroundControl\bin\QGroundControl.exe",
         "https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html",
-        false,
-    );
-    add(
-        "telemetry",
-        "MAVSDK telemetry",
-        "Development",
-        "Read-only live vehicle data · uses UDP 14540",
-        "wsl",
-        vec!["\"$HOME/.local/share/drone-deck/tools/mavsdk/bin/python\" -u \"$DRONE_DECK_SCRIPTS/telemetry.py\"".into()],
-        "",
-        "test -x \"$HOME/.local/share/drone-deck/tools/mavsdk/bin/python\"",
-        "https://mavsdk.mavlink.io/main/en/python/",
         false,
     );
     add(
@@ -406,7 +473,6 @@ pub fn defaults() -> Config {
         "ROS graph discovery · configure your node command",
         "wsl",
         vec!["source /opt/ros/jazzy/setup.bash && ros2 topic list".into()],
-        "",
         "test -f /opt/ros/jazzy/setup.bash",
         "https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html",
         false,
@@ -418,19 +484,39 @@ pub fn defaults() -> Config {
         "PX4 ↔ ROS 2 transport · UDP 8888",
         "wsl",
         vec!["MicroXRCEAgent udp4 -p 8888".into()],
-        "",
         "command -v MicroXRCEAgent",
         "https://docs.px4.io/main/en/middleware/uxrce_dds",
+        false,
+    );
+    add(
+        "rosgz",
+        "ROS–Gazebo camera bridge",
+        "Infrastructure",
+        "x500_mono_cam image + camera_info → /camera/image_raw, /camera/camera_info",
+        "wsl",
+        vec![ROSGZ_ARGS.into()],
+        "test -f /opt/ros/jazzy/share/ros_gz_bridge/package.xml",
+        "https://docs.px4.io/main/en/sim_gazebo_gz/#ros-2-and-gazebo",
+        false,
+    );
+    add(
+        "foxglove",
+        "Foxglove bridge",
+        "Development",
+        "Live ROS topics for Foxglove · WebSocket port 8765",
+        "wsl",
+        vec![FOXGLOVE_ARGS.into()],
+        "test -f /opt/ros/jazzy/share/foxglove_bridge/package.xml",
+        "https://docs.foxglove.dev/docs/connecting-to-data/ros-foxglove-bridge",
         false,
     );
     add(
         "ardupilot",
         "ArduPilot SITL",
         "Simulation",
-        "Alternative flight stack · configure checkout path",
+        "Alternative flight stack · serves MAVLink on TCP 5760",
         "wsl",
-        vec!["cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v ArduCopter --no-mavproxy".into()],
-        "",
+        vec![ARDUPILOT_ARGS.into()],
         "test -x ~/ardupilot/Tools/autotest/sim_vehicle.py",
         "https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html",
         true,
@@ -440,12 +526,47 @@ pub fn defaults() -> Config {
         profiles,
     }
 }
+/// `sim_vehicle.py -v` names for the ArduPilot vehicles a system can name.
+fn ardupilot_vehicle(vehicle: &str) -> String {
+    match vehicle.trim().to_ascii_lowercase().as_str() {
+        "copter" | "arducopter" => "ArduCopter".into(),
+        "plane" | "arduplane" => "ArduPlane".into(),
+        "rover" => "Rover".into(),
+        "sub" | "ardusub" => "ArduSub".into(),
+        "heli" | "helicopter" => "Helicopter".into(),
+        _ => vehicle.trim().into(),
+    }
+}
+/// Environment for profile `id` started for `sys`: the Gazebo world and model, the ArduPilot
+/// vehicle, and the ROS domain for ROS tools. Values reach the process through the agent's
+/// environment, never through the command line.
+pub(crate) fn launch_env(id: &str, sys: &crate::systems::System) -> Vec<(String, String)> {
+    use crate::systems::Source;
+    let mut env = Vec::new();
+    match &sys.source {
+        Source::Gazebo { world, model } if matches!(id, "gazebo" | "rosgz") => {
+            env.push(("DRONE_DECK_GZ_WORLD".into(), world.clone()));
+            env.push(("DRONE_DECK_GZ_MODEL".into(), model.clone()));
+        }
+        Source::ArduPilot { vehicle } if id == "ardupilot" => {
+            env.push(("DRONE_DECK_AP_VEHICLE".into(), ardupilot_vehicle(vehicle)));
+        }
+        _ => {}
+    }
+    if matches!(id, "dds" | "ros2" | "rosgz" | "foxglove" | "ros-workspace") {
+        env.push(("ROS_DOMAIN_ID".into(), sys.consumers.ros.domain.to_string()));
+    }
+    env
+}
 pub enum Request {
     Start(Profile, String),
+    /// Like `Start`, with environment variables for the process (`launch_env`).
+    StartEnv(Profile, String, Vec<(String, String)>),
     Stop(String),
-    Input(String, String),
     Detect(Config),
     Open(String),
+    /// Follow a WSL process an earlier agent started: id, distribution, exclusive.
+    Adopt(String, String, bool),
     Shutdown,
 }
 #[derive(Debug)]
@@ -453,9 +574,7 @@ pub enum Event {
     Log(String, String),
     Status(String, String),
     Detected(String, bool),
-    Metric(String, String),
     Readiness(String, String),
-    Hardware(serde_json::Value),
 }
 pub struct Backend {
     pub tx: Sender<Request>,
@@ -471,55 +590,20 @@ impl Backend {
         }
     }
 }
+/// Windows `CREATE_NO_WINDOW`: a console child gets no console window.
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 fn hidden(c: &mut Command) {
     #[cfg(windows)]
     {
-        c.creation_flags(0x08000000);
+        c.creation_flags(CREATE_NO_WINDOW);
     }
 }
-fn wsl(distro: &str) -> Command {
-    let mut c = Command::new("wsl.exe");
-    c.args(["-d", distro, "--exec"]);
-    hidden(&mut c);
-    c
-}
-fn linux_path(p: &std::path::Path) -> String {
-    let s = p.to_string_lossy().replace('\\', "/");
-    format!("/mnt/{}/{}", s[..1].to_lowercase(), &s[3..])
-}
+/// A Windows-native process the worker owns. WSL processes belong to the agent ([`Launcher`]).
 struct Running {
     child: Child,
-    distro: String,
-    wsl: bool,
     exclusive: bool,
 }
 fn stop(id: &str, r: &mut Running, tx: &SyncSender<Event>) {
-    if id == "hardware" {
-        use std::io::Write;
-        if let Some(input) = r.child.stdin.as_mut() {
-            let _ = writeln!(input, "{{\"action\":\"stop\"}}");
-            let _ = input.flush();
-        }
-        for _ in 0..30 {
-            if r.child.try_wait().ok().flatten().is_some() {
-                let _ = tx.send(Event::Status(id.into(), "Stopped".into()));
-                return;
-            }
-            thread::sleep(Duration::from_millis(50));
-        }
-    }
-    if r.wsl {
-        let _ = wsl(&r.distro)
-            .args([
-                "python3",
-                &linux_path(&scripts().join("supervisor.py")),
-                "stop",
-                id,
-            ])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status();
-    }
     #[cfg(windows)]
     {
         let mut c = Command::new("taskkill.exe");
@@ -534,178 +618,136 @@ fn stop(id: &str, r: &mut Running, tx: &SyncSender<Event>) {
     let _ = r.child.wait();
     let _ = tx.send(Event::Status(id.into(), "Stopped".into()));
 }
+/// Sends one output line of process `id` as a log line, truncated to 3,000 characters.
+pub(crate) fn forward_line(id: &str, line: String, tx: &SyncSender<Event>) {
+    let line: String = line.chars().take(3000).collect();
+    let _ = tx.send(Event::Log(id.into(), line));
+}
+/// Starts a Windows-native profile with its output streamed to `out`.
+fn start_native(p: &Profile, out: &SyncSender<Event>) -> Option<Running> {
+    let mut c = Command::new(&p.program);
+    c.args(&p.args);
+    if !p.cwd.is_empty() {
+        c.current_dir(&p.cwd);
+    }
+    if crate::qgc_launch::configure(&mut c, p) {
+        let _ = out.send(Event::Log(
+            p.id.clone(),
+            "GPU-safe launch: Qt Quick CPU renderer; graphics overrides apply only to QGroundControl.".into(),
+        ));
+    }
+    c.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    // Started suspended and resumed only once it is in the job, so nothing it starts escapes.
+    match crate::winjob::spawn(&mut c, CREATE_NO_WINDOW) {
+        Ok((mut child, assigned)) => {
+            if let Err(e) = assigned {
+                let _ = out.send(Event::Log(
+                    p.id.clone(),
+                    format!("Not added to the job object ({e}); it may outlive Drone Deck."),
+                ));
+            }
+            let a = child.stdout.take().unwrap();
+            let b = child.stderr.take().unwrap();
+            for reader in [Box::new(a) as Box<dyn std::io::Read + Send>, Box::new(b)] {
+                let tx = out.clone();
+                let id = p.id.clone();
+                thread::spawn(move || {
+                    for line in crate::process_output::BoundedLines::new(BufReader::new(reader))
+                        .map_while(Result::ok)
+                    {
+                        forward_line(&id, line, &tx);
+                    }
+                });
+            }
+            let _ = out.send(Event::Status(p.id.clone(), "Running".into()));
+            Some(Running {
+                child,
+                exclusive: p.exclusive,
+            })
+        }
+        Err(e) => {
+            let _ = out.send(Event::Status(p.id.clone(), "Failed".into()));
+            let _ = out.send(Event::Log(p.id.clone(), e.to_string()));
+            None
+        }
+    }
+}
+/// Starts `p` unless it runs, or refuses it while another exclusive flight stack runs.
+fn start(
+    p: &Profile,
+    distro: &str,
+    env: &[(String, String)],
+    running: &mut HashMap<String, Running>,
+    linux: &mut Launcher,
+    out: &SyncSender<Event>,
+) {
+    if running.contains_key(&p.id) || linux.contains(&p.id) {
+        return;
+    }
+    if p.exclusive && (running.values().any(|r| r.exclusive) || linux.exclusive_running()) {
+        let _ = out.send(Event::Status(p.id.clone(), "Blocked".into()));
+        let _ = out.send(Event::Log(
+            p.id.clone(),
+            "Another managed flight stack is running. Stop it first.".into(),
+        ));
+        return;
+    }
+    if p.program != "wsl" {
+        if let Some(r) = start_native(p, out) {
+            running.insert(p.id.clone(), r);
+        }
+    } else if p.args.is_empty() {
+        let _ = out.send(Event::Status(p.id.clone(), "Configure command".into()));
+    } else {
+        linux.start_env(p, distro, env, out);
+    }
+}
+fn detect(config: Config, tx: SyncSender<Event>) {
+    let (linux, native): (Vec<_>, Vec<_>) = config
+        .profiles
+        .into_iter()
+        .partition(|p| p.program == "wsl");
+    for p in native {
+        let found = !p.probe.is_empty() && Path::new(&p.probe).exists();
+        let _ = tx.send(Event::Detected(p.id, found));
+    }
+    for (id, found) in crate::agent::probe(&config.distro, &linux) {
+        let _ = tx.send(Event::Detected(id, found));
+    }
+}
 pub fn spawn() -> Backend {
     let (tx, rx) = mpsc::channel();
     let (out, events) = mpsc::sync_channel(2048);
     let worker = thread::spawn(move || {
         let mut running: HashMap<String, Running> = HashMap::new();
+        let mut linux = Launcher::default();
         loop {
-            match rx.recv_timeout(Duration::from_millis(200)) {
+            // WSL output arrives through agent events, so poll faster while any runs.
+            let wait = Duration::from_millis(if linux.active() { 50 } else { 200 });
+            match rx.recv_timeout(wait) {
                 Ok(Request::Start(p, distro)) => {
-                    if running.contains_key(&p.id) {
-                        continue;
-                    }
-                    if p.exclusive && running.values().any(|r| r.exclusive) {
-                        let _ = out.send(Event::Status(p.id.clone(), "Blocked".into()));
-                        let _ = out.send(Event::Log(
-                            p.id.clone(),
-                            "Another managed flight stack is running. Stop it first.".into(),
-                        ));
-                        continue;
-                    }
-                    if p.program == "wsl" && p.args.is_empty() {
-                        let _ = out.send(Event::Status(p.id, "Configure command".into()));
-                        continue;
-                    }
-                    let mut c = if p.program == "wsl" {
-                        let mut c = wsl(&distro);
-                        c.args([
-                            "python3",
-                            &linux_path(&scripts().join("supervisor.py")),
-                            "run",
-                            &p.id,
-                            &linux_path(&scripts()),
-                            &p.args.join(" "),
-                        ]);
-                        c
-                    } else if p.program == "java" {
-                        let java = fs::read_dir("C:\\Program Files\\Microsoft")
-                            .ok()
-                            .and_then(|d| {
-                                d.filter_map(Result::ok)
-                                    .map(|e| e.path().join("bin/java.exe"))
-                                    .find(|p| p.exists())
-                            })
-                            .unwrap_or_else(|| PathBuf::from("java.exe"));
-                        let mut c = Command::new(java);
-                        c.args(&p.args);
-                        c
-                    } else {
-                        let mut c = Command::new(&p.program);
-                        c.args(&p.args);
-                        c
-                    };
-                    if !p.cwd.is_empty() && p.program != "wsl" {
-                        c.current_dir(&p.cwd);
-                    }
-                    if crate::qgc_launch::configure(&mut c, &p) {
-                        let _ = out.send(Event::Log(p.id.clone(),
-                            "GPU-safe launch: Qt Quick CPU renderer; graphics overrides apply only to QGroundControl.".into()));
-                    }
-                    hidden(&mut c);
-                    c.stdin(if p.id == "hardware" {
-                        Stdio::piped()
-                    } else {
-                        Stdio::null()
-                    })
-                    .stdout(Stdio::piped())
-                    .stderr(Stdio::piped());
-                    match c.spawn() {
-                        Ok(mut child) => {
-                            let a = child.stdout.take().unwrap();
-                            let b = child.stderr.take().unwrap();
-                            for reader in
-                                [Box::new(a) as Box<dyn std::io::Read + Send>, Box::new(b)]
-                            {
-                                let tx = out.clone();
-                                let id = p.id.clone();
-                                thread::spawn(move || {
-                                    for line in crate::process_output::BoundedLines::new(
-                                        BufReader::new(reader),
-                                    )
-                                    .map_while(Result::ok)
-                                    {
-                                        let line: String = line.chars().take(3000).collect();
-                                        if let Some(json) = line.strip_prefix("@hardware ") {
-                                            if let Ok(value) = serde_json::from_str(json) {
-                                                let _ = tx.send(Event::Hardware(value));
-                                            }
-                                        } else if let Some(json) = line.strip_prefix("@readiness ")
-                                        {
-                                            if let Ok(value) =
-                                                serde_json::from_str::<serde_json::Value>(json)
-                                            {
-                                                let state =
-                                                    value["state"].as_str().unwrap_or("Unknown");
-                                                let _ = tx.send(Event::Readiness(
-                                                    id.clone(),
-                                                    state.into(),
-                                                ));
-                                                let _ = tx.send(Event::Log(
-                                                    id.clone(),
-                                                    value["detail"]
-                                                        .as_str()
-                                                        .unwrap_or(state)
-                                                        .into(),
-                                                ));
-                                            }
-                                        } else if let Some(json) = line.strip_prefix("@telemetry ")
-                                        {
-                                            if let Ok(values) =
-                                                serde_json::from_str::<HashMap<String, String>>(
-                                                    json,
-                                                )
-                                            {
-                                                for (k, v) in values {
-                                                    let _ = tx.send(Event::Metric(k, v));
-                                                }
-                                            }
-                                        } else {
-                                            let _ = tx.send(Event::Log(id.clone(), line));
-                                        }
-                                    }
-                                });
-                            }
-                            let _ = out.send(Event::Status(p.id.clone(), "Running".into()));
-                            running.insert(
-                                p.id,
-                                Running {
-                                    child,
-                                    distro,
-                                    wsl: p.program == "wsl",
-                                    exclusive: p.exclusive,
-                                },
-                            );
-                        }
-                        Err(e) => {
-                            let _ = out.send(Event::Status(p.id.clone(), "Failed".into()));
-                            let _ = out.send(Event::Log(p.id, e.to_string()));
-                        }
+                    start(&p, &distro, &[], &mut running, &mut linux, &out)
+                }
+                Ok(Request::StartEnv(p, distro, env)) => {
+                    start(&p, &distro, &env, &mut running, &mut linux, &out)
+                }
+                Ok(Request::Adopt(id, distro, exclusive)) => {
+                    if !running.contains_key(&id) {
+                        linux.adopt(&id, &distro, exclusive, &out);
                     }
                 }
                 Ok(Request::Stop(id)) => {
                     if let Some(mut r) = running.remove(&id) {
                         stop(&id, &mut r, &out);
-                    }
-                }
-                Ok(Request::Input(id, line)) => {
-                    use std::io::Write;
-                    if let Some(r) = running.get_mut(&id) {
-                        if let Some(input) = r.child.stdin.as_mut() {
-                            let _ = writeln!(input, "{line}");
-                            let _ = input.flush();
-                        }
+                    } else {
+                        linux.stop(&id, &out);
                     }
                 }
                 Ok(Request::Detect(config)) => {
                     let tx = out.clone();
-                    thread::spawn(move || {
-                        for p in config.profiles {
-                            let found = if p.probe.is_empty() {
-                                false
-                            } else if p.program == "wsl" {
-                                wsl(&config.distro)
-                                    .args(["bash", "-lc", &p.probe])
-                                    .stdout(Stdio::null())
-                                    .stderr(Stdio::null())
-                                    .status()
-                                    .is_ok_and(|s| s.success())
-                            } else {
-                                std::path::Path::new(&p.probe).exists()
-                            };
-                            let _ = tx.send(Event::Detected(p.id, found));
-                        }
-                    });
+                    thread::spawn(move || detect(config, tx));
                 }
                 Ok(Request::Open(path)) => {
                     let mut c = Command::new("explorer.exe");
@@ -715,10 +757,12 @@ pub fn spawn() -> Backend {
                     for (id, mut r) in running.drain() {
                         stop(&id, &mut r, &out);
                     }
+                    linux.shutdown(&out);
                     break;
                 }
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
             }
+            linux.poll(&out);
             let finished: Vec<_> = running
                 .iter_mut()
                 .filter_map(|(id, r)| r.child.try_wait().ok().flatten().map(|s| (id.clone(), s)))

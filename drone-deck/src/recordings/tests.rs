@@ -97,3 +97,35 @@ fn recordings_are_reachable_from_navigation_and_ai_page() {
     rt.frame(0.2);
     assert!(rt.find("capture-panel").is_some());
 }
+
+#[test]
+fn the_capture_note_names_the_active_system_and_follows_its_ros_consumers() {
+    let mut rt = Runtime::new(
+        State::new(),
+        view,
+        (1216., 900.),
+        Env {
+            system_dark: false,
+            scale: 1.,
+        },
+    );
+    rt.update(|s, _| {
+        let id = s.systems.create(crate::systems::SIMULATION, "Bench sim");
+        s.select_system(&id);
+        s.navigate(crate::ui::Page::Data);
+    });
+    rt.frame(0.2);
+    assert!(rt.find("recording-system-note").is_some());
+    assert!(
+        rt.elements()
+            .into_iter()
+            .filter_map(|e| e.text)
+            .any(|t| t.contains("The active system is Bench sim."))
+    );
+    rt.update(|s, _| {
+        let id = s.systems.active_id().to_string();
+        s.systems.get_mut(&id).unwrap().consumers.ros.recorder = true;
+    });
+    rt.frame(0.2);
+    assert!(rt.find("recording-system-note").is_none());
+}
