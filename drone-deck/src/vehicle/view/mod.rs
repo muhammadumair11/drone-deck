@@ -408,7 +408,11 @@ pub(crate) fn live(s: &State, vp: &Viewport) -> El {
                 .gap(8.)
                 .center_y()
                 .child(dot(if fresh { success() } else { warn() }))
-                .child(meta_sized(line, 9., if fresh { fg() } else { warn() }).wrap().shrink()),
+                .child(
+                    meta_sized(line, 9., if fresh { fg() } else { warn() })
+                        .wrap()
+                        .shrink(),
+                ),
         )
         .child(instruments(s, v, fresh, vp))
         .child(readings(snap, v, fresh))

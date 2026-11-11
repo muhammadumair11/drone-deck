@@ -690,7 +690,8 @@ const SCENES: &[Scene] = &[
     }),
     ("system-launch-failed", |s| {
         s.status.insert("sih".into(), "Exited (2)".into());
-        s.logs.push_back("[sih] ERROR [simulator_sih] lockstep timeout".into());
+        s.logs
+            .push_back("[sih] ERROR [simulator_sih] lockstep timeout".into());
         s.launch_failure = Some((
             "sih".into(),
             "PX4 / SIH exited before it reported vehicle status (exit code 2).".into(),

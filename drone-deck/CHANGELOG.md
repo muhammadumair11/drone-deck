@@ -2,6 +2,13 @@
 
 Drone Deck's user-visible changes. Older entries were reconstructed from the per-version guides and verification reports that this file replaces. Open problems are tracked in [docs/known-issues.md](docs/known-issues.md).
 
+## 0.9.2 — release candidate
+
+- Add light and dark themes, file browsing, installation notifications, and page shortcuts.
+- Keep workspace launch failures visible and link runtime components to their output.
+- Improve narrow-window layout, section separation, and selectable process output.
+- Add a vehicle-link status banner and open Guided setup on first use.
+
 ## 0.9.1 — release checks
 
 - Standardize the project and repository name as Drone Deck, including the project README and path examples.

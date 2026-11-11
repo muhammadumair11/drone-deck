@@ -105,7 +105,10 @@ fn display(s: &State, compact: bool) -> El {
     .my(0.);
     let mut keys = col().gap(6.);
     for (combo, effect) in [
-        ("Ctrl + 1–4", "System, Tools & config, Data & models, Activity"),
+        (
+            "Ctrl + 1–4",
+            "System, Tools & config, Data & models, Activity",
+        ),
         ("Ctrl + −", "Smaller"),
         ("Ctrl + +", "Larger"),
         ("Ctrl + 0", "Reset to 100%"),

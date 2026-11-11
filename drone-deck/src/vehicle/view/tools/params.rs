@@ -1,10 +1,10 @@
 //! Parameters: fetch (with progress), a searchable table, `.params` export, and a comparison
 //! with a loaded file. Nothing here writes a parameter.
 use super::{bar, blocked, mine, percent};
-use crate::{State, TextEdit};
 use crate::hardware::{self, Baseline};
 use crate::mavlink::{ParamSet, ParamValue};
 use crate::ui::{kit::*, theme::*};
+use crate::{State, TextEdit};
 use rune::{El, GrowthSpec, ScrollSpec, col, el, row};
 use std::borrow::Cow;
 use std::collections::BTreeSet;

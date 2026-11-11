@@ -11,7 +11,10 @@ pub(crate) fn register() {
     let mut identity = rune_notify::Identity::new("local.drone-deck", "Drone Deck");
     if let Some(icon) = std::env::current_exe()
         .ok()
-        .and_then(|exe| exe.parent().map(|d| d.join("assets").join("drone-deck.png")))
+        .and_then(|exe| {
+            exe.parent()
+                .map(|d| d.join("assets").join("drone-deck.png"))
+        })
         .filter(|p| p.is_file())
     {
         identity = identity.icon(icon);
@@ -29,7 +32,9 @@ pub(crate) fn job_message(tool: &str, status: &str, message: &str) -> Option<(St
         "Ready" | "Existing installation" => format!("{tool} is ready"),
         "Failed" => format!("{tool} installation failed"),
         "Interrupted" => format!("{tool} installation was interrupted"),
-        "Needs input" | "Needs restart" | "Needs attention" => format!("{tool}: {}", status.to_lowercase()),
+        "Needs input" | "Needs restart" | "Needs attention" => {
+            format!("{tool}: {}", status.to_lowercase())
+        }
         _ => return None,
     };
     let body = if message.trim().is_empty() {
@@ -59,8 +64,16 @@ mod tests {
         let (title, body) = job_message("PX4 SIH", "Ready", "").unwrap();
         assert_eq!(title, "PX4 SIH is ready");
         assert!(body.contains("Activity"));
-        assert_eq!(job_message("PX4 SIH", "Failed", "make exited 2").unwrap().1, "make exited 2");
-        assert!(job_message("PX4 SIH", "Needs restart", "").unwrap().0.contains("needs restart"));
+        assert_eq!(
+            job_message("PX4 SIH", "Failed", "make exited 2").unwrap().1,
+            "make exited 2"
+        );
+        assert!(
+            job_message("PX4 SIH", "Needs restart", "")
+                .unwrap()
+                .0
+                .contains("needs restart")
+        );
         for quiet in ["Queued", "Running", "Cancelled", "Cancelling"] {
             assert!(job_message("PX4 SIH", quiet, "").is_none(), "{quiet}");
         }

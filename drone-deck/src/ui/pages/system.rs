@@ -103,7 +103,12 @@ fn guidance(s: &State, compact: bool) -> El {
             "guided-entry",
             None,
             &text,
-            ghost("review-setup", "Prepare in guided setup ↗", true, crate::guided::open),
+            ghost(
+                "review-setup",
+                "Prepare in guided setup ↗",
+                true,
+                crate::guided::open,
+            ),
             compact,
         );
     }
@@ -156,17 +161,32 @@ fn launch_failure(id: &str, why: &str) -> El {
         .gap(6.)
         .fill(danger().alpha(0.12))
         .border_sides([0., 0., 0., 4.], danger())
-        .child(caps(format!("Workspace stopped at {name}"), 11., 700., 0.08, danger()).wrap())
+        .child(
+            caps(
+                format!("Workspace stopped at {name}"),
+                11.,
+                700.,
+                0.08,
+                danger(),
+            )
+            .wrap(),
+        )
         .child(body(why, 13., fg()))
-        .child(body("Later tools were not started. Nothing was sent to a vehicle.", 12., muted()))
+        .child(body(
+            "Later tools were not started. Nothing was sent to a vehicle.",
+            12.,
+            muted(),
+        ))
         .child(
             row()
                 .gaps(0., 20.)
                 .flex_wrap()
                 .center_y()
-                .child(small_link("launch-failure-output", "Show output ↗", move |s| {
-                    runtime::show_output(s, &output_id)
-                }))
+                .child(small_link(
+                    "launch-failure-output",
+                    "Show output ↗",
+                    move |s| runtime::show_output(s, &output_id),
+                ))
                 .child(
                     small_link("launch-failure-copy", "Copy message", |_| {}).on_press_tx(
                         move |s: &mut State, tx| {

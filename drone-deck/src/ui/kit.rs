@@ -80,7 +80,9 @@ pub(crate) fn browse(
         tx.open_file(options, move |s: &mut State, answer, _| match answer {
             Ok(Some(path)) => set(s, path),
             Ok(None) => {}
-            Err(e) => s.notice = format!("Could not open the file dialog: {e}. Type the path instead."),
+            Err(e) => {
+                s.notice = format!("Could not open the file dialog: {e}. Type the path instead.")
+            }
         });
     })
 }
@@ -427,10 +429,30 @@ pub(crate) fn section_head(title: &str, right: El, compact: bool) -> El {
     } else {
         row().gap(24.).center_y().justify_between()
     };
+    // Every section opens with a full-width rule and space above it, so where one section
+    // ends and the next begins is visible at a glance (row rules inside use `soft`).
     head.w_full()
         .min_w(0.)
+        .mt(20.)
+        .pt(20.)
         .mb(12.)
+        .border_sides([1., 0., 0., 0.], section_rule())
         .child(h2(title, 19.))
+        .child(right)
+}
+/// A sub-section heading inside a section (`h3` with a lighter rule than `section_head`).
+pub(crate) fn subsection_head(title: &str, right: El) -> El {
+    row()
+        .w_full()
+        .min_w(0.)
+        .gaps(6., 24.)
+        .flex_wrap()
+        .justify_between()
+        .mt(12.)
+        .pt(16.)
+        .pb(8.)
+        .border_sides([1., 0., 0., 0.], divider())
+        .child(h3(title, 15.))
         .child(right)
 }
 
@@ -445,14 +467,22 @@ pub(crate) fn asset(left: El, right: El, compact: bool) -> El {
             .child(left)
             .child(right);
     }
+    // Side-by-side halves are separate things: a vertical rule between them.
     row()
         .w_full()
         .min_w(0.)
-        .gap(40.)
         .py(24.)
-        .items_start()
-        .child(col().grow(1.).min_w(0.).gap(12.).child(left))
-        .child(col().grow(1.).min_w(0.).gap(12.).child(right))
+        .items_stretch()
+        .child(col().grow(1.).min_w(0.).gap(12.).pr(20.).child(left))
+        .child(
+            col()
+                .grow(1.)
+                .min_w(0.)
+                .gap(12.)
+                .pl(20.)
+                .border_sides([0., 0., 0., 1.], divider())
+                .child(right),
+        )
 }
 
 /// `.station`: one stage of a topology chain.
@@ -476,7 +506,11 @@ pub(crate) fn station(
             // A long single word ("QGroundControl") cannot wrap at a space: draw it smaller,
             // and break it anywhere as a last resort rather than clipping it at the page edge.
             let size = if large { 24. } else { 20. };
-            let size = if name.chars().count() > 12 { size * 0.8 } else { size };
+            let size = if name.chars().count() > 12 {
+                size * 0.8
+            } else {
+                size
+            };
             h3(name, size).wrap_anywhere()
         })
         .child(p(desc, 11.).max_w(420.))

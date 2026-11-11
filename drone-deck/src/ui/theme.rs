@@ -35,15 +35,27 @@ pub(crate) fn c(r: u8, g: u8, b: u8) -> Color {
 
 /// `--bg` / `--surface`.
 pub(crate) fn bg() -> Color {
-    if light() { c(248, 248, 250) } else { c(0, 0, 0) }
+    if light() {
+        c(248, 248, 250)
+    } else {
+        c(0, 0, 0)
+    }
 }
 /// `--fg` / `--accent`.
 pub(crate) fn fg() -> Color {
-    if light() { c(20, 20, 28) } else { c(240, 240, 250) }
+    if light() {
+        c(20, 20, 28)
+    } else {
+        c(240, 240, 250)
+    }
 }
 /// `--accent-hover`.
 pub(crate) fn fg_hover() -> Color {
-    if light() { c(0, 0, 0) } else { c(255, 255, 255) }
+    if light() {
+        c(0, 0, 0)
+    } else {
+        c(255, 255, 255)
+    }
 }
 /// `--muted`.
 pub(crate) fn muted() -> Color {
@@ -53,19 +65,39 @@ pub(crate) fn muted() -> Color {
 pub(crate) fn rule() -> Color {
     fg().alpha(0.35)
 }
-/// `--border-soft`, also the selected and hovered wash.
+/// `--border-soft`, also the selected and hovered wash. Rules between rows inside a section.
 pub(crate) fn soft() -> Color {
     fg().alpha(0.1)
 }
+/// Rule above a section heading: the strongest line on a page, so sections read as separate.
+pub(crate) fn section_rule() -> Color {
+    fg().alpha(0.45)
+}
+/// Rule above a sub-section and between side-by-side columns: between `section_rule` and `soft`.
+pub(crate) fn divider() -> Color {
+    fg().alpha(0.22)
+}
 /// Status colours; the light palette uses darker shades that keep their contrast on white.
 pub(crate) fn success() -> Color {
-    if light() { c(0x15, 0x80, 0x3d) } else { c(0x16, 0xa3, 0x4a) }
+    if light() {
+        c(0x15, 0x80, 0x3d)
+    } else {
+        c(0x16, 0xa3, 0x4a)
+    }
 }
 pub(crate) fn warn() -> Color {
-    if light() { c(0xb4, 0x53, 0x09) } else { c(0xea, 0xb3, 0x08) }
+    if light() {
+        c(0xb4, 0x53, 0x09)
+    } else {
+        c(0xea, 0xb3, 0x08)
+    }
 }
 pub(crate) fn danger() -> Color {
-    if light() { c(0xb9, 0x1c, 0x1c) } else { c(0xdc, 0x26, 0x26) }
+    if light() {
+        c(0xb9, 0x1c, 0x1c)
+    } else {
+        c(0xdc, 0x26, 0x26)
+    }
 }
 
 /// The design's `--font-display` / `--font-body` resolve to the app's sans family

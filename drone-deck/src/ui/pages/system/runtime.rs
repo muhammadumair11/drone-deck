@@ -78,11 +78,11 @@ fn component_row(s: &State, c: &Component, vp: &Viewport) -> El {
     let (label, tone) = systems::state(s, c);
     // A tool that wrote output gets a direct way to it.
     let output = match c.backing {
-        Backing::Profile(id) if s.logs.iter().any(|l| l.starts_with(&format!("[{id}]"))) => {
-            Some(small_link(format!("output-{}", c.id), "Output ↗", move |s| {
+        Backing::Profile(id) if s.logs.iter().any(|l| l.starts_with(&format!("[{id}]"))) => Some(
+            small_link(format!("output-{}", c.id), "Output ↗", move |s| {
                 show_output(s, id)
-            }))
-        }
+            }),
+        ),
         _ => None,
     };
     let name = col()
@@ -98,7 +98,11 @@ fn component_row(s: &State, c: &Component, vp: &Viewport) -> El {
         .child(dot(systems::tone_color(tone)))
         .child(meta_sized(label, 9., fg()).wrap().grow(1.));
     let state = match output {
-        Some(link) => col().min_w(0.).gap(2.).child(state).child(row().child(link)),
+        Some(link) => col()
+            .min_w(0.)
+            .gap(2.)
+            .child(state)
+            .child(row().child(link)),
         None => state,
     };
     let action = action(s, c);

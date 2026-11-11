@@ -217,9 +217,15 @@ fn rail(s: &State, width: f32, drawer: bool, height: f32) -> El {
         })
         // Narrower rails (≤1100 px windows) get a smaller wordmark; it wraps rather than clips.
         .child(
-            caps("Drone Deck", if width < 180. { 15. } else { 19. }, 700., 0.1, fg())
-                .wrap()
-                .w_full(),
+            caps(
+                "Drone Deck",
+                if width < 180. { 15. } else { 19. },
+                700.,
+                0.1,
+                fg(),
+            )
+            .wrap()
+            .w_full(),
         );
     let mut top = col().w_full().gap(8.).child(logo);
     if drawer {
@@ -460,7 +466,8 @@ fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
     }
     let owner = s.vehicle.owner.as_deref().and_then(|id| s.systems.get(id));
     let name = owner.map_or_else(String::new, |x| format!(" · {}", x.name.trim()));
-    let physical = owner.is_some_and(|x| matches!(x.source, crate::systems::Source::Physical { .. }))
+    let physical = owner
+        .is_some_and(|x| matches!(x.source, crate::systems::Source::Physical { .. }))
         || link.is_some_and(|l| l.origin() == crate::mavlink::LinkOrigin::Physical);
     let (tone, title, detail) = if crate::vehicle::authority(s).may_fly() {
         (
@@ -488,12 +495,19 @@ fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
         )
     };
     // A template name ("Physical vehicle") would only repeat the title.
-    let name = if title.to_lowercase().contains(&name.trim_start_matches(" · ").to_lowercase()) {
+    let name = if title
+        .to_lowercase()
+        .contains(&name.trim_start_matches(" · ").to_lowercase())
+    {
         String::new()
     } else {
         name
     };
-    let strip = if compact { col().gap(4.) } else { row().gaps(4., 16.).center_y().flex_wrap() };
+    let strip = if compact {
+        col().gap(4.)
+    } else {
+        row().gaps(4., 16.).center_y().flex_wrap()
+    };
     Some(
         strip
             .key("mode-banner")
@@ -505,7 +519,11 @@ fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
             .py(8.)
             .fill(tone.alpha(0.14))
             .border_sides([0., 0., 0., 4.], tone)
-            .child(caps(format!("{title}{name}"), 11., 700., 0.08, tone).wrap().shrink())
+            .child(
+                caps(format!("{title}{name}"), 11., 700., 0.08, tone)
+                    .wrap()
+                    .shrink(),
+            )
             .child(body(detail, 12., fg()).grow(1.).shrink()),
     )
 }

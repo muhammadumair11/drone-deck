@@ -479,32 +479,26 @@ pub(crate) fn health(s: &State, v: &VehicleState, fresh: bool, vp: &Viewport) ->
         .key("vehicle-health")
         .w_full()
         .min_w(0.)
-        .pt(18.)
-        .child(
-            row()
-                .w_full()
-                .gaps(6., 24.)
-                .flex_wrap()
-                .justify_between()
-                .pb(8.)
-                .child(h3("Preflight & health", 15.))
-                .child(meta(
-                    match (v.health_report(), v.unhealthy_sensors().count_ones()) {
-                        (Some(r), _) if r.error_components() != 0 => {
-                            let n = r.error_components().count_ones();
-                            format!(
-                                "Read-only / {n} component{} with errors",
-                                if n == 1 { "" } else { "s" }
-                            )
-                        }
-                        (_, 0) => "Read-only / as reported by the vehicle".to_string(),
-                        (_, n) => format!(
-                            "Read-only / {n} unhealthy sensor{}",
+        .pt(8.)
+        .child(subsection_head(
+            "Preflight & health",
+            meta(
+                match (v.health_report(), v.unhealthy_sensors().count_ones()) {
+                    (Some(r), _) if r.error_components() != 0 => {
+                        let n = r.error_components().count_ones();
+                        format!(
+                            "Read-only / {n} component{} with errors",
                             if n == 1 { "" } else { "s" }
-                        ),
-                    },
-                )),
-        )
+                        )
+                    }
+                    (_, 0) => "Read-only / as reported by the vehicle".to_string(),
+                    (_, n) => format!(
+                        "Read-only / {n} unhealthy sensor{}",
+                        if n == 1 { "" } else { "s" }
+                    ),
+                },
+            ),
+        ))
         .child(asset(facts, messages(s), compact).pt(4.));
     if !fresh {
         block = block.dim(0.45);
