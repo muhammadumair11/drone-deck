@@ -53,6 +53,7 @@ pub(crate) fn adopt(s: &mut State) {
         && ["ros-workspace", "onnx", "mavsdk"].contains(&id)
     {
         config.profiles.push(backend::Profile {
+            px4: None,
             id: id.into(),
             name: match id {
                 "onnx" => "ONNX CPU runtime",
@@ -92,17 +93,22 @@ pub(crate) fn adopt(s: &mut State) {
             (profile.args, profile.probe) = mavsdk_command(&exe);
         }
         "px4" => {
-            profile.program = "wsl".into();
-            let target = if candidate.build_target == "px4_sitl_sih" {
-                "px4_sitl_sih"
-            } else {
-                "px4_sitl"
+            let installation = crate::px4::Installation {
+                path: candidate.path.clone(),
+                build_target: if candidate.build_target == "px4_sitl_sih" {
+                    "px4_sitl_sih"
+                } else {
+                    "px4_sitl"
+                }
+                .into(),
             };
-            profile.args = vec![format!(
-                "cd {} && test -z \"$(pgrep -x px4)\" && make {target} sihsim_quadx",
-                quote(&candidate.path)
-            )];
-            profile.probe = format!("test -x {exe}");
+            if let Err(e) = crate::px4::validate(&installation) {
+                s.setup.message = e;
+                return;
+            }
+            config
+                .px4_installations
+                .insert(candidate.environment.to_ascii_lowercase(), installation);
         }
         "dds" => {
             profile.program = "wsl".into();
@@ -135,7 +141,9 @@ pub(crate) fn adopt(s: &mut State) {
         }
         "gazebo" => {
             profile.program = "wsl".into();
-            profile.probe = format!("test -x {exe}");
+            if profile.px4.is_none() {
+                profile.probe = format!("test -x {exe}");
+            }
         }
         "ros-gz" | "foxglove-bridge" => {
             profile.program = "wsl".into();
@@ -166,6 +174,12 @@ pub(crate) fn adopt(s: &mut State) {
     s.setup
         .checks
         .insert(candidate.tool.clone(), candidate.clone());
+    if candidate.tool == "px4" {
+        for id in ["sih", "gazebo"] {
+            s.detected.remove(id);
+            s.readiness.remove(id);
+        }
+    }
     s.setup.last_applied = Some(candidate.tool);
     s.setup.message="Launch configuration saved. No tool was updated or started. Connection/readiness is checked when you use it.".into();
 }

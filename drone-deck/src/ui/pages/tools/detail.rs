@@ -34,11 +34,12 @@ fn copy_command(s: &mut State, tx: &mut rune::Tx, id: &str) {
     let Some(p) = s.config.profiles.iter().find(|p| p.id == id) else {
         return;
     };
-    tx.copy(command(p));
+    tx.copy(command(&crate::px4::resolve(&s.config, p)));
     s.notice = format!("{} command copied.", p.name);
 }
 
 fn profile_block(s: &State, p: &crate::backend::Profile, vp: &Viewport) -> El {
+    let effective = crate::px4::resolve(&s.config, p);
     let detected = match s.detected.get(&p.id) {
         Some(true) => "Probe found the installation",
         Some(false) => "Probe did not find the installation",
@@ -51,7 +52,7 @@ fn profile_block(s: &State, p: &crate::backend::Profile, vp: &Viewport) -> El {
         .gap(8.)
         .child(caps("Command preview", 10., 400., 0.08, muted()))
         .child(
-            code(command(p), 12., fg())
+            code(command(&effective), 12., fg())
                 .key("command-preview")
                 .wrap_anywhere()
                 .selectable(true),
@@ -105,6 +106,7 @@ fn profile_block(s: &State, p: &crate::backend::Profile, vp: &Viewport) -> El {
     col()
         .w_full()
         .min_w(0.)
+        .child(if p.px4.is_some() { notice("PX4 folder is shared by SIH and Gazebo in this Ubuntu distribution. Use Guided setup to select another PX4 installation. Editing the command, program or probe below makes this a custom profile.") } else { el() })
         .child(asset(left, right, vp.compact()))
         .child(form)
 }

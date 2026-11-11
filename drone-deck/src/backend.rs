@@ -1,5 +1,7 @@
+mod detection;
 use crate::agent::Launcher;
 use crate::store::Read;
+use detection::detect;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 #[cfg(windows)]
@@ -21,6 +23,8 @@ use std::{
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Profile {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) px4: Option<crate::px4::Mode>,
     pub id: String,
     pub name: String,
     pub category: String,
@@ -39,11 +43,13 @@ pub struct Profile {
 }
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Config {
+    #[serde(default)]
+    pub(crate) px4_installations: HashMap<String, crate::px4::Installation>,
     pub distro: String,
     pub profiles: Vec<Profile>,
 }
 /// The current `profiles.json` schema. A file without `"schema"` is schema 0.
-pub const SCHEMA: u64 = 2;
+pub const SCHEMA: u64 = 3;
 #[derive(Serialize)]
 struct Stored<'a> {
     schema: u64,
@@ -309,7 +315,13 @@ pub(crate) fn parse_config(
     } else {
         (Vec::new(), false)
     };
-    let config: Config = serde_json::from_value(value).map_err(|e| e.to_string())?;
+    let mut config: Config = serde_json::from_value(value).map_err(|e| e.to_string())?;
+    if schema < 3 {
+        crate::px4::migrate(&mut config);
+    }
+    for installation in config.px4_installations.values() {
+        crate::px4::validate(installation)?;
+    }
     if config.profiles.is_empty() || config.distro.is_empty() {
         return Ok(Err(
             "At least one profile and a WSL distribution are required".into(),
@@ -418,6 +430,11 @@ pub fn defaults() -> Config {
                    docs: &str,
                    exclusive: bool| {
         profiles.push(Profile {
+            px4: match id {
+                "sih" => Some(crate::px4::Mode::Sih),
+                "gazebo" => Some(crate::px4::Mode::Gazebo),
+                _ => None,
+            },
             id: id.into(),
             name: name.into(),
             category: cat.into(),
@@ -522,6 +539,7 @@ pub fn defaults() -> Config {
         true,
     );
     Config {
+        px4_installations: HashMap::new(),
         distro: "Ubuntu-24.04".into(),
         profiles,
     }
@@ -704,19 +722,7 @@ fn start(
         linux.start_env(p, distro, env, out);
     }
 }
-fn detect(config: Config, tx: SyncSender<Event>) {
-    let (linux, native): (Vec<_>, Vec<_>) = config
-        .profiles
-        .into_iter()
-        .partition(|p| p.program == "wsl");
-    for p in native {
-        let found = !p.probe.is_empty() && Path::new(&p.probe).exists();
-        let _ = tx.send(Event::Detected(p.id, found));
-    }
-    for (id, found) in crate::agent::probe(&config.distro, &linux) {
-        let _ = tx.send(Event::Detected(id, found));
-    }
-}
+
 pub fn spawn() -> Backend {
     let (tx, rx) = mpsc::channel();
     let (out, events) = mpsc::sync_channel(2048);

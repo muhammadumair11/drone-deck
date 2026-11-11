@@ -1,6 +1,6 @@
 //! Flight logs: a ULog parser with flight summaries and plot series, a `.tlog` summary from the
 //! MAVLink service's decoder (`mavlink::summarize_tlog`, CRC-checked and streamed), log discovery (PX4 SITL in WSL, vehicle downloads, telemetry captures) and the state behind
-//! Data & models → Flight logs. Files are read and parsed on a worker thread; the UI keeps only
+//! Data & models Ã¢â€ â€™ Flight logs. Files are read and parsed on a worker thread; the UI keeps only
 //! summaries and reduced plot series, in a bounded cache.
 mod fixture;
 pub(crate) mod parse;
@@ -23,7 +23,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 use worker::{Done, Job, Worker};
 
-/// `ui.data_tab` of Data & models → Flight logs.
+/// `ui.data_tab` of Data & models Ã¢â€ â€™ Flight logs.
 pub(crate) const LOGS_TAB: usize = 4;
 /// Larger ULog files are not read into memory; Flight Review handles them. Tlogs are streamed,
 /// so any size is summarized.
@@ -182,7 +182,25 @@ pub(crate) fn locations(s: &State) -> Locations {
             .filter(|(d, _)| *d == distro)
             .map(|(_, h)| h.clone()),
         distro: s.wsl_ready().then_some(distro),
-        px4_dirs: sources::px4_dirs(&s.config.profiles),
+        px4_dirs: {
+            let resolved: Vec<_> = s
+                .config
+                .profiles
+                .iter()
+                .map(|p| crate::px4::resolve(&s.config, p))
+                .collect();
+            let mut dirs = sources::px4_dirs(&resolved);
+            if let Some(i) = s
+                .config
+                .px4_installations
+                .get(&s.config.distro.to_ascii_lowercase())
+            {
+                if !dirs.contains(&i.path) {
+                    dirs.push(i.path.clone());
+                }
+            }
+            dirs
+        },
         data_root: crate::backend::root(),
     }
 }
@@ -190,7 +208,7 @@ pub(crate) fn locations(s: &State) -> Locations {
 /// Rescans every source. Headless previews never touch the file system.
 pub(crate) fn refresh(s: &mut State) {
     if s.headless {
-        s.notice = "Headless preview · flight-log discovery is disabled.".into();
+        s.notice = "Headless preview Ã‚· flight-log discovery is disabled.".into();
         return;
     }
     let loc = locations(s);
@@ -212,7 +230,7 @@ pub(crate) fn select(s: &mut State, path: &Path) {
             logs.insert(
                 f.path.clone(),
                 stamp(&f),
-                Analysis::Failed("Headless preview · logs are not read.".into()),
+                Analysis::Failed("Headless preview Ã‚· logs are not read.".into()),
             );
         }
         return;
@@ -245,7 +263,7 @@ pub(crate) fn explorer_target(path: &Path) -> String {
 /// Opens Explorer with the file selected (or its folder; see `explorer_target`).
 pub(crate) fn show_in_folder(s: &mut State, path: &Path) {
     if s.headless {
-        s.notice = "Headless preview · opening folders is disabled.".into();
+        s.notice = "Headless preview Ã‚· opening folders is disabled.".into();
         return;
     }
     s.open(explorer_target(path));
@@ -255,7 +273,7 @@ pub(crate) fn show_in_folder(s: &mut State, path: &Path) {
 /// Drone Deck uploads nothing itself.
 pub(crate) fn flight_review(s: &mut State, path: &Path) {
     if s.headless {
-        s.notice = "Headless preview · opening the browser is disabled.".into();
+        s.notice = "Headless preview Ã‚· opening the browser is disabled.".into();
         return;
     }
     s.open(FLIGHT_REVIEW.into());

@@ -202,6 +202,9 @@ fn source(s: &State, id: &str, recipe: &Recipe) -> El {
             ),
             12.,
         ));
+    if id == "px4" {
+        lines = lines.child(p("Reusing PX4 saves one folder for this Ubuntu distribution. Linked SIH and Gazebo profiles use it together; custom launch commands keep their own configuration.", 12.));
+    }
     if !recipe.destination.is_empty() {
         lines = lines.child(p(format!("Destination: {}", recipe.destination), 12.));
     }

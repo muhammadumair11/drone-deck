@@ -264,3 +264,9 @@ To keep the data folder beside the executable instead (a USB stick or a self-con
 Drone Deck keeps these separate everywhere: **installed** (a probe or verified recipe), **configured** (a profile points at it), **running** (the process is alive), **connected** (protocol traffic observed), **healthy** (fresh data). A running visualizer is not proof it receives state; a downloaded model is not a ready runtime; a probe is not a compatibility test; Stop session is not a vehicle command. Dashed connections are unverified.
 
 Not provided: embedded simulator or ground-station windows, flight commands to physical vehicles (arming, mode changes and the rest), parameter writes, mission upload, offboard control, firmware flashing, a ROS graph browser, remote/onboard execution. See the [roadmap](../ROADMAP.md).
+
+### Shared PX4 installation
+
+Guided setup → Preparation → PX4 → Reuse now saves one PX4 checkout location for the selected Ubuntu distribution. Linked SIH and Gazebo profiles use it together; Gazebo keeps the world and model selected by the system. Each distribution has its own saved location. With no selection, linked profiles use the app-managed PX4 folder in that distribution.
+
+Tools & config shows the resolved command. Changing its command, program, working directory or installation probe makes that profile custom; later PX4 selections keep that custom configuration. Name/category edits retain the shared link. Older exact app-generated profiles migrate to the shared location; modified profiles are preserved. Profile schema 3 prevents older application versions from silently discarding the new settings.

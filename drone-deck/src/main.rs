@@ -9,6 +9,7 @@ mod mavlink;
 mod notify;
 mod process_output;
 mod profile_editor;
+mod px4;
 mod qgc_launch;
 mod recordings;
 mod session;
@@ -203,7 +204,7 @@ impl State {
                     .into();
             return;
         }
-        let p = self.config.profiles[index].clone();
+        let p = crate::px4::resolve(&self.config, &self.config.profiles[index]);
         if p.program == "wsl" && !self.wsl_ready() {
             self.navigate(Page::Settings);
             self.notice =

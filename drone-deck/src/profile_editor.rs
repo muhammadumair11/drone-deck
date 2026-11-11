@@ -56,6 +56,7 @@ pub fn open(s: &mut State) {
     let Some(p) = s.config.profiles.get(s.selected) else {
         return;
     };
+    let p = crate::px4::resolve(&s.config, p);
     let id = p.id.clone();
     s.form = Some(Form {
         creating: false,
@@ -180,6 +181,7 @@ fn save(s: &mut State) {
             sequence += 1;
         }
         next.profiles.push(backend::Profile {
+            px4: None,
             id: format!("custom-{sequence}"),
             name: String::new(),
             category: String::new(),
@@ -194,12 +196,21 @@ fn save(s: &mut State) {
         });
         selected = next.profiles.len() - 1;
     }
+    let effective = next
+        .profiles
+        .get(selected)
+        .map(|p| crate::px4::resolve(&next, p));
     let Some(p) = next.profiles.get_mut(selected) else {
         return refuse(
             s,
             "This profile is no longer registered. Close the form and open the tool again.",
         );
     };
+    if effective.as_ref().is_some_and(|e| {
+        e.program != fields[1] || e.args != args || e.cwd != fields[3] || e.probe != fields[4]
+    }) {
+        p.px4 = None;
+    }
     p.name = fields[0].clone();
     p.program = fields[1].clone();
     p.args = args;
@@ -348,3 +359,6 @@ pub fn view(s: &State, compact: bool) -> El {
         .child(input(s, 2, locked))
         .child(pair(input(s, 3, locked), input(s, 4, locked), compact))
 }
+
+#[cfg(test)]
+mod px4_tests;

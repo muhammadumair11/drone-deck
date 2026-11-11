@@ -111,6 +111,7 @@ pub(super) fn run(s: &mut State, project: Value) {
         }
     };
     let profile = backend::Profile {
+        px4: None,
         id: id.clone(),
         name: format!("Project {name}"),
         category: "AI & data".into(),

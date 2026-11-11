@@ -1,0 +1,1 @@
+- **Drone Deck:** PX4 SIH and Gazebo resolve their commands and probes from one PX4 installation per WSL distribution; migration preserves custom commands and command previews show the resolved configuration.

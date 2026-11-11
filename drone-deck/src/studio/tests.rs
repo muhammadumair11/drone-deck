@@ -113,6 +113,7 @@ fn mavsdk_projects_run_with_the_adopted_mavsdk_interpreter() {
     );
     // The command the setup adopt path writes for a MAVSDK environment.
     s.config.profiles.push(backend::Profile {
+            px4: None,
         id: "mavsdk".into(),
         name: "MAVSDK Python".into(),
         category: "Development".into(),
