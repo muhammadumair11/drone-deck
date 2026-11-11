@@ -2,6 +2,8 @@
 
 For maintainers. How a release is built, what the installer does, how crash reports and diagnostics work, and what is still missing (code signing).
 
+The tag workflow prepares a **draft prerelease**. Review the attached installer/zip and validation results, then publish it explicitly in GitHub. Do not imply the remaining Known issues are resolved.
+
 ## Building a release
 
 ```powershell
