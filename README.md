@@ -2,6 +2,12 @@
 
 A Windows desktop workspace for autonomous drone development, built with the Rune UI framework. Drone Deck connects simulation, vehicle telemetry, ROS 2, recordings, models and inference workflows in one place.
 
+## Watch Drone Deck
+
+[![Watch the Drone Deck promotional video](media/drone-deck-demo.jpg)](media/drone-deck-demo.mp4)
+
+[Watch the full video](media/drone-deck-demo.mp4) · 59 seconds
+
 Repository: [muhammadumair11/drone-deck](https://github.com/muhammadumair11/drone-deck).
 
 **Early public preview.** Expect rough edges and integration gaps. Drone Deck is open for community evaluation and contribution; clean-machine setup and real-hardware workflows still need validation. Read [Known issues](drone-deck/docs/known-issues.md) before relying on a workflow.
