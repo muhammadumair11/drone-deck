@@ -22,3 +22,11 @@ __pycache__/
 /assets/
 /workspace/
 /dist/
+
+# Local credentials and generated launch media
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+/launch-media/

@@ -1,0 +1,19 @@
+name: Feature request
+description: Propose an improvement or integration
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior and alternatives
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Tools, platform and workflow involved

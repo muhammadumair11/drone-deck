@@ -14,7 +14,7 @@ cargo test  --manifest-path drone-deck/Cargo.toml
 drone-deck\Build.cmd   # release: Drone Deck.exe + runtime\ + assets\ at the repo root, and dist\DroneDeck-<version>\ + zip
 ```
 
-`drone-deck\Build.ps1 -Installer` also builds a per-user setup program when Inno Setup 6.3 or newer is installed. The installer and the executable are unsigned, and the installer build has not been run yet; see [Releasing](docs/release.md).
+`drone-deck\Build.ps1 -Installer` also builds a per-user setup program when Inno Setup 6.3 or newer is installed. The installer and the executable are unsigned, and the 0.9.2 candidate installer has been compiled locally; fresh-machine installation acceptance remains pending; see [Releasing](docs/release.md).
 
 ## Run
 

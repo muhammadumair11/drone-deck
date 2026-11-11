@@ -176,3 +176,5 @@ jobs:
             dist/DroneDeck-${{ steps.version.outputs.version }}-setup.exe
           fail_on_unmatched_files: true
           generate_release_notes: true
+          draft: true
+          prerelease: true

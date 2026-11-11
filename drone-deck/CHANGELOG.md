@@ -8,6 +8,7 @@ Drone Deck's user-visible changes. Older entries were reconstructed from the per
 - Keep workspace launch failures visible and link runtime components to their output.
 - Improve narrow-window layout, section separation, and selectable process output.
 - Add a vehicle-link status banner and open Guided setup on first use.
+- Share PX4 locations between SIH and Gazebo per WSL distribution, with conservative profile migration and preserved custom commands.
 
 ## 0.9.1 — release checks
 
