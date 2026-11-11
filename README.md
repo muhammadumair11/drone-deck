@@ -4,7 +4,7 @@ A Windows desktop workspace for autonomous drone development, built with the Run
 
 ## Watch Drone Deck
 
-[![Watch the Drone Deck promotional video](media/drone-deck-demo.jpg)](media/drone-deck-demo.mp4)
+https://github.com/user-attachments/assets/83e1bc0c-d143-456b-8a21-2c2c12eac5a5
 
 [Watch the full video](media/drone-deck-demo.mp4) · 59 seconds
 
