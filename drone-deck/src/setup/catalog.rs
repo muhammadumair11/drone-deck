@@ -22,8 +22,30 @@ pub(crate) struct Recipe {
     /// The launch profile this recipe configures, when its id differs from the recipe's.
     #[serde(default)]
     profile: String,
+    /// How an existing installation is chosen: `wsl-folder`, `wsl-file`, `windows-folder` or
+    /// `windows-file` (read by `picker.ps1`). Empty when there is nothing to choose.
+    #[serde(default)]
+    pub pick: String,
+    /// Recipes this one builds on (jMAVSim lives in the PX4 checkout).
+    #[serde(default)]
+    pub depends: Vec<String>,
+    /// Steps for a tool the user installs themselves (paid, licensed, or with its own
+    /// installer). A recipe with a guide is never run as a job.
+    #[serde(default)]
+    pub guide: Vec<GuideStep>,
+}
+#[derive(Clone, Deserialize)]
+pub(crate) struct GuideStep {
+    pub title: String,
+    pub body: String,
+    #[serde(default)]
+    pub link: String,
 }
 impl Recipe {
+    /// Installed by the user from its guide, then checked; never a job.
+    pub(crate) fn guided(&self) -> bool {
+        !self.automatic && !self.guide.is_empty()
+    }
     /// The launch profile this recipe configures.
     pub(crate) fn profile(&self) -> &str {
         if self.profile.is_empty() {

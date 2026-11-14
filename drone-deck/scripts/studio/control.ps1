@@ -21,7 +21,6 @@ function Start-ModelJob($Model) {
 try{
  $request=[Console]::In.ReadToEnd() | ConvertFrom-Json
  switch($request.action){
-  'ports' {$data=@{ports=@(Get-CimInstance Win32_SerialPort | Select-Object DeviceID,Name,PNPDeviceID);message='Windows serial devices listed without opening them.'}}
   'credential_status' {$data=@{stored=($null -ne [DroneCredentials]::Read($script:credentialTarget));message='Tokens are stored per Windows user in Credential Manager.'}}
   'save_token' {if($request.token -notmatch '^hf_[A-Za-z0-9]{10,}$'){throw 'Enter a Hugging Face access token.'};[DroneCredentials]::Save($script:credentialTarget,$request.token);$request.token=$null;$data=@{stored=$true;message='Token saved in Windows Credential Manager. Validate it to check current access.'}}
   'forget_token' {[DroneCredentials]::Forget($script:credentialTarget);$data=@{stored=$false;message='Saved Hugging Face token removed.'}}

@@ -763,9 +763,10 @@ fn launch_env_carries_world_model_vehicle_and_domain() {
     assert!(args("ardupilot").contains("-v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\""));
     assert!(args("rosgz").contains("/link/camera_link/sensor/camera"));
     assert!(args("foxglove").contains("port:=8765"));
-    for retired in backend::RETIRED {
+    // jMAVSim was retired with the display relay and came back through the router.
+    for retired in backend::RETIRED.iter().filter(|r| **r != "jmavsim") {
         assert!(
-            defaults.profiles.iter().all(|p| p.id != retired),
+            defaults.profiles.iter().all(|p| p.id != *retired),
             "{retired}"
         );
     }

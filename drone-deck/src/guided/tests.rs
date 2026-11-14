@@ -8,7 +8,7 @@ fn first_run(kind: usize, task: usize) -> State {
     s.guided.choice = kind;
     s.guided.base = Some(s.systems.active_id().to_string());
     s.guided.existing = s.guided.base.clone();
-    s.guided.chapter = 3;
+    s.guided.chapter = RUN;
     s.guided.task = task;
     s
 }

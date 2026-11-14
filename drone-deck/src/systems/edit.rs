@@ -18,6 +18,8 @@ pub(crate) struct Draft {
     pub autopilot: AutopilotKind,
     /// The world id of a simulated vehicle.
     pub world: String,
+    /// The flight stack a physical vehicle runs, as the user says (labels only).
+    pub hint: Option<AutopilotKind>,
     /// Every adapter detail by key (the Gazebo world and model, the ArduPilot vehicle), so a
     /// change of autopilot or world starts from sensible values.
     pub params: BTreeMap<&'static str, TextEdit>,
@@ -95,7 +97,8 @@ pub(crate) fn off_this_computer(addr: &str) -> bool {
         .is_ok_and(|a| !a.ip().is_loopback() && !a.ip().is_unspecified())
 }
 
-/// `serial:COMn:baud`, `udp:host:port` or `tcp:host:port`, or empty (chosen later).
+/// `serial:COMn:baud`, `udp:host:port` or `tcp:host:port`, or empty (chosen later). The one
+/// check for a vehicle endpoint: Settings, guided setup and the System page all use it.
 pub(crate) fn endpoint_ok(text: &str) -> bool {
     if text.is_empty() {
         return true;
@@ -133,6 +136,10 @@ impl Draft {
             Vehicle::Simulated { world, .. } => world.id.clone(),
             _ => "internal".into(),
         };
+        let hint = match &sys.vehicle {
+            Vehicle::Physical { autopilot_hint, .. } => *autopilot_hint,
+            _ => None,
+        };
         let recording = match &sys.vehicle {
             Vehicle::Replay { recording } => recording.as_deref().unwrap_or(""),
             _ => "",
@@ -144,6 +151,7 @@ impl Draft {
             vehicle: sys.vehicle.index(),
             autopilot: sys.autopilot().unwrap_or(AutopilotKind::Px4),
             world,
+            hint,
             params,
             endpoint: text(sys.endpoint().unwrap_or("")),
             recording: text(recording),
@@ -247,13 +255,9 @@ impl Draft {
                 if !endpoint_ok(endpoint) {
                     return Err("Use serial:COM4:115200, udp:0.0.0.0:14550 or tcp:192.168.4.1:5760 for the endpoint.".into());
                 }
-                let autopilot_hint = match &base.vehicle {
-                    Vehicle::Physical { autopilot_hint, .. } => *autopilot_hint,
-                    _ => None,
-                };
                 Vehicle::Physical {
                     endpoint: endpoint.into(),
-                    autopilot_hint,
+                    autopilot_hint: self.hint,
                 }
             }
             2 => {

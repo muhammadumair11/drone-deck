@@ -202,7 +202,7 @@ fn modes(s: &State, enabled: bool) -> El {
 
 /// The flight actions bar (key `vehicle-actions`). Empty for a system that is not simulated.
 pub(crate) fn actions(s: &State, vp: &Viewport) -> El {
-    if !s.systems.current().simulated() {
+    if !crate::systems::compat::may_command(s.systems.current()) {
         return col();
     }
     let reason = blocked(s);

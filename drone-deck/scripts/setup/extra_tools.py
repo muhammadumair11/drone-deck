@@ -6,7 +6,10 @@ import shutil
 import subprocess
 import urllib.request
 
-TOOLS={'gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge'}
+TOOLS={'gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge','jmavsim','flightgear'}
+# jMAVSim inside a PX4 checkout: its Ant project and the jar `ant create_run_jar` builds.
+JMAVSIM=Path('Tools/simulation/jmavsim/jMAVSim')
+JMAVSIM_JAR=JMAVSIM/'out/production/jmavsim_run.jar'
 # ROS 2 Jazzy apt packages: recipe id -> (package, ROS package directory under /opt/ros/jazzy/share).
 ROS_PACKAGES={'ros-gz':('ros-jazzy-ros-gz','ros_gz_bridge'),'foxglove-bridge':('ros-jazzy-foxglove-bridge','foxglove_bridge')}
 def ros_package(base,tool,share=Path('/opt/ros/jazzy/share')):
@@ -37,6 +40,30 @@ def probe(base,tool,location=''):
                 if compatible:break
     elif tool in ROS_PACKAGES:
         result.update(ros_package(base,tool))
+    elif tool=='flightgear':
+        executable=str(requested) if requested else (shutil.which('fgfs') or ('/usr/games/fgfs' if Path('/usr/games/fgfs').is_file() else ''))
+        if executable and Path(executable).is_file():
+            version=base.output([executable,'--version']).splitlines()
+            compatible=bool(version)
+            result.update(found=True,compatible=compatible,path=executable,executable=executable,version=version[0] if version else '',
+                          reason='FlightGear runs; PX4 builds its FlightGear bridge on the first launch.' if compatible else 'fgfs did not report a version; reinstall the flightgear package.')
+        else:
+            result['reason']="FlightGear not found. Install Ubuntu's flightgear package."
+    elif tool=='jmavsim':
+        for path in ([requested] if requested else [Path.home()/'PX4-Autopilot',root/'PX4-Autopilot']):
+            project=path/JMAVSIM
+            if not (project/'build.xml').is_file():continue
+            jar=path/JMAVSIM_JAR
+            java=shutil.which('java')
+            compatible=jar.is_file() and bool(java)
+            reason=('jMAVSim jar and Java found; PX4 builds its SITL target on the first launch.' if compatible else
+                    'Install a Java runtime (java not found).' if jar.is_file() else
+                    'jMAVSim source found; build its jar (ant create_run_jar copy_res) before reuse.')
+            result.update(found=True,compatible=compatible,path=str(path),executable=str(jar),
+                          version=base.output(['git','-C',str(project),'describe','--tags','--always']),reason=reason)
+            if compatible:break
+        if not result['found']:
+            result['reason']='No PX4 checkout with the jMAVSim submodule found. Choose the PX4 folder, or install PX4 first.'
     elif tool=='ros-workspace':
         path=requested or root/'px4_ros_ws'
         setup=path/'install/setup.bash'
@@ -72,6 +99,11 @@ def dependencies(base,tool):
         base.run(['apt-get','update'],env=env);base.run(['apt-get','install','-y','--no-install-recommends',ROS_PACKAGES[tool][0]],env=env)
         return
     if tool=='ardupilot':packages+=['build-essential','ccache','gawk','pkg-config','python3-dev','libexpat1-dev','libsqlite3-dev','zlib1g-dev']
+    if tool=='jmavsim':packages+=['openjdk-17-jdk','ant']
+    if tool=='flightgear':
+        env={**os.environ,'DEBIAN_FRONTEND':'noninteractive'}
+        base.run(['apt-get','update'],env=env);base.run(['apt-get','install','-y','--no-install-recommends','flightgear'],env=env)
+        return
     if tool=='ros-workspace':
         if not Path('/opt/ros/jazzy/setup.bash').is_file():raise RuntimeError('Install ROS 2 Jazzy in Setup before its message workspace.')
         packages+=['build-essential','cmake','python3-colcon-common-extensions','python3-rosdep','ros-jazzy-rosidl-default-generators']
@@ -86,7 +118,7 @@ def clone(base,path,url,revision):
 def install(base,tool):
     base.require_noble()
     if os.geteuid()==0:raise RuntimeError('Build user tools as a regular Linux user.')
-    if tool=='gazebo' or tool in ROS_PACKAGES:return
+    if tool in ('gazebo','flightgear') or tool in ROS_PACKAGES:return
     if tool=='onnx':
         path=base.owned_target('onnx')
         if not (path/'bin/python').is_file():base.run(['python3','-m','venv',str(path)])
@@ -101,6 +133,14 @@ def install(base,tool):
         base.run([str(environment/'bin/python'),'waf','configure','--board','sitl'],cwd=path,env=env)
         base.run([str(environment/'bin/python'),'waf','copter','-j2'],cwd=path,env=env)
         (environment/'environment.txt').write_text(base.output([str(environment/'bin/python'),'-m','pip','freeze']))
+    elif tool=='jmavsim':
+        # Built only inside Drone Deck's own PX4 checkout: an adopted checkout is never changed.
+        path=base.ROOT/'PX4-Autopilot'
+        if not (path/'.git').exists() or not (base.ROOT/'.owned-PX4-Autopilot').is_file():
+            raise RuntimeError("jMAVSim builds inside Drone Deck's own PX4 checkout. Install PX4 with Drone Deck first, "
+                               'or build jMAVSim in your own checkout (make px4_sitl jmavsim) and choose that folder.')
+        base.run(['git','-C',str(path),'submodule','update','--init',str(JMAVSIM)])
+        base.run(['ant','create_run_jar','copy_res'],cwd=path/JMAVSIM)
     elif tool=='ros-workspace':
         path=base.owned_target('px4_ros_ws');(path/'src').mkdir(parents=True,exist_ok=True)
         clone(base,path/'src/px4_msgs','https://github.com/PX4/px4_msgs.git','v1.17.0')

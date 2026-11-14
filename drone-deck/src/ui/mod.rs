@@ -7,6 +7,7 @@ mod settings;
 #[cfg(test)]
 mod tests;
 pub(crate) mod theme;
+pub(crate) mod vehicle_form;
 use kit::*;
 pub(crate) use settings::{
     ThemeMode, restore as restore_preferences, set_theme, set_zoom, shortcuts as zoom_shortcuts,

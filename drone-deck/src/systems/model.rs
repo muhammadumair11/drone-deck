@@ -271,10 +271,19 @@ impl System {
                     world.id
                 ),
             },
-            Vehicle::Physical { endpoint, .. } if endpoint.trim().is_empty() => {
-                "Physical vehicle / no endpoint yet".into()
+            Vehicle::Physical {
+                endpoint,
+                autopilot_hint,
+            } => {
+                let what = autopilot_hint.map_or("Physical vehicle".to_string(), |k| {
+                    format!("Physical vehicle ({})", adapter::autopilot_name(k))
+                });
+                if endpoint.trim().is_empty() {
+                    format!("{what} / no endpoint yet")
+                } else {
+                    format!("{what} / {endpoint}")
+                }
             }
-            Vehicle::Physical { endpoint, .. } => format!("Physical vehicle / {endpoint}"),
             Vehicle::Replay { recording: None } => "Recording replay / chosen at replay".into(),
             Vehicle::Replay { recording: Some(r) } => format!("Recording replay / {r}"),
         }

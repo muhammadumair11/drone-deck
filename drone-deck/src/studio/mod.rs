@@ -232,7 +232,6 @@ pub(crate) fn poll(s: &mut State) -> bool {
             "inspect_model" => r.preview = Some(data),
             "models" => r.models = data["models"].as_array().cloned().unwrap_or_default(),
             "data_library" => r.library = data,
-            "ports" => r.library["ports"] = data["ports"].clone(),
             "start_model" | "retry_model" => {
                 r.selected_job = data["id"].as_str().map(str::to_owned)
             }

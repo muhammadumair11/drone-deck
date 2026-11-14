@@ -1,13 +1,15 @@
-//! Guided setup: Intention → The system → Preparation → First run.
+//! Guided setup: Vehicle → World → Listeners → Review & install → First run.
 //!
-//! A focused route for creating a system from a template, or preparing an existing one, on
-//! this computer. It drives the real setup backend (host scan, workflow detection, reviewed
-//! batch installation) and ends by saving the system and returning to the management
-//! workspace.
+//! A focused route for creating a system, from a starting point or piece by piece, or for
+//! preparing an existing one on this computer. The first three chapters edit a draft with the
+//! same controls as Settings → Systems (`steps`); leaving them saves the system. Review &
+//! install drives the real setup backend (host scan, workflow detection, reviewed batch
+//! installation, guided manual installs); First run collects evidence that it works.
 use crate::*;
 mod content;
 mod prep;
 mod run;
+mod steps;
 #[cfg(test)]
 mod tests;
 mod view;
@@ -15,7 +17,17 @@ pub(crate) use content::STORIES;
 use setup::presets::{self, Preset};
 pub(crate) use view::{header, page};
 
-pub(crate) const CHAPTERS: [&str; 4] = ["Intention", "The system", "Preparation", "First run"];
+pub(crate) const CHAPTERS: [&str; 5] = [
+    "Vehicle",
+    "World",
+    "Listeners",
+    "Review & install",
+    "First run",
+];
+/// The chapter that checks this computer and installs what the system needs.
+pub(crate) const REVIEW: usize = 3;
+/// The chapter that tries the prepared system.
+pub(crate) const RUN: usize = 4;
 
 /// The computer check in Preparation: host scan, then tool detection.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -26,10 +38,14 @@ pub(crate) enum Check {
 }
 
 pub(crate) struct Guided {
-    /// 0..4, see `CHAPTERS`.
+    /// 0..5, see `CHAPTERS`.
     pub chapter: usize,
-    /// The template being prepared (index into `systems::KINDS`).
+    /// The template family being prepared (index into `systems::KINDS`): the starting point
+    /// chosen, then the kind of the saved system. Review & install and First run follow it.
     pub choice: usize,
+    /// The vehicle, world and listeners being chosen, applied to the system when Listeners
+    /// is left.
+    pub draft: systems::Draft,
     /// The saved system guided setup was opened to update; None for "New system…".
     pub base: Option<String>,
     /// The saved system this preparation updates: `base` while its template is chosen, or
@@ -37,9 +53,6 @@ pub(crate) struct Guided {
     pub existing: Option<String>,
     pub name: TextEdit,
     pub name_error: String,
-    /// Optional existing location for the system's primary tool.
-    pub path: TextEdit,
-    pub path_error: bool,
     /// The reviewed-changes acknowledgement in Preparation.
     pub consent: bool,
     pub prep_error: String,
@@ -69,12 +82,11 @@ impl Default for Guided {
         Self {
             chapter: 0,
             choice: systems::SIMULATION,
+            draft: systems::Draft::default(),
             base: None,
             existing: None,
             name: TextEdit::new(""),
             name_error: String::new(),
-            path: TextEdit::new(""),
-            path_error: false,
             consent: false,
             prep_error: String::new(),
             check: Check::Idle,
@@ -118,6 +130,14 @@ pub(crate) fn preset(s: &State) -> Preset {
     target(s).map_or_else(|| template_preset(s.guided.choice), presets::for_system)
 }
 
+/// The draft of the target system, or of the chosen template for a new one.
+fn draft_for(s: &State) -> systems::Draft {
+    target(s).map_or_else(
+        || systems::Draft::of(&systems::model::template(s.guided.choice, "", "")),
+        systems::Draft::of,
+    )
+}
+
 /// Preparation for the active system, unless a running queue installs another template.
 fn fresh(s: &State) -> Guided {
     let current = s.systems.current();
@@ -129,10 +149,12 @@ fn fresh(s: &State) -> Guided {
         opened_for: current.id.clone(),
         ..Guided::default()
     };
+    g.draft = systems::Draft::of(current);
     if let Some(kind) = batch_system(s).filter(|k| *k != g.choice) {
         g.choice = kind;
         g.existing = None;
         g.name = TextEdit::new(s.systems.suggest_name(systems::KINDS[kind]));
+        g.draft = systems::Draft::of(&systems::model::template(kind, "", ""));
     }
     g
 }
@@ -146,8 +168,6 @@ pub(super) fn set_choice(s: &mut State, i: usize) {
     }
     let g = &mut s.guided;
     g.choice = i;
-    g.path = TextEdit::new("");
-    g.path_error = false;
     g.consent = false;
     g.applied = false;
     g.prep_error.clear();
@@ -182,6 +202,7 @@ pub(super) fn set_choice(s: &mut State, i: usize) {
             }
         }
     }
+    s.guided.draft = draft_for(s);
 }
 
 /// A running workflow queue owns the preparation: follow the system it installs for.
@@ -229,6 +250,7 @@ pub(crate) fn new_system(s: &mut State) {
     s.guided = Guided {
         name: TextEdit::new(s.systems.suggest_name(systems::KINDS[systems::SIMULATION])),
         opened_for: s.systems.active_id().to_string(),
+        draft: systems::Draft::of(&systems::model::template(systems::SIMULATION, "", "")),
         ..Guided::default()
     };
     follow_batch(s);
@@ -246,20 +268,15 @@ pub(crate) fn restart(s: &mut State) {
         s.guided.existing = None;
         s.guided.choice = systems::SIMULATION;
         s.guided.name = TextEdit::new(s.systems.suggest_name(systems::KINDS[0]));
+        s.guided.draft = draft_for(s);
     }
     s.guided.came_from = from;
     s.ui.reset_scroll = true;
 }
 
 pub(crate) fn go(s: &mut State, chapter: usize) {
-    s.guided.chapter = chapter.min(3);
+    s.guided.chapter = chapter.min(RUN);
     s.ui.reset_scroll = true;
-}
-
-/// The primary tool's recipe id, which the optional existing location applies to (empty
-/// when the preset installs nothing).
-pub(crate) fn primary_tool(s: &State) -> String {
-    preset(s).recipes.into_iter().next().unwrap_or_default()
 }
 
 /// The target system's id, creating it from the chosen template under the entered name
@@ -365,7 +382,7 @@ pub(crate) fn poll(s: &mut State) -> bool {
 pub(crate) fn preview(s: &mut State, phase: &str) {
     setup::preview(s);
     open(s);
-    s.guided.chapter = 2;
+    s.guided.chapter = REVIEW;
     if s.guided.name.text.trim().is_empty() {
         s.guided.name = TextEdit::new("My first system");
     }

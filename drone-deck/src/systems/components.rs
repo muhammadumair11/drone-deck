@@ -88,6 +88,78 @@ const ARDUPILOT: Component = comp(
     Backing::Profile("ardupilot"),
     "Serves MAVLink on TCP 5760 itself. One simulator runs at a time: they share UDP 14550 and TCP 5760.",
 );
+const JMAVSIM: Component = comp(
+    "jmavsim",
+    "PX4 / jMAVSim",
+    "Autopilot + jMAVSim view",
+    WSL,
+    "Simulation",
+    Backing::Profile("jmavsim"),
+    "PX4 builds its SITL target on the first launch. The jMAVSim window needs WSLg; vehicle status, not the window, marks it ready.",
+);
+const PX4_EXTERNAL: Component = comp(
+    "px4-none",
+    "PX4 / external simulator",
+    "Autopilot waiting on TCP 4560",
+    WSL,
+    "Simulation",
+    Backing::Profile("px4-none"),
+    "PX4 waits for a simulator to connect. Nothing flies until the simulator (X-Plane) joins.",
+);
+const XPLANE: Component = comp(
+    "xplane",
+    "X-Plane 12",
+    "Physics + view, px4xplane plugin",
+    "Windows",
+    "Simulation",
+    Backing::Profile("xplane"),
+    "Installed by you. Its plugin connects to PX4 in WSL; a running X-Plane does not prove the plugin connected.",
+);
+const FLIGHTGEAR: Component = comp(
+    "flightgear",
+    "PX4 / FlightGear",
+    "Autopilot + FlightGear world",
+    WSL,
+    "Simulation",
+    Backing::Profile("flightgear"),
+    "PX4 builds its FlightGear bridge on the first launch. The FlightGear window needs WSLg; vehicle status marks it ready.",
+);
+const AP_WEBOTS: Component = comp(
+    "ardupilot-webots",
+    "ArduPilot SITL / Webots",
+    "Autopilot waiting for a Webots world",
+    WSL,
+    "Simulation",
+    Backing::Profile("ardupilot-webots"),
+    "Serves MAVLink on TCP 5760. It waits until an ArduPilot world runs in Webots.",
+);
+const WEBOTS: Component = comp(
+    "webots",
+    "Webots",
+    "Physics + view, ArduPilot world",
+    "Windows",
+    "Simulation",
+    Backing::Profile("webots"),
+    "Installed by you. Open ArduPilot's Webots world in it; a running Webots does not prove the world talks to SITL.",
+);
+const REALFLIGHT: Component = comp(
+    "realflight",
+    "RealFlight",
+    "Physics + view over FlightAxis",
+    "Windows",
+    "Simulation",
+    Backing::Profile("realflight"),
+    "Installed by you, with FlightAxis enabled. A running RealFlight does not prove ArduPilot reached it.",
+);
+const AP_REALFLIGHT: Component = comp(
+    "ardupilot-realflight",
+    "ArduPilot SITL / RealFlight",
+    "Autopilot driving RealFlight",
+    WSL,
+    "Simulation",
+    Backing::Profile("ardupilot-realflight"),
+    "Serves MAVLink on TCP 5760 and connects to FlightAxis on the system's RealFlight computer.",
+);
 const ROUTER: Component = comp(
     "router",
     "MAVLink router",
@@ -216,9 +288,32 @@ const TLOG: Component = comp(
 );
 
 /// Every known component, in catalog order.
-const ALL: [&Component; 17] = [
-    &PX4, &GAZEBO, &ARDUPILOT, &ROUTER, &LINK, &QGC, &SCRIPTS, &DDS, &ROSGZ, &ROS2, &MCAP, &ONNX,
-    &PROJECT, &PIPELINES, &FOXGLOVE, &ENDPOINT, &TLOG,
+const ALL: [&Component; 25] = [
+    &PX4,
+    &GAZEBO,
+    &ARDUPILOT,
+    &JMAVSIM,
+    &PX4_EXTERNAL,
+    &XPLANE,
+    &FLIGHTGEAR,
+    &AP_WEBOTS,
+    &WEBOTS,
+    &REALFLIGHT,
+    &AP_REALFLIGHT,
+    &ROUTER,
+    &LINK,
+    &QGC,
+    &SCRIPTS,
+    &DDS,
+    &ROSGZ,
+    &ROS2,
+    &MCAP,
+    &ONNX,
+    &PROJECT,
+    &PIPELINES,
+    &FOXGLOVE,
+    &ENDPOINT,
+    &TLOG,
 ];
 
 /// Every component across systems, without duplicates.
@@ -348,20 +443,6 @@ pub(crate) const SESSIONS: [&[&str]; 4] = [
     &[],
     &[],
 ];
-
-/// Profile ids in the components of template `kind`. Used where only the active kind is at
-/// hand; prefer [`components`] with the system itself.
-pub(crate) fn profile_ids(kind: usize) -> impl Iterator<Item = &'static str> {
-    let sys = super::model::template(kind, "", "");
-    components(&sys)
-        .into_iter()
-        .filter_map(|c| match c.backing {
-            Backing::Profile(id) => Some(id),
-            _ => None,
-        })
-        .collect::<Vec<_>>()
-        .into_iter()
-}
 
 /// The design filter for a profile that is not part of a system catalog.
 pub(crate) fn filter_for(profile: &crate::backend::Profile) -> &'static str {

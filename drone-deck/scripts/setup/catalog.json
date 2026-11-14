@@ -74,6 +74,7 @@
       "Verify API and write environment manifest"
     ],
     "automatic": true,
+    "pick": "wsl-folder",
     "destination": "~/.local/share/drone-deck/tools/mavsdk",
     "privileges": "Root for shared Python prerequisites; regular Linux user for the private environment",
     "packages": [
@@ -101,6 +102,7 @@
       "Verify binary and source revision"
     ],
     "automatic": true,
+    "pick": "wsl-folder",
     "destination": "~/.local/share/drone-deck/tools/PX4-Autopilot and px4-python",
     "privileges": "Root for shared build prerequisites; regular Linux user for source and Python environment",
     "packages": [
@@ -132,6 +134,58 @@
     ]
   },
   {
+    "id": "jmavsim",
+    "name": "jMAVSim simulator",
+    "version": "PX4 v1.17.0 submodule",
+    "target": "WSL",
+    "docs": "https://docs.px4.io/v1.17/en/sim_jmavsim/",
+    "summary": "Build PX4's lightweight jMAVSim simulator from the jMAVSim submodule of the PX4 checkout. It needs a Java JDK and Ant in Ubuntu; its 3D window needs WSLg (Windows 11). PX4 itself is built on the first launch.",
+    "steps": [
+      "Check the PX4 checkout",
+      "Install Java JDK and Ant",
+      "Fetch the jMAVSim submodule",
+      "Build the jMAVSim jar",
+      "Verify the jar and Java"
+    ],
+    "automatic": true,
+    "pick": "wsl-folder",
+    "depends": [
+      "px4"
+    ],
+    "destination": "Tools/simulation/jmavsim inside the PX4 checkout",
+    "privileges": "WSL root for Java and Ant; regular Linux user for the build",
+    "packages": [
+      "openjdk-17-jdk",
+      "ant",
+      "jMAVSim (PX4 submodule)"
+    ],
+    "verification": "jmavsim_run.jar exists in the PX4 checkout and java -version runs"
+  },
+  {
+    "id": "flightgear",
+    "name": "FlightGear",
+    "version": "Ubuntu 24.04 package",
+    "target": "WSL",
+    "docs": "https://docs.px4.io/v1.17/en/sim_flightgear/",
+    "summary": "Install the open-source FlightGear simulator from Ubuntu's package archive. PX4's FlightGear bridge is built from the PX4 checkout on the first launch. Its window needs WSLg (Windows 11). The package and its scenery are large.",
+    "steps": [
+      "Check Linux",
+      "Install the flightgear package",
+      "Verify fgfs runs"
+    ],
+    "automatic": true,
+    "pick": "wsl-file",
+    "depends": [
+      "px4"
+    ],
+    "destination": "Shared Ubuntu package (/usr/games/fgfs)",
+    "privileges": "Selected WSL root account for the shared apt package",
+    "packages": [
+      "flightgear"
+    ],
+    "verification": "fgfs --version runs"
+  },
+  {
     "id": "dds",
     "name": "Micro XRCE-DDS Agent",
     "version": "2.4.3 (DDS v2 client)",
@@ -145,6 +199,7 @@
       "Verify executable"
     ],
     "automatic": true,
+    "pick": "wsl-file",
     "destination": "~/.local/share/drone-deck/tools/Micro-XRCE-DDS-Agent",
     "privileges": "Root for shared build prerequisites; regular Linux user for source/build",
     "packages": [
@@ -174,11 +229,161 @@
       "Check installed executable"
     ],
     "automatic": true,
+    "pick": "windows-file",
     "destination": "Downloaded package in workspace/setup/jobs; destination chosen in Windows installer",
     "privileges": "Windows installer may request administrator approval",
     "packages": [
       "QGroundControl 5.1.5 AMD64"
     ]
+  },
+  {
+    "id": "xplane",
+    "name": "X-Plane 12 with the PX4 plugin",
+    "version": "X-Plane 12 + px4xplane",
+    "target": "Windows",
+    "docs": "https://github.com/alireza787b/px4xplane",
+    "summary": "X-Plane is a paid Windows flight simulator. A community plugin, px4xplane, connects it to PX4 running in WSL. Drone Deck cannot download or install either: install them yourself, then choose the X-Plane folder and check it.",
+    "steps": [
+      "Install X-Plane 12 yourself",
+      "Install the px4xplane plugin",
+      "Choose the X-Plane folder",
+      "Check the installation"
+    ],
+    "automatic": false,
+    "pick": "windows-folder",
+    "depends": [
+      "px4"
+    ],
+    "check": {
+      "kind": "windows-folder",
+      "expect": [
+        "X-Plane.exe",
+        "Resources/plugins/px4xplane"
+      ]
+    },
+    "guide": [
+      {
+        "title": "Install X-Plane 12",
+        "body": "Buy X-Plane 12 from Laminar Research and install it on Windows. It is a paid product, so Drone Deck cannot install it for you.",
+        "link": "https://www.x-plane.com/"
+      },
+      {
+        "title": "Install the px4xplane plugin",
+        "body": "Download the px4xplane release for your PX4 version and unzip it into X-Plane's Resources/plugins folder, so that Resources/plugins/px4xplane exists.",
+        "link": "https://github.com/alireza787b/px4xplane/releases"
+      },
+      {
+        "title": "Configure the plugin",
+        "body": "Follow the plugin's instructions to pick the airframe and connect to PX4. PX4 runs in WSL, which Windows reaches at 127.0.0.1. Windows may ask about the firewall the first time; that choice is yours."
+      },
+      {
+        "title": "Choose the folder and check",
+        "body": "Choose your X-Plane folder, then Check. Drone Deck looks for X-Plane.exe and the plugin folder. Whether PX4 and X-Plane actually talk is only known once the workspace starts."
+      }
+    ],
+    "destination": "Your own X-Plane folder",
+    "privileges": "Whatever the X-Plane installer asks for",
+    "packages": [
+      "X-Plane 12 (paid)",
+      "px4xplane plugin (community)"
+    ],
+    "verification": "X-Plane.exe and Resources/plugins/px4xplane exist in the chosen folder"
+  },
+  {
+    "id": "webots",
+    "name": "Webots",
+    "version": "Webots R2023b or later",
+    "target": "Windows",
+    "docs": "https://ardupilot.org/dev/docs/sitl-with-webots-python.html",
+    "summary": "Webots is an open-source robot simulator. ArduPilot SITL flies in Webots worlds that ship with ArduPilot's source. Install Webots yourself on Windows, then choose its program and check it.",
+    "steps": [
+      "Install Webots yourself",
+      "Choose the Webots program",
+      "Check the installation",
+      "Open ArduPilot's Webots world when the workspace starts"
+    ],
+    "automatic": false,
+    "pick": "windows-file",
+    "depends": [
+      "ardupilot"
+    ],
+    "check": {
+      "kind": "windows-file"
+    },
+    "guide": [
+      {
+        "title": "Install Webots",
+        "body": "Download the Windows installer from Cyberbotics and install it. Webots is free and open source; Drone Deck does not download it for you.",
+        "link": "https://cyberbotics.com/"
+      },
+      {
+        "title": "Choose the Webots program and check",
+        "body": "Choose webotsw.exe in the Webots installation folder (under msys64\\mingw64\\bin), then Check."
+      },
+      {
+        "title": "Open ArduPilot's world",
+        "body": "When the workspace starts, open a world from ArduPilot's libraries/SITL/examples/Webots_Python/worlds folder in Webots (File > Open World; the folder is inside WSL under \\\\wsl.localhost). ArduPilot SITL waits until the world runs.",
+        "link": "https://ardupilot.org/dev/docs/sitl-with-webots-python.html"
+      },
+      {
+        "title": "WSL networking",
+        "body": "ArduPilot in WSL and Webots on Windows exchange data over UDP. If SITL never connects, WSL's mirrored networking (networkingMode=mirrored in .wslconfig) lets both use 127.0.0.1. Windows may ask about the firewall; that choice is yours."
+      }
+    ],
+    "destination": "Your own Webots installation",
+    "privileges": "Whatever the Webots installer asks for",
+    "packages": [
+      "Webots (open source)"
+    ],
+    "verification": "The chosen program is a Windows executable"
+  },
+  {
+    "id": "realflight",
+    "name": "RealFlight with FlightAxis",
+    "version": "RealFlight 8, 9 or Evolution",
+    "target": "Windows",
+    "docs": "https://ardupilot.org/dev/docs/sitl-with-realflight.html",
+    "summary": "RealFlight is a paid Windows RC flight simulator. ArduPilot SITL drives a RealFlight model over its FlightAxis link. Install RealFlight yourself, enable FlightAxis, then choose its program and check it.",
+    "steps": [
+      "Buy and install RealFlight yourself",
+      "Enable FlightAxis in RealFlight",
+      "Choose the RealFlight program",
+      "Check the installation"
+    ],
+    "automatic": false,
+    "pick": "windows-file",
+    "depends": [
+      "ardupilot"
+    ],
+    "check": {
+      "kind": "windows-file"
+    },
+    "guide": [
+      {
+        "title": "Install RealFlight",
+        "body": "Buy RealFlight 8, 9 or Evolution and install it on Windows. It is a paid product, so Drone Deck cannot install it for you.",
+        "link": "https://www.realflight.com/"
+      },
+      {
+        "title": "Enable FlightAxis and load a model",
+        "body": "In RealFlight's settings, enable the FlightAxis link, then load a model prepared for ArduPilot. ArduPilot's guide lists the models and settings.",
+        "link": "https://ardupilot.org/dev/docs/sitl-with-realflight.html"
+      },
+      {
+        "title": "Tell ArduPilot where RealFlight runs",
+        "body": "ArduPilot SITL runs in WSL and connects to RealFlight on Windows. Set the system's RealFlight computer to the address WSL reaches Windows at: 127.0.0.1 with WSL's mirrored networking, otherwise the Windows address WSL sees as its gateway. Windows may ask about the firewall; that choice is yours."
+      },
+      {
+        "title": "Choose the RealFlight program and check",
+        "body": "Choose RealFlight's program file, then Check. Whether ArduPilot reaches FlightAxis is only known once the workspace starts."
+      }
+    ],
+    "destination": "Your own RealFlight installation",
+    "privileges": "Whatever the RealFlight installer asks for",
+    "packages": [
+      "RealFlight (paid)"
+    ],
+    "verification": "The chosen program is a Windows executable"
   },
   {
     "id": "ardupilot",
@@ -194,6 +399,7 @@
       "Verify executable"
     ],
     "automatic": true,
+    "pick": "wsl-folder",
     "destination": "~/.local/share/drone-deck/tools/ardupilot and ardupilot-python",
     "privileges": "WSL root for shared prerequisites; regular Linux user for source/environment",
     "packages": [
@@ -223,6 +429,7 @@
       "Verify gz-sim 8.x"
     ],
     "automatic": true,
+    "pick": "wsl-file",
     "destination": "Shared WSL /usr and OSRF apt source",
     "privileges": "Selected WSL root account for shared apt packages",
     "packages": [
@@ -290,6 +497,7 @@
       "Verify installed workspace"
     ],
     "automatic": true,
+    "pick": "wsl-folder",
     "destination": "~/.local/share/drone-deck/tools/px4_ros_ws",
     "privileges": "WSL root for apt prerequisites; regular user for workspace",
     "packages": [
@@ -314,6 +522,7 @@
       "Verify runtime imports"
     ],
     "automatic": true,
+    "pick": "wsl-folder",
     "destination": "~/.local/share/drone-deck/tools/onnx",
     "privileges": "WSL root for Python prerequisites; regular user for private environment",
     "packages": [

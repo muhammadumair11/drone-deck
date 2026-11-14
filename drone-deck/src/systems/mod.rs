@@ -19,10 +19,10 @@ mod tests;
 mod vehicle_tests;
 
 pub(crate) use components::{
-    Backing, Component, SESSIONS, all_components, chain, component, components, filter_for,
-    profile_ids, routed, session_stages, vehicle_profile,
+    Backing, Component, SESSIONS, all_components, chain, component, components, filter_for, routed,
+    session_stages, vehicle_profile,
 };
-pub(crate) use edit::Draft;
+pub(crate) use edit::{Draft, endpoint_ok};
 pub(crate) use model::{AI, KINDS, MAX_NAME, PHYSICAL, ROS, SIMULATION, System, VEHICLES, Vehicle};
 pub(crate) use state::{Tone, profile_state, running, state, tone_color};
 use std::collections::HashMap;
@@ -245,6 +245,7 @@ impl Systems {
         id
     }
     /// Renames `id`; its id stays the same.
+    #[cfg(test)]
     pub fn rename(&mut self, id: &str, name: &str) -> Result<(), String> {
         let name = clean_name(name)?;
         let sys = self.get_mut(id).ok_or("That system no longer exists.")?;

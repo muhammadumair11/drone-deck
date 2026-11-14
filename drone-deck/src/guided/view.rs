@@ -1,5 +1,5 @@
-//! Guided setup surface: its own top bar, the chapter journey, a shared chapter frame and
-//! the first two chapters (Intention, The system).
+//! Guided setup surface: its own top bar, the chapter journey, a shared chapter frame, the
+//! starting-point rows of the Vehicle chapter and the page that holds a chapter.
 use super::*;
 use crate::ui::kit::*;
 use crate::ui::theme::*;
@@ -222,7 +222,7 @@ pub(super) fn next(name: &str, enabled: bool, on: impl Fn(&mut State) + 'static)
     pill_sized("next", name, enabled, true, on)
 }
 
-fn intent_row(s: &State, i: usize, f: &Frame) -> El {
+pub(super) fn intent_row(s: &State, i: usize, f: &Frame) -> El {
     let story = &STORIES[i];
     let selected = s.guided.choice == i;
     let locked = s.setup.active();
@@ -301,7 +301,7 @@ fn choose(s: &mut State, i: usize) {
 }
 
 /// Why the system choice is locked, naming what the running installation belongs to.
-fn locked_note(s: &State) -> String {
+pub(super) fn locked_note(s: &State) -> String {
     let after = "Other systems can be chosen after it finishes or is cancelled.";
     if s.setup.batch.is_none() {
         return format!("An installation job is running. {after}");
@@ -319,7 +319,7 @@ fn locked_note(s: &State) -> String {
 }
 
 /// Which saved system this preparation creates or updates.
-fn scope_note(s: &State) -> String {
+pub(super) fn scope_note(s: &State) -> String {
     let base = s.guided.base.as_deref().and_then(|id| s.systems.get(id));
     match (base, target(s)) {
         (Some(b), Some(t)) if b.id == t.id => format!(
@@ -334,306 +334,6 @@ fn scope_note(s: &State) -> String {
         ),
         (None, None) => "Creates a new system from this template when you name it.".into(),
     }
-}
-
-fn intention(s: &State, f: &Frame) -> El {
-    let mut list = col()
-        .key("intent-list")
-        .role("radiogroup")
-        .label("System starting point")
-        .w_full()
-        .min_w(0.);
-    for i in 0..4 {
-        list = list.child(intent_row(s, i, f));
-    }
-    let mut content = col()
-        .w_full()
-        .min_w(0.)
-        .gap(12.)
-        .child(list)
-        .child(notice(scope_note(s)).key("intent-scope"));
-    if s.setup.active() {
-        content = content.child(notice(locked_note(s)));
-    }
-    frame(
-        s,
-        f,
-        "01 / Start with an outcome",
-        "What would you like to try?",
-        "You bring the idea. Drone Deck brings the right tools together, helps prepare your computer, and guides you to a first result.",
-        content,
-        "No tool knowledge required. Nothing installs yet.",
-        next("Shape this system →", true, |s| go(s, 1)),
-    )
-}
-
-fn connector(vertical: bool, width: f32) -> El {
-    if vertical {
-        let mut line = col().w(1.).h(28.).gap(3.).ml(10.);
-        for _ in 0..5 {
-            line = line.child(el().w(1.).h(3.).fill(rule()));
-        }
-        return line.a11y_hidden();
-    }
-    let mut line = row().grow(1.).h(1.).gap(3.);
-    for _ in 0..((width - 12.) / 6.) as usize {
-        line = line.child(el().w(3.).h(1.).fill(rule()));
-    }
-    row()
-        .w(width)
-        .gap(4.)
-        .center_y()
-        .self_center()
-        .a11y_hidden()
-        .child(line)
-        .child(meta_sized("›", 16., muted()))
-}
-
-fn blueprint(s: &State, f: &Frame) -> El {
-    let story = &STORIES[s.guided.choice];
-    let vertical = f.narrow();
-    let mut chain = if vertical {
-        col().w_full().min_w(0.)
-    } else {
-        row()
-            .w_full()
-            .min_w(0.)
-            .gap(if f.medium() { 16. } else { 20. })
-    };
-    chain = chain
-        .key("system-story")
-        .mt(if vertical { 24. } else { 48. })
-        .mb(30.);
-    for (i, (name, role, desc, target)) in story.steps.iter().enumerate() {
-        if i > 0 {
-            chain = chain.child(connector(vertical, if f.medium() { 20. } else { 50. }));
-        }
-        let mut stage = col()
-            .key(format!("system-stage-{i}"))
-            .min_w(0.)
-            .py(if vertical { 10. } else { 20. })
-            .gap(8.)
-            .child(meta(format!("0{} / {role}", i + 1)).wrap())
-            .child(h3(*name, 23.).my(4.))
-            .child(p(*desc, 12.))
-            .child(meta(*target).wrap());
-        stage = if vertical {
-            stage.w_full()
-        } else {
-            stage.grow(1.).w(0.)
-        };
-        chain = chain.child(stage);
-    }
-    chain
-}
-
-fn valid_path(text: &str) -> bool {
-    let b = text.as_bytes();
-    text.starts_with('/')
-        || (b.len() >= 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && b[2] == b'\\')
-}
-
-fn recipe_controls(s: &State, f: &Frame) -> El {
-    let g = &s.guided;
-    let target: El = if g.choice == systems::PHYSICAL {
-        body("Windows local / no WSL required", 12., fg())
-    } else {
-        let installed: Vec<_> = s
-            .setup
-            .host
-            .as_ref()
-            .map(|h| h.distros.iter().filter(|d| d.version == 2).collect())
-            .unwrap_or_default();
-        if installed.is_empty() {
-            p(
-                if s.setup.host.is_none() {
-                    format!(
-                        "{} / WSL 2. Not checked yet: Preparation checks this computer and offers to install it.",
-                        s.config.distro
-                    )
-                } else {
-                    "No WSL 2 distribution is installed. Preparation offers a reviewed installation."
-                        .to_string()
-                },
-                12.,
-            )
-        } else {
-            let mut list = col().w_full().min_w(0.);
-            for d in installed {
-                let name = d.name.clone();
-                list = list.child(crate::setup::option_row(
-                    format!("environment-{}", d.name),
-                    &d.name,
-                    &format!(
-                        "WSL 2 / {}",
-                        if d.name == s.config.distro {
-                            "in use"
-                        } else {
-                            "installed"
-                        }
-                    ),
-                    s.setup.distro.text.trim().eq_ignore_ascii_case(&d.name),
-                    !s.setup.active(),
-                    move |s| crate::setup::select_distro(s, &name),
-                ));
-            }
-            list
-        }
-    };
-    let tool = s
-        .setup
-        .recipes
-        .iter()
-        .find(|r| r.id == primary_tool(s))
-        .map(|r| r.name.as_str())
-        .unwrap_or("tool");
-    let text = g.path.text.trim();
-    let (message, tone) = if text.is_empty() {
-        (
-            "An existing path needs compatibility checks before adoption.",
-            muted(),
-        )
-    } else if valid_path(text) {
-        (
-            "Path format accepted; compatibility has not been checked.",
-            muted(),
-        )
-    } else {
-        (
-            "Use an absolute Windows or Linux path.",
-            if g.path_error { danger() } else { muted() },
-        )
-    };
-    let path = col()
-        .w_full()
-        .min_w(0.)
-        .gap(10.)
-        .child(labeled(
-            &format!("Existing {tool} location (optional)"),
-            field(&g.path, "override", "Absolute executable or source path")
-                .on_edit(|s: &mut State| &mut s.guided.path),
-        ))
-        .child(body(message, 11., tone).key("pathmessage").role("status"));
-    let target = labeled("Execution target", target);
-    let grid = if f.medium() {
-        col().w_full().min_w(0.).gap(24.).child(target).child(path)
-    } else {
-        row()
-            .w_full()
-            .min_w(0.)
-            .gap(32.)
-            .items_start()
-            .child(col().grow(1.).w(0.).min_w(0.).child(target))
-            .child(col().grow(1.).w(0.).min_w(0.).child(path))
-    };
-    col()
-        .w_full()
-        .min_w(0.)
-        .gap(16.)
-        .child(p(
-            "This is a proposed relationship, not a discovered live network. The selected environment and every connection need separate verification.",
-            12.,
-        ).max_w(760.))
-        .child(grid)
-}
-
-fn advance_system(s: &mut State) {
-    let name = match systems::clean_name(&s.guided.name.text) {
-        Ok(name) => name,
-        Err(e) => {
-            s.guided.name_error = e;
-            return;
-        }
-    };
-    s.guided.name_error.clear();
-    let path = s.guided.path.text.trim().to_string();
-    if !path.is_empty() && !valid_path(&path) {
-        s.guided.path_error = true;
-        s.ui.open.insert("technical-recipe".into());
-        return;
-    }
-    s.guided.path_error = false;
-    let tool = primary_tool(s).to_string();
-    if path.is_empty() {
-        s.setup.overrides.remove(&tool);
-    } else {
-        s.setup.overrides.insert(tool, path);
-    }
-    let kind = s.guided.choice;
-    let id = ensure_target(s);
-    if s.systems.get(&id).is_some_and(|x| x.name != name) {
-        let _ = s.systems.rename(&id, &name);
-        if let Err(e) = s.systems.save(s.headless) {
-            s.notice = format!("The system name could not be saved: {e}");
-        }
-    }
-    if kind != systems::PHYSICAL
-        && !s
-            .setup
-            .distro
-            .text
-            .trim()
-            .eq_ignore_ascii_case(&s.config.distro)
-        && s.setup.can_use_distro()
-    {
-        crate::setup::use_distro(s);
-        if !s
-            .setup
-            .distro
-            .text
-            .trim()
-            .eq_ignore_ascii_case(&s.config.distro)
-        {
-            s.notice = s.setup.message.clone();
-        }
-    }
-    go(s, 2);
-}
-
-fn the_system(s: &State, f: &Frame) -> El {
-    let story = &STORIES[s.guided.choice];
-    let name = col()
-        .w_full()
-        .max_w(440.)
-        .min_w(0.)
-        .gap(10.)
-        .mt(18.)
-        .child(labeled(
-            "Give your system a name",
-            field(&s.guided.name, "name", "My first system")
-                .on_edit(|s: &mut State| &mut s.guided.name),
-        ))
-        .child(
-            body(s.guided.name_error.clone(), 11., danger())
-                .key("nameerror")
-                .role("status"),
-        )
-        .child(notice(scope_note(s)).key("system-scope"));
-    let content = col()
-        .w_full()
-        .min_w(0.)
-        .child(blueprint(s, f))
-        .child(notice(story.extra).max_w(860.))
-        .child(
-            disclosure(
-                s,
-                "technical-recipe",
-                "Inspect or adapt the technical recipe",
-                || recipe_controls(s, f),
-            )
-            .mt(16.),
-        )
-        .child(name);
-    frame(
-        s,
-        f,
-        "02 / A small, complete system",
-        story.title,
-        story.result,
-        content,
-        "A plan you can understand before a tool is installed.",
-        next("Prepare my computer →", true, advance_system),
-    )
 }
 
 fn footer(s: &State, f: &Frame) -> El {
@@ -664,9 +364,10 @@ fn footer(s: &State, f: &Frame) -> El {
 pub(crate) fn page(s: &State, vp: &ui::theme::Viewport) -> El {
     let f = Frame { w: vp.w };
     let chapter = match s.guided.chapter {
-        0 => intention(s, &f),
-        1 => the_system(s, &f),
-        2 => prep::view(s, &f),
+        0 => steps::vehicle(s, &f),
+        1 => steps::world(s, &f),
+        2 => steps::listeners(s, &f),
+        REVIEW => prep::view(s, &f),
         _ => run::view(s, &f),
     };
     let container = col()

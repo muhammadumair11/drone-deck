@@ -159,7 +159,7 @@ fn body(s: &State, reason: Option<String>) -> El {
 
 /// The console disclosure (key `vehicle-console`). Empty for a system that is not simulated.
 pub(crate) fn console(s: &State, _vp: &Viewport) -> El {
-    if !s.systems.current().simulated() {
+    if !crate::systems::compat::may_command(s.systems.current()) {
         return col();
     }
     let reason = console_blocked(s);

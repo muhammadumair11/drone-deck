@@ -29,7 +29,7 @@ pub(crate) fn evidence(s: &State) -> SimulationEvidence {
         && link.origin() == LinkOrigin::SimulatorRouter
         && own_port
         && foreign_vehicle(s).is_none();
-    let simulator_source = sys.is_some_and(|x| x.simulated());
+    let simulator_source = sys.is_some_and(systems::compat::may_command);
     let stack_owned_running = sys.and_then(systems::vehicle_profile).is_some_and(|id| {
         s.status.get(id).is_some_and(|st| st == "Running") && s.systems.owner(id) == Some(owner)
     });
@@ -223,7 +223,8 @@ pub(crate) fn simulator_conflict(s: &State, id: &str, for_system: &str) -> Optio
         if !systems::running(s, other) {
             continue;
         }
-        if other != id {
+        // Stages of one adapter (PX4 and X-Plane) run together.
+        if other != id && !adapter::same_adapter(other, id) {
             return Some(format!(
                 "{} is running for {}. Stop it before starting {}: simulators share UDP 14550 and TCP 5760.",
                 name(other),

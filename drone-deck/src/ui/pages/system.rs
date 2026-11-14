@@ -1,6 +1,7 @@
 //! 01 System: the active system's session, connections, live evidence and runtime.
 use super::*;
 use systems::{AI, PHYSICAL};
+mod details;
 mod runtime;
 mod topology;
 
@@ -34,7 +35,8 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
     }
     page = page
         .child(guidance(s, compact))
-        .child(topology::section(s, vp));
+        .child(topology::section(s, vp))
+        .child(details::section(s, vp));
     if kind == PHYSICAL {
         page = page.child(hardware::monitor(s, vp));
     }
@@ -43,7 +45,7 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
     }
     // Flight actions and the console exist only for an app-owned simulation; a physical
     // vehicle is read-only and never shows them.
-    if current.simulated() {
+    if systems::compat::may_command(current) {
         page = page
             .child(vehicle::view::actions(s, vp))
             .child(vehicle::view::console(s, vp));

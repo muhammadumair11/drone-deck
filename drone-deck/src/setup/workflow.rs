@@ -120,8 +120,14 @@ pub(crate) fn status(s: &State, id: &str) -> (&'static str, &'static str, Tone) 
         }
         _ => {}
     }
+    let guided = s
+        .setup
+        .recipe_index(id)
+        .is_some_and(|i| s.setup.recipes[i].guided());
     match valid(s, id) {
         Some(c) if c.compatible => ("Found", "Reuse after verification", Tone::Good),
+        // Installed by the user: its guide is in the row's details.
+        _ if guided => ("Guide", "Install it yourself, then check", Tone::Warn),
         Some(c) if c.found => (
             "Found / incompatible",
             "Install reviewed recipe",
@@ -178,6 +184,24 @@ fn source(s: &State, id: &str, recipe: &Recipe) -> El {
     if !recipe.verification.is_empty() {
         lines = lines.child(p(format!("Verification: {}", recipe.verification), 12.));
     }
+    if !recipe.depends.is_empty() {
+        let names: Vec<&str> = recipe
+            .depends
+            .iter()
+            .map(|d| {
+                s.setup
+                    .recipes
+                    .iter()
+                    .find(|r| &r.id == d)
+                    .map_or(d.as_str(), |r| r.name.as_str())
+            })
+            .collect();
+        lines = lines.child(p(format!("Builds on: {}", names.join(", ")), 12.));
+    }
+    if recipe.guided() {
+        lines = lines.child(guide(id, recipe));
+    }
+    lines = lines.child(location_actions(s, id, recipe));
     if let Some(c) = valid(s, id).filter(|c| c.found) {
         lines = lines.child(p(
             format!(
@@ -200,6 +224,78 @@ fn source(s: &State, id: &str, recipe: &Recipe) -> El {
         }
     }
     lines
+}
+
+/// The numbered steps of a tool the user installs themselves (`guide-<id>`), with a link per
+/// step where the guide names one.
+pub(crate) fn guide(id: &str, recipe: &Recipe) -> El {
+    let mut steps = col()
+        .key(format!("guide-{id}"))
+        .w_full()
+        .min_w(0.)
+        .gap(10.)
+        .child(meta(
+            "Install it yourself: Drone Deck cannot download or install this tool",
+        ));
+    for (n, step) in recipe.guide.iter().enumerate() {
+        let mut text = col()
+            .grow(1.)
+            .min_w(0.)
+            .gap(4.)
+            .child(body(&step.title, 12., fg()))
+            .child(p(&step.body, 12.).max_w(760.));
+        if !step.link.is_empty() {
+            let link = step.link.clone();
+            text = text.child(ghost(
+                format!("guide-{id}-{n}-link"),
+                "Open link ↗",
+                true,
+                move |s| s.open(link.clone()),
+            ));
+        }
+        steps = steps.child(
+            row()
+                .w_full()
+                .min_w(0.)
+                .gap(14.)
+                .items_start()
+                .child(meta(format!("{:02}", n + 1)).w(24.).pt(2.))
+                .child(text),
+        );
+    }
+    steps
+}
+
+/// Choose an existing installation's location (never typed) and, for a guided tool, check
+/// it: `pick-<id>`, `check-<id>`.
+pub(crate) fn location_actions(s: &State, id: &str, recipe: &Recipe) -> El {
+    let Some(index) = s.setup.recipe_index(id) else {
+        return el();
+    };
+    let idle = !s.setup.pending && s.setup.batch.is_none() && !s.headless;
+    let mut actions = row().gaps(0., 24.).center_y().flex_wrap();
+    if !recipe.pick.is_empty() {
+        actions = actions.child(ghost(
+            format!("pick-{id}"),
+            "Choose location…",
+            idle,
+            move |s| {
+                choose(s, index);
+                request(s, "browse");
+            },
+        ));
+    }
+    if recipe.guided() {
+        let rid = id.to_string();
+        actions = actions.child(ghost(format!("check-{id}"), "Check", idle, move |s| {
+            choose(s, index);
+            if let Some(location) = s.setup.overrides.get(&rid) {
+                s.setup.location = TextEdit::new(location);
+            }
+            request(s, "detect");
+        }));
+    }
+    actions
 }
 
 /// One numbered dependency row (`.log-row`: number | name + detail | status).

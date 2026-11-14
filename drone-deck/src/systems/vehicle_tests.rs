@@ -122,3 +122,42 @@ fn consumers_follow_what_the_vehicle_can_feed() {
     assert!(!sys.consumers.live_view && sys.consumers.scripts_udp.is_none());
     assert!(sys.consumers.qgc, "QGroundControl is never pruned");
 }
+
+#[test]
+fn only_a_simulator_drone_deck_owns_may_be_commanded() {
+    for kind in [SIMULATION, ROS] {
+        assert!(compat::may_command(&template(kind, "s", "S")), "{kind}");
+    }
+    for kind in [AI, PHYSICAL] {
+        assert!(!compat::may_command(&template(kind, "x", "X")), "{kind}");
+    }
+    let mut unknown = template(SIMULATION, "u", "U");
+    unknown.vehicle = Vehicle::Simulated {
+        autopilot: model::Autopilot::Px4,
+        world: World::new("future-sim", &[]),
+    };
+    assert!(
+        !compat::may_command(&unknown),
+        "a world without an adapter is not a simulator Drone Deck starts"
+    );
+}
+
+#[test]
+fn a_physical_vehicle_keeps_the_flight_stack_the_user_names() {
+    let base = template(PHYSICAL, "rig", "Rig");
+    let mut d = Draft::of(&base);
+    assert_eq!(d.hint, None);
+    d.endpoint = rune::TextEdit::new("serial:COM3:57600");
+    d.hint = Some(adapter::AutopilotKind::ArduPilot);
+    let sys = d.apply(&base).unwrap();
+    assert_eq!(sys.autopilot(), Some(adapter::AutopilotKind::ArduPilot));
+    assert_eq!(
+        sys.summary(),
+        "Physical vehicle (ArduPilot) / serial:COM3:57600"
+    );
+    assert!(!compat::may_command(&sys), "a hint never grants commands");
+    assert_eq!(
+        Draft::of(&sys).hint,
+        Some(adapter::AutopilotKind::ArduPilot)
+    );
+}

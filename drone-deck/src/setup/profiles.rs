@@ -30,7 +30,8 @@ pub(crate) fn adopt(s: &mut State) {
         s.setup.message = "Select and detect the matching tool before applying this result.".into();
         return;
     }
-    if candidate.tool != "qgc"
+    // Windows tools (QGroundControl, X-Plane) belong to no WSL environment.
+    if s.setup.recipes[s.setup.selected].target != "Windows"
         && (candidate.environment.is_empty()
             || !candidate
                 .environment
@@ -144,6 +145,15 @@ pub(crate) fn adopt(s: &mut State) {
         "ros-gz" | "foxglove-bridge" => {
             profile.program = "wsl".into();
             profile.probe = format!("test -f {exe}");
+        }
+        // Their commands come from the PX4 installation, like SIH and Gazebo.
+        "jmavsim" | "flightgear" => {}
+        // Windows simulators the user installed and chose.
+        "xplane" | "webots" | "realflight" => {
+            profile.program = candidate.executable.clone();
+            profile.args = Vec::new();
+            profile.probe = candidate.executable.clone();
+            profile.cwd = candidate.path.clone();
         }
         "qgc" => {
             profile.program = candidate.executable.clone();

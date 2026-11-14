@@ -7,6 +7,12 @@ use serde::{Deserialize, Serialize};
 pub(crate) enum Mode {
     Sih,
     Gazebo,
+    /// PX4 with jMAVSim (`make px4_sitl jmavsim`).
+    JMavSim,
+    /// PX4 waiting for an external simulator on TCP 4560 (`make px4_sitl none_iris`).
+    External,
+    /// PX4 with FlightGear through PX4's bridge (`make px4_sitl flightgear_rascal`).
+    FlightGear,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct Installation {
@@ -134,6 +140,22 @@ pub(crate) fn resolve(c: &Config, p: &Profile) -> Profile {
                 "cd {dir} && {guard} && PX4_GZ_WORLD=\"${{DRONE_DECK_GZ_WORLD:-default}}\" make px4_sitl \"gz_${{DRONE_DECK_GZ_MODEL:-x500_mono_cam}}\""
             )];
             p.probe = format!("command -v gz && test -f {dir}/Makefile");
+        }
+        Mode::JMavSim => {
+            p.args = vec![format!("cd {dir} && {guard} && make px4_sitl jmavsim")];
+            p.probe = format!(
+                "test -f {dir}/Tools/simulation/jmavsim/jMAVSim/out/production/jmavsim_run.jar"
+            );
+        }
+        Mode::External => {
+            p.args = vec![format!("cd {dir} && {guard} && make px4_sitl none_iris")];
+            p.probe = format!("test -f {dir}/Makefile");
+        }
+        Mode::FlightGear => {
+            p.args = vec![format!(
+                "cd {dir} && {guard} && make px4_sitl flightgear_rascal"
+            )];
+            p.probe = format!("command -v fgfs && test -f {dir}/Makefile");
         }
     }
     p

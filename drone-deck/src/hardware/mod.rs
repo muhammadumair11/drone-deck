@@ -7,6 +7,7 @@ use crate::mavlink::ParamSet;
 use crate::*;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, TryRecvError};
+pub(crate) mod ports;
 mod preview;
 #[cfg(test)]
 mod tests;
@@ -42,6 +43,8 @@ pub(crate) struct Hardware {
     pub loads: HashMap<String, Loading>,
     /// The last `.params` export of this session, by the system whose parameters it holds.
     pub exports: HashMap<String, PathBuf>,
+    /// Serial ports found for the endpoint picker.
+    pub ports: ports::Scan,
 }
 /// A `.params` file read off the UI thread: a path on an offline network share can block
 /// until Windows gives up.
@@ -75,6 +78,7 @@ impl Default for Hardware {
             baselines: HashMap::new(),
             loads: HashMap::new(),
             exports: HashMap::new(),
+            ports: ports::Scan::default(),
         }
     }
 }
@@ -82,6 +86,8 @@ pub(crate) const DEFAULT_MESSAGE: &str = "Enter a dedicated endpoint, then conne
 
 /// Added wherever the panel says what reaches the vehicle, while the active system has
 /// QGroundControl or scripts enabled (`systems::physical_bridge`).
+/// What a vehicle endpoint looks like, for a refused one.
+pub(crate) const ENDPOINT_HELP: &str = "Choose a serial port and baud rate, or use serial:COM4:57600, udp:0.0.0.0:14550 or tcp:192.168.4.1:5760.";
 const BRIDGE_CAVEAT: &str = "QGroundControl and scripts enabled for this system are bridged both ways and can command the vehicle.";
 /// A `.params` file larger than this is not a parameter file.
 const PARAMS_FILE_LIMIT: u64 = 8 * 1024 * 1024;
@@ -108,8 +114,8 @@ pub(crate) fn start(s: &mut State) {
         return;
     }
     let endpoint = s.hardware.endpoint.text.trim().to_string();
-    if endpoint.len() > 160 || endpoint.contains(['\n', '\r']) {
-        s.hardware.message = "Invalid endpoint.".into();
+    if endpoint.is_empty() || !systems::endpoint_ok(&endpoint) {
+        s.hardware.message = ENDPOINT_HELP.into();
         return;
     }
     let owner = s.systems.active_id().to_string();
@@ -151,14 +157,8 @@ pub(crate) fn saved_endpoint(s: &State) -> Option<&str> {
 /// Saves the endpoint being edited as the active physical system's endpoint.
 pub(crate) fn save_endpoint(s: &mut State) {
     let endpoint = s.hardware.endpoint.text.trim().to_string();
-    if endpoint.is_empty()
-        || endpoint.len() > 160
-        || endpoint.contains(['\n', '\r'])
-        || endpoint.parse::<crate::mavlink::Endpoint>().is_err()
-    {
-        s.hardware.message = format!(
-            "{endpoint:?} is not an endpoint. Use serial:COM4:57600, udp:0.0.0.0:14550 or tcp:host:5760."
-        );
+    if endpoint.is_empty() || !systems::endpoint_ok(&endpoint) {
+        s.hardware.message = format!("{endpoint:?} is not an endpoint. {ENDPOINT_HELP}");
         return;
     }
     let id = s.systems.active_id().to_string();
@@ -278,8 +278,9 @@ pub(crate) fn load_baseline(s: &mut State) {
 /// Lands each finished **Load and compare** for the system it was started for. True only
 /// when a result landed.
 pub(crate) fn poll(s: &mut State) -> bool {
+    let scanned = ports::poll(s);
     if s.hardware.loads.is_empty() {
-        return false;
+        return scanned;
     }
     let mut done = Vec::new();
     for (system, loading) in &s.hardware.loads {
@@ -295,7 +296,7 @@ pub(crate) fn poll(s: &mut State) -> bool {
             )),
         }
     }
-    let landed = !done.is_empty();
+    let landed = scanned || !done.is_empty();
     for (system, result) in done {
         if let Some(loading) = s.hardware.loads.remove(&system) {
             land_baseline(s, &system, &loading.path, result);

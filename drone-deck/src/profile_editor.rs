@@ -87,7 +87,9 @@ pub fn open(s: &mut State) {
 /// Makes sure the row for `id` is listed: widens the scope and clears a filter or search
 /// that would hide it.
 fn reveal(s: &mut State, id: &str) {
-    let in_system = systems::profile_ids(s.systems.active).any(|p| p == id);
+    let in_system = systems::components(s.systems.current())
+        .iter()
+        .any(|c| matches!(c.backing, systems::Backing::Profile(p) if p == id));
     if !in_system {
         s.ui.tools_all = true;
     }

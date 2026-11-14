@@ -23,12 +23,15 @@ try {
         'online' { $data = @(Get-OnlineDistros) }
         'browse' {
             . (Join-Path $PSScriptRoot 'picker.ps1')
-            $data=Select-ToolLocation $request.tool $request.distro
+            $recipe = Get-Recipes | Where-Object {$_.id -eq $request.tool} | Select-Object -First 1
+            if (-not $recipe) { throw 'Unknown tool recipe.' }
+            $data=Select-ToolLocation $request.tool $request.distro ([string]$recipe.pick)
         }
         'detect' {
-            if ($request.tool -eq 'qgc') {
+            $recipe = Get-Recipes | Where-Object {$_.id -eq $request.tool} | Select-Object -First 1
+            if ($recipe -and $recipe.target -eq 'Windows') {
                 . (Join-Path $PSScriptRoot 'windows-tools.ps1')
-                $data = Find-WindowsTool $request.tool $request.location
+                $data = Find-WindowsTool $request.tool $request.location $recipe.check
                 break
             }
             if (-not (@(Get-InstalledDistros | Where-Object {$_.name -eq $request.distro -and $_.version -eq 2}))) { throw 'Choose an installed WSL 2 distribution first.' }

@@ -132,9 +132,26 @@ fn schema_one_drops_retired_profiles_and_keeps_user_profiles() {
     fs::write(&file, serde_json::to_vec_pretty(&v1).unwrap()).unwrap();
     let config = backend::load_at(&file).unwrap();
     let ids: Vec<&str> = config.profiles.iter().map(|p| p.id.as_str()).collect();
+    // The relay-era jMAVSim (a Java jar on Windows) is dropped; schema 4 adds jMAVSim back as
+    // a PX4 launch profile, with the external-simulator PX4 and X-Plane.
     assert_eq!(
         ids,
-        ["sih", "gazebo", "ardupilot", "relay-2", "rosgz", "foxglove"]
+        [
+            "sih",
+            "gazebo",
+            "ardupilot",
+            "relay-2",
+            "rosgz",
+            "foxglove",
+            "jmavsim",
+            "px4-none",
+            "xplane",
+            "flightgear",
+            "ardupilot-webots",
+            "webots",
+            "realflight",
+            "ardupilot-realflight"
+        ]
     );
     let args = |id: &str| {
         config
@@ -145,6 +162,10 @@ fn schema_one_drops_retired_profiles_and_keeps_user_profiles() {
             .args
             .join(" ")
     };
+    assert!(
+        args("jmavsim").contains("make px4_sitl jmavsim"),
+        "not the old profile"
+    );
     assert!(
         args("gazebo").contains("DRONE_DECK_GZ_MODEL"),
         "unedited default upgraded"

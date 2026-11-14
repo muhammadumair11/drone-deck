@@ -10,8 +10,8 @@ def extra_base():
     return types.SimpleNamespace(ROOT=ROOT,run=run,output=output,probe=probe,require_noble=require_noble,owned_target=owned_target)
 
 ROOT = Path.home() / '.local/share/drone-deck/tools'
-TOOLS = {'ros2', 'mavsdk', 'px4', 'dds', 'ardupilot', 'gazebo','ros-workspace','onnx','ros-gz','foxglove-bridge'}
-EXTRA = ('gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge')
+TOOLS = {'ros2', 'mavsdk', 'px4', 'dds', 'ardupilot', 'gazebo','ros-workspace','onnx','ros-gz','foxglove-bridge','jmavsim','flightgear'}
+EXTRA = ('gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge','jmavsim','flightgear')
 
 def run(args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
@@ -164,7 +164,7 @@ def install(tool):
 
 def preflight(tool):
     require_noble()
-    minimum = {'mavsdk': 1, 'px4': 10, 'dds': 3,'gazebo':5,'ardupilot':8,'ros-workspace':3,'onnx':2,'ros-gz':2,'foxglove-bridge':1}.get(tool, 1)
+    minimum = {'mavsdk': 1, 'px4': 10, 'dds': 3,'gazebo':5,'ardupilot':8,'ros-workspace':3,'onnx':2,'ros-gz':2,'foxglove-bridge':1,'jmavsim':1,'flightgear':4}.get(tool, 1)
     if shutil.disk_usage(Path.home()).free < minimum * 1024 ** 3:
         raise RuntimeError(f'This recipe needs at least {minimum} GiB free in the Linux filesystem; source builds may need more.')
     names = {'mavsdk': ['mavsdk'], 'px4': ['PX4-Autopilot', 'px4-python'], 'dds': ['Micro-XRCE-DDS-Agent'],'ardupilot':['ardupilot','ardupilot-python'],'ros-workspace':['px4_ros_ws'],'onnx':['onnx']}
@@ -174,7 +174,8 @@ def preflight(tool):
 
 def verify(tool):
     managed = {'mavsdk': ROOT / 'mavsdk', 'px4': ROOT / 'PX4-Autopilot',
-               'dds': ROOT / 'Micro-XRCE-DDS-Agent','ardupilot':ROOT/'ardupilot','ros-workspace':ROOT/'px4_ros_ws','onnx':ROOT/'onnx'}
+               'dds': ROOT / 'Micro-XRCE-DDS-Agent','ardupilot':ROOT/'ardupilot','ros-workspace':ROOT/'px4_ros_ws','onnx':ROOT/'onnx',
+               'jmavsim':ROOT/'PX4-Autopilot'}
     return probe(tool, str(managed[tool]) if tool in managed else '')
 
 if __name__ == '__main__':

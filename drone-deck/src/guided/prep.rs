@@ -116,16 +116,6 @@ fn close_app(s: &State) -> El {
     })
 }
 
-fn location_note(s: &State) -> El {
-    let tool = primary_tool(s);
-    match s.setup.overrides.get(&tool) {
-        Some(path) => notice(format!(
-            "Requested existing location: {path}. Discovery validates it before reuse."
-        )),
-        None => el(),
-    }
-}
-
 fn error_line(s: &State) -> El {
     let e = &s.guided.prep_error;
     body(e.clone(), 11., danger())
@@ -237,7 +227,7 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
     let mut content = col().w_full().min_w(0.).gap(16.);
     match phase {
         Phase::Start => {
-            content = content.child(deps).child(location_note(s)).child(jobs(s));
+            content = content.child(deps).child(jobs(s));
         }
         Phase::Checking => {
             let progress = match g.check {
@@ -262,8 +252,7 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
                         .key("check-progress")
                         .role("status"),
                 )
-                .child(deps)
-                .child(location_note(s));
+                .child(deps);
         }
         Phase::Environment => {
             let vp = ui::theme::Viewport { w: f.w, h: 800. };
@@ -276,7 +265,6 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
         Phase::Review => {
             content = content
                 .child(deps)
-                .child(location_note(s))
                 .child(notice(plan_summary(s)).max_w(860.).mt(8.))
                 .child(checkbox(
                     "setup-consent",
@@ -322,7 +310,7 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
                 "Continue to first run",
                 |s| {
                     mark_prepared(s);
-                    go(s, 3);
+                    go(s, RUN);
                 },
             )));
         }

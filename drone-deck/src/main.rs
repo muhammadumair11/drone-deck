@@ -581,8 +581,9 @@ const SCENES: &[Scene] = &[
     ("system-new", guided::new_system),
     ("setup", |s| guided_at(s, 0)),
     ("setup-system", |s| guided_at(s, 1)),
-    ("setup-prep", |s| guided_at(s, 2)),
-    ("setup-run", |s| guided_at(s, 3)),
+    ("setup-listeners", |s| guided_at(s, 2)),
+    ("setup-prep", |s| guided_at(s, guided::REVIEW)),
+    ("setup-run", |s| guided_at(s, guided::RUN)),
     ("recordings-demo", recordings::preview),
     ("setup-demo", setup::preview),
     ("setup-no-wsl", |s| {
@@ -616,6 +617,16 @@ const SCENES: &[Scene] = &[
             .unwrap_or(0);
         setup::choose(s, px4);
         setup::review(s);
+    }),
+    // A tool the user installs themselves: its guide and Check instead of Install.
+    ("tool-guide", |s| {
+        s.navigate(Page::Tools);
+        s.ui.tools_all = true;
+        s.ui.expanded = Some("xplane".into());
+        if let Some(xplane) = s.setup.recipe_index("xplane") {
+            setup::choose(s, xplane);
+            setup::review(s);
+        }
     }),
     ("activity-demo", |s| {
         for text in [
@@ -727,25 +738,23 @@ const SCENES: &[Scene] = &[
     ("vehicle-link-retrying", vehicle::view::scene_link_retrying),
     ("physical-params", hardware::preview_params),
     ("physical-logs", hardware::preview_logs),
-    ("setup-recipe", |s| {
-        setup::preview(s);
+    // ArduPilot chosen: the worlds it cannot fly in are listed, disabled, with the reason.
+    ("setup-world-ardupilot", |s| {
         guided_at(s, 1);
-        s.ui.open.insert("technical-recipe".into());
-        s.guided.path = TextEdit::new("tools/px4");
-        s.guided.path_error = true;
+        s.guided.draft.autopilot = systems::adapter::AutopilotKind::ArduPilot;
     }),
     ("setup-run-physical", |s| {
         s.select_system(systems::PHYSICAL);
-        guided_at(s, 3);
+        guided_at(s, guided::RUN);
     }),
     ("setup-run-ai", |s| {
         studio::pipelines::preview(s);
         s.select_system(systems::AI);
-        guided_at(s, 3);
+        guided_at(s, guided::RUN);
         s.guided.task = 2;
     }),
     ("setup-receipt", |s| {
-        guided_at(s, 3);
+        guided_at(s, guided::RUN);
         s.guided.done = true;
         s.guided.evidence = vec!["Headless preview fixture: no evidence was collected.".into()];
     }),

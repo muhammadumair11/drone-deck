@@ -182,10 +182,17 @@ pub(crate) fn begin(s: &mut State) {
             return;
         }
     }
+    // Tools the user installs from a guide are never queued: they are checked instead.
     let mut remaining = Vec::new();
+    let mut guided = 0;
     for id in &ids {
         if !s.setup.checks.get(id).is_some_and(|c| c.compatible) {
-            remaining.push(s.setup.recipes.iter().position(|r| &r.id == id).unwrap());
+            let index = s.setup.recipes.iter().position(|r| &r.id == id).unwrap();
+            if s.setup.recipes[index].guided() {
+                guided += 1;
+            } else {
+                remaining.push(index);
+            }
         }
     }
     s.setup.batch = Some(Batch {
@@ -194,7 +201,13 @@ pub(crate) fn begin(s: &mut State) {
         distro: s.setup.distro.text.clone(),
     });
     s.setup.configure_after = true;
-    s.setup.batch_message="Workflow setup started. Components install sequentially and are configured after verification.".into();
+    s.setup.batch_message = if guided == 0 {
+        "Workflow setup started. Components install sequentially and are configured after verification.".into()
+    } else {
+        format!(
+            "Workflow setup started. Components install sequentially and are configured after verification. {guided} tool(s) need a manual install: follow the guide in their row, then check."
+        )
+    };
 }
 pub(super) fn started(s: &mut State, id: &str) {
     if let Some(batch) = s.setup.batch.as_mut() {

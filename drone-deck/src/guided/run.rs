@@ -135,7 +135,7 @@ fn launched_project(s: &State) -> Option<String> {
 
 fn endpoint_ok(s: &State) -> bool {
     let e = s.hardware.endpoint.text.trim();
-    !e.is_empty() && e.len() <= 160 && !e.contains(['\n', '\r'])
+    !e.is_empty() && systems::endpoint_ok(e)
 }
 
 pub(super) fn act(s: &mut State) {
@@ -442,7 +442,7 @@ const REQUERIES: u8 = 5;
 /// topics until PX4 and the DDS agent publish, and re-lists recordings until one finalizes.
 pub(super) fn poll(s: &mut State) -> bool {
     let g = &s.guided;
-    if g.chapter != 3 || !g.awaiting || g.done || !on_active(s) {
+    if g.chapter != RUN || !g.awaiting || g.done || !on_active(s) {
         return false;
     }
     if g.choice == systems::AI {

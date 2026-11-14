@@ -4,10 +4,8 @@ pub(crate) struct Story {
     pub name: &'static str,
     pub desc: &'static str,
     pub tag: &'static str,
-    pub title: &'static str,
     pub result: &'static str,
-    /// Blueprint stations: name, role, explanation, where it runs.
-    pub steps: [(&'static str, &'static str, &'static str, &'static str); 3],
+    /// A note on how the starting point's parts connect, shown with its listeners.
     pub extra: &'static str,
     /// First-run tasks: title, what happens, what to observe.
     pub tasks: [(&'static str, &'static str, &'static str); 3],
@@ -20,28 +18,7 @@ pub(crate) const STORIES: [Story; 4] = [
         name: "Watch a virtual drone",
         desc: "See an autopilot, a simulated vehicle and a ground station working together.",
         tag: "Start here / no hardware",
-        title: "A flight lab on your laptop.",
         result: "A virtual drone you can observe and command from the System page (this simulation only), with missions and vehicle setup in QGroundControl.",
-        steps: [
-            (
-                "PX4 / SIH",
-                "Simulate the vehicle",
-                "The autopilot and internal physics run together in Ubuntu.",
-                "Ubuntu / WSL",
-            ),
-            (
-                "MAVLink router",
-                "Move state to Windows",
-                "Bridges PX4's UDP 14550 to TCP 5760, which Windows reaches through WSL.",
-                "WSL / TCP 5760",
-            ),
-            (
-                "Vehicle link",
-                "See the result",
-                "Drone Deck shows the live vehicle and feeds QGroundControl on UDP 14550.",
-                "Windows native",
-            ),
-        ],
         extra: "QGroundControl opens separately for vehicle setup and missions. Your own scripts on Windows (MAVSDK, pymavlink) can use UDP 14540 through the same link.",
         tasks: [
             (
@@ -66,28 +43,7 @@ pub(crate) const STORIES: [Story; 4] = [
         name: "Capture sensor data",
         desc: "Connect ROS streams, record them, and replay or extract them later.",
         tag: "ROS / recordings",
-        title: "From live messages to a reusable recording.",
         result: "A finalized MCAP recording, ready for isolated replay, frame extraction and inference on replay.",
-        steps: [
-            (
-                "PX4 + matching messages",
-                "Provide the source",
-                "A compatible DDS client and firmware-matched px4_msgs are prerequisites.",
-                "Ubuntu / WSL",
-            ),
-            (
-                "DDS Agent + ROS 2",
-                "Connect the streams",
-                "The Agent bridges messages. Live publishers must actually be present.",
-                "UDP 8888 / ROS Jazzy",
-            ),
-            (
-                "rosbag2 / MCAP",
-                "Keep the evidence",
-                "Capture selected topics, then stop gracefully to finalize metadata.",
-                "Local Linux storage",
-            ),
-        ],
         extra: "Replay uses a separate ROS domain, normally 77. Camera and LiDAR streams need their own publishers; SIH does not automatically create them.",
         tasks: [
             (
@@ -112,28 +68,7 @@ pub(crate) const STORIES: [Story; 4] = [
         name: "Test a model offline",
         desc: "Run a local model on prepared inputs, then on a replayed recording.",
         tag: "AI / no vehicle needed",
-        title: "Test the model before connecting it to flight.",
         result: "Output tensors from prepared inputs, then detections recorded from a replayed recording, each with a run record. No accuracy is computed.",
-        steps: [
-            (
-                "Model + prepared input",
-                "Choose the material",
-                "Select a compatible ONNX file and correctly preprocessed NPZ tensors.",
-                "Local assets",
-            ),
-            (
-                "ONNX CPU runtime",
-                "Run the system",
-                "The editable starter executes inference inside the selected WSL environment.",
-                "Ubuntu / WSL",
-            ),
-            (
-                "Pipelines",
-                "Infer on replay",
-                "Replays a finalized recording on an isolated ROS domain and records the model's detections with model and source hashes.",
-                "Ubuntu / WSL",
-            ),
-        ],
         extra: "Hugging Face downloads are optional. Downloaded weights do not supply a sensor adapter, calibration, preprocessing or flight capability.",
         tasks: [
             (
@@ -162,28 +97,7 @@ pub(crate) const STORIES: [Story; 4] = [
         name: "Observe my physical drone",
         desc: "Connect a flight controller for read-only monitoring and local logs.",
         tag: "Hardware / Windows native",
-        title: "Know what is connected before doing anything.",
         result: "An identified vehicle with fresh telemetry and a local tlog. Drone Deck sends it no flight commands; flight control stays in the ground station.",
-        steps: [
-            (
-                "Serial / UDP / TCP",
-                "Choose the connection",
-                "Use a dedicated endpoint so tools do not compete for the same port.",
-                "Windows native",
-            ),
-            (
-                "Vehicle link",
-                "Identify the vehicle",
-                "Look for a fresh autopilot heartbeat and select its identity.",
-                "Read-only monitoring",
-            ),
-            (
-                "Telemetry + tlog",
-                "Keep the record",
-                "Inspect freshness and retain the local telemetry log.",
-                "Windows local storage",
-            ),
-        ],
         extra: "This route does not need PX4 simulation or WSL. Drone Deck's link is read-only: it sends no flight commands, parameter writes or ground-station heartbeat. If you enable QGroundControl or scripts for this system, the link forwards their messages, so those programs can command the vehicle.",
         tasks: [
             (

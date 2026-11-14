@@ -34,3 +34,11 @@ pub(crate) fn prune(sys: &mut System) {
         c.scripts_udp = None;
     }
 }
+
+/// Whether Drone Deck itself may send flight commands and console lines to `sys`'s vehicle:
+/// today only a simulator it starts and owns. This is the one place a later, deliberate
+/// opt-in for real drones would change. The gate's evidence (`vehicle::gate`) and the link's
+/// own refusal of physical links (`mavlink::Service::check_flight`) still apply underneath.
+pub(crate) fn may_command(sys: &System) -> bool {
+    sys.simulated()
+}

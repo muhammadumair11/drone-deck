@@ -49,4 +49,45 @@ class ExtraTests(unittest.TestCase):
   self.assertEqual(calls,[['apt-get','update'],['apt-get','install','-y','--no-install-recommends','ros-jazzy-foxglove-bridge']])
   with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):extra_tools.install(base,'ros-gz')
   self.assertEqual(len(base.run.call_args_list),2,'no user-level stage for apt packages')
+ def test_jmavsim_probe_needs_the_built_jar_and_java(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   px4=Path(directory)/'PX4-Autopilot';project=px4/extra_tools.JMAVSIM;project.mkdir(parents=True)
+   base=Mock(ROOT=Path(directory));base.output.return_value='v1.17.0'
+   self.assertFalse(extra_tools.probe(base,'jmavsim',str(px4))['found'],'no Ant project yet')
+   (project/'build.xml').write_text('<project/>')
+   result=extra_tools.probe(base,'jmavsim',str(px4))
+   self.assertTrue(result['found']);self.assertFalse(result['compatible']);self.assertIn('build its jar',result['reason'])
+   jar=px4/extra_tools.JMAVSIM_JAR;jar.parent.mkdir(parents=True);jar.write_bytes(b'PK')
+   with patch.object(extra_tools.shutil,'which',return_value='/usr/bin/java'):
+    result=extra_tools.probe(base,'jmavsim',str(px4))
+   self.assertTrue(result['compatible']);self.assertEqual(result['executable'],str(jar))
+   self.assertTrue(result['managed'],'inside the managed root')
+ def test_jmavsim_builds_only_in_the_managed_px4_checkout(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   root=Path(directory);base=Mock(ROOT=root)
+   with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):
+    with self.assertRaisesRegex(RuntimeError,"own PX4 checkout"):extra_tools.install(base,'jmavsim')
+    base.run.assert_not_called()
+    (root/'PX4-Autopilot'/'.git').mkdir(parents=True);(root/'.owned-PX4-Autopilot').write_text('x')
+    extra_tools.install(base,'jmavsim')
+  calls=[call.args[0] for call in base.run.call_args_list]
+  self.assertEqual(calls[1],['ant','create_run_jar','copy_res'])
+  self.assertEqual(base.run.call_args_list[1].kwargs['cwd'],root/'PX4-Autopilot'/extra_tools.JMAVSIM)
+ def test_jmavsim_is_a_known_tool_verified_in_the_px4_checkout(self):
+  self.assertIn('jmavsim',tools.TOOLS)
+  with patch.object(extra_tools,'probe',return_value={}) as probe:tools.verify('jmavsim')
+  self.assertEqual(probe.call_args.args[1:],('jmavsim',str(tools.ROOT/'PX4-Autopilot')))
+ def test_flightgear_is_an_apt_package_with_no_user_stage(self):
+  base=Mock()
+  with patch.object(extra_tools.os,'geteuid',return_value=0,create=True):extra_tools.dependencies(base,'flightgear')
+  calls=[call.args[0] for call in base.run.call_args_list]
+  self.assertEqual(calls[-1],['apt-get','install','-y','--no-install-recommends','flightgear'])
+  with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):extra_tools.install(base,'flightgear')
+  self.assertEqual(len(base.run.call_args_list),2,'nothing to build')
+ def test_flightgear_probe_reads_the_version_of_the_chosen_fgfs(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   fgfs=Path(directory)/'fgfs';fgfs.touch();base=Mock(ROOT=Path(directory));base.output.return_value='2020.3.19\nmore'
+   result=extra_tools.probe(base,'flightgear',str(fgfs))
+   self.assertTrue(result['compatible']);self.assertEqual(result['version'],'2020.3.19')
+   self.assertFalse(extra_tools.probe(base,'flightgear',str(Path(directory)/'missing'))['found'])
 if __name__=='__main__':unittest.main()

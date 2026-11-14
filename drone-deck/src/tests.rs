@@ -346,11 +346,23 @@ fn new_system_from_guided_setup_is_created_from_its_template() {
     rt.update(|s, _| crate::guided::new_system(s));
     rt.frame(0.1);
     tap(&mut rt, "intent-1");
-    tap(&mut rt, "next");
     rt.update(|s, _| s.guided.name = TextEdit::new("Camera rig"));
     rt.frame(0.1);
     tap(&mut rt, "next");
+    assert_eq!(
+        rt.state.guided.chapter, 1,
+        "a simulated vehicle chooses its world"
+    );
+    assert!(rt.find("system-world-gazebo").is_some());
+    tap(&mut rt, "next");
     assert_eq!(rt.state.guided.chapter, 2);
+    assert_eq!(
+        rt.state.systems.list.len(),
+        4,
+        "nothing is saved before Listeners"
+    );
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, crate::guided::REVIEW);
     assert_eq!(rt.state.systems.list.len(), 5);
     let sys = rt.state.systems.get("camera-rig").expect("created");
     assert_eq!(sys.template, "ros-sensor-capture");
@@ -465,17 +477,31 @@ fn guided_setup_validates_the_name_and_returns_to_the_workspace() {
     assert_eq!(rt.state.guided.chapter, 0);
     tap(&mut rt, "intent-3");
     assert_eq!(rt.state.guided.choice, systems::PHYSICAL);
-    tap(&mut rt, "next");
-    assert_eq!(rt.state.guided.chapter, 1);
     rt.update(|s, _| s.guided.name = TextEdit::new("   "));
     rt.frame(0.1);
     tap(&mut rt, "next");
-    assert_eq!(rt.state.guided.chapter, 1, "a blank name does not advance");
+    assert_eq!(rt.state.guided.chapter, 0, "a blank name does not advance");
     assert!(!rt.state.guided.name_error.is_empty());
     rt.update(|s, _| s.guided.name = TextEdit::new("Bench quad"));
     rt.frame(0.1);
     tap(&mut rt, "next");
-    assert_eq!(rt.state.guided.chapter, 2);
+    assert_eq!(
+        rt.state.guided.chapter, 2,
+        "a physical vehicle needs no world"
+    );
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, crate::guided::REVIEW);
+    // Opened for Local simulation, another starting point prepares a new system.
+    let created = rt.state.systems.get("bench-quad").expect("created");
+    assert!(created.is_physical());
+    assert_eq!(
+        rt.state
+            .systems
+            .get("local-simulation")
+            .map(|x| x.name.as_str()),
+        Some("Local simulation"),
+        "the system it was opened for stays as it is"
+    );
     tap(&mut rt, "chapter-nav-0");
     assert_eq!(
         rt.state.guided.chapter, 0,
@@ -747,4 +773,35 @@ fn the_system_editor_greys_a_world_the_autopilot_has_no_adapter_for() {
         rt.state.systems.list[0].vehicle,
         systems::Vehicle::ardupilot("copter")
     );
+}
+
+#[test]
+fn guided_setup_builds_a_system_piece_by_piece() {
+    let mut rt = runtime(State::new(), (1440., 1100.));
+    rt.update(|s, _| crate::guided::new_system(s));
+    rt.update(|s, _| s.guided.name = TextEdit::new("ArduPilot bench"));
+    rt.frame(0.1);
+    tap(&mut rt, "system-autopilot-1");
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, 1);
+    tap(&mut rt, "system-world-gazebo");
+    assert_eq!(
+        rt.state.guided.draft.world, "internal",
+        "ArduPilot cannot pick Gazebo"
+    );
+    tap(&mut rt, "system-world-webots");
+    assert_eq!(rt.state.guided.draft.world, "webots");
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, 2);
+    assert!(
+        rt.find("consumer-ros-agent").is_none(),
+        "no ROS bridge for ArduPilot + Webots"
+    );
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, crate::guided::REVIEW);
+    let sys = rt.state.systems.get("ardupilot-bench").expect("created");
+    assert_eq!(sys.adapter().map(|a| a.id), Some("ardupilot-webots"));
+    let preset = crate::guided::preset(&rt.state);
+    assert_eq!(preset.recipes, ["ardupilot", "webots", "qgc"]);
+    assert!(!sys.prepared, "prepared only after Review & install");
 }

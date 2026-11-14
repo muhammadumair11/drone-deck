@@ -202,8 +202,11 @@ fn physical_tools_expose_no_write_control() {
                     continue;
                 }
                 let label = e.label.unwrap_or_default();
+                // The endpoint picker's ports, baud rates and presets only fill the endpoint
+                // field; nothing reaches the vehicle until Connect read-only.
+                let picker = e.path.split('/').any(|p| p.contains("endpoint-picker"));
                 assert!(
-                    ALLOWED.contains(&label.as_str()),
+                    picker || ALLOWED.contains(&label.as_str()),
                     "unexpected control {label:?} in {key}"
                 );
                 seen += 1;

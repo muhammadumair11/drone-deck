@@ -3,8 +3,8 @@ mod detection;
 use crate::agent::Launcher;
 use crate::store::Read;
 pub use builtins::defaults;
+pub(crate) use builtins::{ADDED_IN_4, RETIRED, launch_env};
 use builtins::{ARDUPILOT_ARGS, GAZEBO_ARGS, OLD_ARDUPILOT, OLD_GAZEBO, OLD_MAVSDK_PYTHON};
-pub(crate) use builtins::{RETIRED, launch_env};
 use detection::detect;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -53,7 +53,7 @@ pub struct Config {
     pub profiles: Vec<Profile>,
 }
 /// The current `profiles.json` schema. A file without `"schema"` is schema 0.
-pub const SCHEMA: u64 = 3;
+pub const SCHEMA: u64 = 4;
 #[derive(Serialize)]
 struct Stored<'a> {
     schema: u64,
@@ -323,6 +323,20 @@ pub(crate) fn parse_config(
     if schema < 3 {
         crate::px4::migrate(&mut config);
     }
+    // Schema 4: built-ins for jMAVSim and X-Plane (PX4 waiting for it, and X-Plane itself).
+    let mut added = Vec::new();
+    if schema < 4 {
+        for new in defaults()
+            .profiles
+            .into_iter()
+            .filter(|p| ADDED_IN_4.contains(&p.id.as_str()))
+        {
+            if !config.profiles.iter().any(|p| p.id == new.id) {
+                added.push(new.name.clone());
+                config.profiles.push(new);
+            }
+        }
+    }
     for installation in config.px4_installations.values() {
         crate::px4::validate(installation)?;
     }
@@ -343,6 +357,9 @@ pub(crate) fn parse_config(
         }
         if kept {
             text.push_str(" The adopted MAVSDK interpreter is kept as the MAVSDK Python profile.");
+        }
+        if !added.is_empty() {
+            text.push_str(&format!(" Added built-in profiles: {}.", added.join(", ")));
         }
         text
     });

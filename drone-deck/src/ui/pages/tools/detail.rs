@@ -191,8 +191,11 @@ fn existing(s: &State, i: usize) -> El {
     let r = &s.setup.recipes[i];
     let selected = s.setup.selected == i;
     let idle = !s.setup.pending && !s.setup.active();
-    let hint = match (r.target.as_str(), r.id.as_str()) {
-        ("Windows", _) => "Full Windows path to the .exe",
+    let hint = match r.pick.as_str() {
+        "windows-folder" => "Windows folder where it is installed (Browse chooses it)",
+        "windows-file" => "Full Windows path to the .exe (Browse chooses it)",
+        "wsl-folder" | "wsl-file" => "Linux path inside the WSL environment (Browse chooses it)",
+        _ if r.target == "Windows" => "Full Windows path to the .exe",
         _ => "Linux path inside the WSL environment",
     };
     let mut block = col()
@@ -230,7 +233,7 @@ fn existing(s: &State, i: usize) -> El {
             .child(ghost(
                 "browse-existing-tool",
                 "Browse for existing tool…",
-                idle && !s.headless,
+                idle && !s.headless && !r.pick.is_empty(),
                 move |s| find_existing(s, i, "browse"),
             ))
             .child(ghost(

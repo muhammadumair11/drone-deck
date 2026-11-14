@@ -36,7 +36,7 @@ pub(crate) fn autopilot_name(kind: AutopilotKind) -> &'static str {
 
 /// The worlds systems can name: id, name, one line about it. A world is offered for every
 /// autopilot; the ones without an adapter for it say so instead of being hidden.
-pub(crate) const WORLDS: [(&str, &str, &str); 2] = [
+pub(crate) const WORLDS: [(&str, &str, &str); 7] = [
     (
         "internal",
         "Built-in physics",
@@ -46,6 +46,31 @@ pub(crate) const WORLDS: [(&str, &str, &str); 2] = [
         "gazebo",
         "Gazebo Harmonic",
         "A 3D world with sensors such as cameras. Needs Gazebo in WSL.",
+    ),
+    (
+        "jmavsim",
+        "jMAVSim",
+        "A light Java 3D view for PX4, built inside the PX4 checkout. Its window needs WSLg.",
+    ),
+    (
+        "xplane",
+        "X-Plane 12",
+        "A paid Windows flight simulator with a community PX4 plugin. You install it yourself.",
+    ),
+    (
+        "flightgear",
+        "FlightGear",
+        "An open-source flight simulator for PX4, installed in WSL. Its window needs WSLg.",
+    ),
+    (
+        "webots",
+        "Webots",
+        "An open-source robot simulator with ArduPilot example worlds. You install it yourself.",
+    ),
+    (
+        "realflight",
+        "RealFlight",
+        "A paid Windows RC flight simulator that ArduPilot drives over FlightAxis. You install it yourself.",
     ),
 ];
 
@@ -71,9 +96,10 @@ pub(crate) fn world_for(autopilot: AutopilotKind, world: &str) -> Result<&'stati
 /// How the staged launch knows a stage is ready.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Readiness {
-    /// The agent saw this px4 process (started with `PX4_SIMULATOR=<simulator>`) publish
-    /// vehicle status (`scripts/agent/sih.py`). A running process alone is not enough.
-    Px4Status { simulator: &'static str },
+    /// The agent saw a px4 process publish vehicle status (`scripts/agent/sih.py`): the one
+    /// started with `PX4_SIMULATOR=<simulator>`, or any px4 when `None` (one PX4 runs at a
+    /// time). A running process alone is not enough.
+    Px4Status { simulator: Option<&'static str> },
     /// The process runs.
     ProcessRunning,
 }
@@ -81,7 +107,10 @@ impl Readiness {
     /// The readiness check the WSL agent runs for the process, if any.
     pub(crate) fn agent_kind(self) -> Option<String> {
         match self {
-            Readiness::Px4Status { simulator } => Some(format!("px4-status:{simulator}")),
+            Readiness::Px4Status {
+                simulator: Some(simulator),
+            } => Some(format!("px4-status:{simulator}")),
+            Readiness::Px4Status { simulator: None } => Some("px4-status".into()),
             Readiness::ProcessRunning => None,
         }
     }
@@ -148,6 +177,10 @@ pub(crate) struct Adapter {
     pub autopilot: AutopilotKind,
     /// The world id systems store (`internal` is the autopilot's own physics).
     pub world: &'static str,
+    /// The stage that runs the autopilot: the flight stack the gate and the one-at-a-time rule
+    /// look at. Not always the first stage: RealFlight must be running before ArduPilot.
+    pub vehicle: &'static str,
+    /// The processes the launch starts, in order.
     pub stages: &'static [Stage],
     pub link: Link,
     pub ros: Option<Ros>,
@@ -158,9 +191,9 @@ pub(crate) struct Adapter {
     pub shell: bool,
 }
 impl Adapter {
-    /// The profile that runs the vehicle: the first stage.
+    /// The profile that runs the autopilot.
     pub(crate) fn vehicle_profile(&self) -> &'static str {
-        self.stages[0].profile
+        self.vehicle
     }
     /// Profiles that receive this adapter's `params` as environment: its stages and the
     /// extra ROS profiles started with it.
@@ -188,6 +221,19 @@ pub(crate) fn by_profile(id: &str) -> Option<&'static Adapter> {
 /// Whether profile `id` runs a simulator.
 pub(crate) fn is_simulator(id: &str) -> bool {
     by_profile(id).is_some()
+}
+
+/// Whether profile `id` runs an adapter's autopilot (`vehicle`). These are the flight
+/// stacks the backend lets run one at a time; later stages of the same adapter join them.
+pub(crate) fn is_vehicle_profile(id: &str) -> bool {
+    ALL.iter().any(|a| a.vehicle_profile() == id)
+}
+
+/// Whether profiles `a` and `b` are stages of the same adapter.
+pub(crate) fn same_adapter(a: &str, b: &str) -> bool {
+    by_profile(a)
+        .zip(by_profile(b))
+        .is_some_and(|(x, y)| x.id == y.id)
 }
 
 /// Every simulator profile, in table order.

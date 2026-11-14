@@ -202,7 +202,7 @@ fn wizard_shows_real_results_without_promoting_process_state_to_connection() {
         .checks
         .insert("px4".into(), candidate("px4", "/px4", "/px4/bin/px4"));
     crate::guided::open(&mut s);
-    s.guided.chapter = 2;
+    s.guided.chapter = crate::guided::REVIEW;
     let mut rt = Runtime::new(
         s,
         view,
@@ -384,4 +384,148 @@ fn an_adopted_copter_build_refuses_another_ardupilot_vehicle() {
     );
     assert!(command.contains("exit 2; }; } && cd '/home/user/ardupilot' && "));
     assert!(command.ends_with("copter.parm"));
+}
+
+#[test]
+fn adopting_jmavsim_keeps_its_px4_command_and_xplane_runs_the_chosen_exe() {
+    let mut s = State::new();
+    let jmavsim_before = s
+        .config
+        .profiles
+        .iter()
+        .find(|p| p.id == "jmavsim")
+        .cloned()
+        .unwrap();
+    let jmavsim = s.setup.recipe_index("jmavsim").unwrap();
+    choose(&mut s, jmavsim);
+    s.setup.candidate = Some(candidate(
+        "jmavsim",
+        "/home/u/PX4-Autopilot",
+        "/home/u/PX4-Autopilot/x.jar",
+    ));
+    profiles::adopt(&mut s);
+    let after = s
+        .config
+        .profiles
+        .iter()
+        .find(|p| p.id == "jmavsim")
+        .unwrap();
+    assert_eq!(
+        after.args, jmavsim_before.args,
+        "the command comes from the PX4 installation"
+    );
+    assert_eq!(after.px4, Some(crate::px4::Mode::JMavSim));
+
+    let xplane = s.setup.recipe_index("xplane").unwrap();
+    choose(&mut s, xplane);
+    let mut c = candidate(
+        "xplane",
+        r"D:\Games\X-Plane 12",
+        r"D:\Games\X-Plane 12\X-Plane.exe",
+    );
+    c.environment = String::new();
+    s.setup.candidate = Some(c);
+    profiles::adopt(&mut s);
+    let xp = s.config.profiles.iter().find(|p| p.id == "xplane").unwrap();
+    assert_eq!(xp.program, r"D:\Games\X-Plane 12\X-Plane.exe");
+    assert_eq!(xp.cwd, r"D:\Games\X-Plane 12");
+    assert!(xp.args.is_empty());
+}
+
+#[test]
+fn a_guided_tool_reads_guide_until_checked_and_is_never_queued() {
+    let mut s = State::new();
+    let xplane = &s.setup.recipes[s.setup.recipe_index("xplane").unwrap()];
+    assert!(xplane.guided() && !xplane.automatic && xplane.guide.len() >= 3);
+    assert_eq!(xplane.pick, "windows-folder");
+    s.setup.workflow = presets::Preset {
+        name: "PX4 + X-Plane".into(),
+        recipes: vec!["px4".into(), "xplane".into()],
+    };
+    assert_eq!(workflow::status(&s, "xplane").0, "Guide");
+    for id in ["px4", "xplane"] {
+        let mut missing = candidate(id, "", "");
+        (missing.found, missing.compatible) = (false, false);
+        s.setup.checks.insert(id.into(), missing);
+    }
+    assert_eq!(workflow::status(&s, "xplane").0, "Guide", "not found yet");
+    assert_eq!(workflow::status(&s, "px4").0, "Not found");
+    s.setup.host = Some(Host {
+        distros: vec![Distro {
+            name: "Ubuntu-24.04".into(),
+            version: 2,
+            ..Default::default()
+        }],
+        ..Default::default()
+    });
+    s.headless = false;
+    batch::begin(&mut s);
+    s.headless = true;
+    let batch = s.setup.batch.as_ref().expect("queue started");
+    assert_eq!(batch.remaining(), [s.setup.recipe_index("px4").unwrap()]);
+    assert!(
+        s.setup
+            .batch_message
+            .contains("1 tool(s) need a manual install"),
+        "{}",
+        s.setup.batch_message
+    );
+    s.setup.checks.insert(
+        "xplane".into(),
+        candidate("xplane", "D:/X", "D:/X/X-Plane.exe"),
+    );
+    assert_eq!(workflow::status(&s, "xplane").0, "Found");
+}
+
+#[test]
+fn a_chosen_location_is_kept_for_its_tool_and_checked() {
+    let mut s = State::new();
+    let px4 = s.setup.recipe_index("px4").unwrap();
+    choose(&mut s, px4);
+    apply_event(
+        &mut s,
+        json!({"ok": true, "action": "browse", "data": {"tool": "px4", "location": "/home/u/PX4-Autopilot"}}),
+    );
+    assert_eq!(s.setup.location.text, "/home/u/PX4-Autopilot");
+    assert_eq!(
+        s.setup.overrides.get("px4").map(String::as_str),
+        Some("/home/u/PX4-Autopilot")
+    );
+    assert!(
+        s.notice.contains("Preview"),
+        "the check was requested: {}",
+        s.notice
+    );
+    apply_event(
+        &mut s,
+        json!({"ok": true, "action": "browse", "data": {"tool": "px4", "location": ""}}),
+    );
+    assert_eq!(s.setup.message, "No location was chosen.");
+    assert_eq!(
+        s.setup.overrides.len(),
+        1,
+        "a cancelled picker keeps the earlier choice"
+    );
+}
+
+#[test]
+fn a_chosen_webots_or_realflight_program_becomes_its_launch_profile() {
+    let mut s = State::new();
+    for id in ["webots", "realflight"] {
+        let index = s.setup.recipe_index(id).unwrap();
+        assert!(s.setup.recipes[index].guided(), "{id}");
+        assert_eq!(s.setup.recipes[index].pick, "windows-file");
+        choose(&mut s, index);
+        let mut c = candidate(id, r"E:\Sims", r"E:\Sims\sim.exe");
+        c.environment = String::new();
+        s.setup.candidate = Some(c);
+        profiles::adopt(&mut s);
+        let p = s.config.profiles.iter().find(|p| p.id == id).unwrap();
+        assert_eq!(
+            (p.program.as_str(), p.cwd.as_str()),
+            (r"E:\Sims\sim.exe", r"E:\Sims")
+        );
+    }
+    let flightgear = &s.setup.recipes[s.setup.recipe_index("flightgear").unwrap()];
+    assert!(flightgear.automatic && !flightgear.guided());
 }

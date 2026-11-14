@@ -378,6 +378,30 @@ pub(crate) fn install_review(s: &State) -> El {
         );
     }
     let can_install = recipe.automatic && !s.busy() && !r.pending;
+    if recipe.guided() {
+        return col()
+            .key("installation-review")
+            .w_full()
+            .min_w(0.)
+            .gap(12.)
+            .pt(18.)
+            .border_sides([1., 0., 0., 0.], fg())
+            .child(meta("Manual installation / follow the steps, then check"))
+            .child(h3(&recipe.name, 19.))
+            .child(p(&recipe.summary, 12.).max_w(760.))
+            .child(facts)
+            .child(super::workflow::guide(&recipe.id, recipe))
+            .child(
+                row()
+                    .gaps(8., 16.)
+                    .center_y()
+                    .flex_wrap()
+                    .child(super::workflow::location_actions(s, &recipe.id, recipe))
+                    .child(ghost("cancel-install-review", "Back", true, |s| {
+                        s.setup.review = false
+                    })),
+            );
+    }
     col()
         .key("installation-review")
         .w_full()

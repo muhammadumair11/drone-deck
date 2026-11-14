@@ -186,10 +186,11 @@ fn branches(s: &State, vp: &Viewport) -> Option<El> {
     let sys = s.systems.current();
     let c = &sys.consumers;
     let physical = sys.is_physical();
+    // A physical vehicle is named by the flight stack the user said it runs, if any.
     let autopilot = match sys.autopilot() {
-        _ if physical => "Vehicle",
-        Some(adapter::AutopilotKind::ArduPilot) => "ArduPilot",
-        _ => "PX4",
+        Some(kind) => adapter::autopilot_name(kind),
+        None if physical => "Vehicle",
+        None => "PX4",
     };
     // With ROS the chain shows the DDS path; MAVLink still runs through the router and link.
     let mavlink = if physical {

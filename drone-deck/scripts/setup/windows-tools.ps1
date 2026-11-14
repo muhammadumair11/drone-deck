@@ -1,4 +1,51 @@
-function Find-WindowsTool([string]$Tool,[string]$Location) {
+function Find-WindowsFolder([string]$Tool,[string]$Location,$Check) {
+    # A tool installed by hand into a folder the user chose: every `expect` entry must exist.
+    $result=@{tool=$Tool;found=$false;compatible=$false;path='';executable='';version='';runtime='';managed=$false;
+        reason='Choose the folder where you installed it, then check again.'}
+    if (-not $Location) { return $result }
+    if (-not (Test-Path -LiteralPath $Location -PathType Container)) {
+        $result.reason='That folder does not exist. Choose the folder where you installed it.'
+        return $result
+    }
+    $missing=@($Check.expect | Where-Object { -not (Test-Path -LiteralPath (Join-Path $Location $_)) })
+    $first=Join-Path $Location ([string]@($Check.expect)[0])
+    $result.found=$true
+    $result.path=$Location
+    $result.executable=if (Test-Path -LiteralPath $first -PathType Leaf) {$first} else {''}
+    if ($missing.Count -eq 0) {
+        $result.compatible=$true
+        $result.reason='Every expected file is in place. Whether the simulator talks to the autopilot is checked when the workspace starts.'
+    } else {
+        $result.reason='Missing in this folder: ' + ($missing -join ', ') + '. Finish the guide steps, then check again.'
+    }
+    return $result
+}
+function Find-WindowsProgram([string]$Tool,[string]$Location) {
+    # A program the user installed and chose: a Windows executable (MZ header).
+    $result=@{tool=$Tool;found=$false;compatible=$false;path='';executable='';version='';runtime='';managed=$false;
+        reason='Choose the program you installed, then check again.'}
+    if (-not $Location) { return $result }
+    if (-not (Test-Path -LiteralPath $Location -PathType Leaf)) {
+        $result.reason='That file does not exist. Choose the program you installed.'
+        return $result
+    }
+    $stream=[IO.File]::OpenRead($Location)
+    try { $pe=($stream.ReadByte() -eq 77 -and $stream.ReadByte() -eq 90) } finally {$stream.Dispose()}
+    $result.found=$true
+    $result.path=Split-Path -Parent $Location
+    $result.executable=$Location
+    $result.version=[string]([Diagnostics.FileVersionInfo]::GetVersionInfo($Location).ProductVersion)
+    if ($pe -and [IO.Path]::GetExtension($Location) -eq '.exe') {
+        $result.compatible=$true
+        $result.reason='A Windows program. Whether the simulator talks to the autopilot is checked when the workspace starts.'
+    } else {
+        $result.reason='That file is not a Windows program. Choose the .exe you start the simulator with.'
+    }
+    return $result
+}
+function Find-WindowsTool([string]$Tool,[string]$Location,$Check) {
+    if ($Check -and $Check.kind -eq 'windows-folder') { return Find-WindowsFolder $Tool $Location $Check }
+    if ($Check -and $Check.kind -eq 'windows-file') { return Find-WindowsProgram $Tool $Location }
     $paths = @()
     $fallback=$null
     if ($Location) { $paths += $Location }

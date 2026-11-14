@@ -14,7 +14,23 @@ const ROSGZ_ARGS: &str = "source /opt/ros/jazzy/setup.bash && G=\"/world/${DRONE
 const FOXGLOVE_ARGS: &str = "source /opt/ros/jazzy/setup.bash && exec ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765";
 /// Built-in profiles of earlier versions that the native vehicle link replaced. Stored
 /// profiles with these ids are dropped when `profiles.json` is upgraded to schema 2.
+/// `jmavsim` came back in schema 4 as a PX4 launch profile through the router.
 pub(crate) const RETIRED: [&str; 4] = ["relay", "jmavsim", "telemetry", "hardware"];
+/// Built-in profiles schema 4 adds when a file lacks them.
+pub(crate) const ADDED_IN_4: [&str; 8] = [
+    "jmavsim",
+    "px4-none",
+    "xplane",
+    "flightgear",
+    "ardupilot-webots",
+    "webots",
+    "realflight",
+    "ardupilot-realflight",
+];
+/// ArduPilot SITL with the Webots Python model: it waits for the world opened in Webots.
+const ARDUPILOT_WEBOTS_ARGS: &str = "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" --model webots-python --no-mavproxy";
+/// ArduPilot SITL driving RealFlight over FlightAxis on the system's RealFlight computer.
+const ARDUPILOT_REALFLIGHT_ARGS: &str = "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" -f \"flightaxis:${DRONE_DECK_FLIGHTAXIS_HOST:-127.0.0.1}\" --no-mavproxy";
 /// Earlier built-in commands that schema 2 replaces when they were never edited.
 /// The interpreter the built-in MAVSDK telemetry profile named before adoption.
 pub(super) const OLD_MAVSDK_PYTHON: &str =
@@ -37,6 +53,9 @@ pub fn defaults() -> Config {
             px4: match id {
                 "sih" => Some(crate::px4::Mode::Sih),
                 "gazebo" => Some(crate::px4::Mode::Gazebo),
+                "jmavsim" => Some(crate::px4::Mode::JMavSim),
+                "px4-none" => Some(crate::px4::Mode::External),
+                "flightgear" => Some(crate::px4::Mode::FlightGear),
                 _ => None,
             },
             id: id.into(),
@@ -49,8 +68,9 @@ pub fn defaults() -> Config {
             probe: probe.into(),
             docs: docs.into(),
             download_url: String::new(),
-            // Simulators share ports: the worker refuses a second one as well as the UI.
-            exclusive: crate::systems::adapter::is_simulator(id),
+            // Flight stacks share ports: the worker refuses a second one as well as the UI.
+            // Later stages of one simulator (X-Plane beside its PX4) are not flight stacks.
+            exclusive: crate::systems::adapter::is_vehicle_profile(id),
         })
     };
     add(
@@ -124,6 +144,92 @@ pub fn defaults() -> Config {
         vec![FOXGLOVE_ARGS.into()],
         "test -f /opt/ros/jazzy/share/foxglove_bridge/package.xml",
         "https://docs.foxglove.dev/docs/connecting-to-data/ros-foxglove-bridge",
+    );
+    add(
+        "jmavsim",
+        "jMAVSim",
+        "Simulation",
+        "PX4 with the lightweight jMAVSim 3D view",
+        "wsl",
+        vec![format!(
+            "{PX4_DIR} && test -z \"$(pgrep -x px4)\" && make px4_sitl jmavsim"
+        )],
+        "test -f \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot/Tools/simulation/jmavsim/jMAVSim/out/production/jmavsim_run.jar\"",
+        "https://docs.px4.io/v1.17/en/sim_jmavsim/",
+    );
+    add(
+        "px4-none",
+        "PX4 for an external simulator",
+        "Simulation",
+        "PX4 waiting for a simulator such as X-Plane on TCP 4560",
+        "wsl",
+        vec![format!(
+            "{PX4_DIR} && test -z \"$(pgrep -x px4)\" && make px4_sitl none_iris"
+        )],
+        "test -f \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot/Makefile\"",
+        "https://docs.px4.io/v1.17/en/simulation/",
+    );
+    add(
+        "xplane",
+        "X-Plane 12",
+        "Simulation",
+        "X-Plane with the px4xplane plugin, installed by you",
+        r"C:\X-Plane 12\X-Plane.exe",
+        vec![],
+        r"C:\X-Plane 12\X-Plane.exe",
+        "https://github.com/alireza787b/px4xplane",
+    );
+    add(
+        "flightgear",
+        "FlightGear",
+        "Simulation",
+        "PX4 with FlightGear through PX4's FlightGear bridge",
+        "wsl",
+        vec![format!(
+            "{PX4_DIR} && test -z \"$(pgrep -x px4)\" && make px4_sitl flightgear_rascal"
+        )],
+        "command -v fgfs && test -f \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot/Makefile\"",
+        "https://docs.px4.io/v1.17/en/sim_flightgear/",
+    );
+    add(
+        "ardupilot-webots",
+        "ArduPilot SITL for Webots",
+        "Simulation",
+        "ArduPilot SITL waiting for an ArduPilot world in Webots",
+        "wsl",
+        vec![ARDUPILOT_WEBOTS_ARGS.into()],
+        "test -x ~/ardupilot/Tools/autotest/sim_vehicle.py",
+        "https://ardupilot.org/dev/docs/sitl-with-webots-python.html",
+    );
+    add(
+        "webots",
+        "Webots",
+        "Simulation",
+        "Webots robot simulator, installed by you",
+        r"C:\Program Files\Webots\msys64\mingw64\bin\webotsw.exe",
+        vec![],
+        r"C:\Program Files\Webots\msys64\mingw64\bin\webotsw.exe",
+        "https://cyberbotics.com/",
+    );
+    add(
+        "realflight",
+        "RealFlight",
+        "Simulation",
+        "RealFlight with FlightAxis enabled, installed by you",
+        r"C:\Program Files\RealFlight\RealFlight.exe",
+        vec![],
+        r"C:\Program Files\RealFlight\RealFlight.exe",
+        "https://ardupilot.org/dev/docs/sitl-with-realflight.html",
+    );
+    add(
+        "ardupilot-realflight",
+        "ArduPilot SITL for RealFlight",
+        "Simulation",
+        "ArduPilot SITL driving RealFlight over FlightAxis",
+        "wsl",
+        vec![ARDUPILOT_REALFLIGHT_ARGS.into()],
+        "test -x ~/ardupilot/Tools/autotest/sim_vehicle.py",
+        "https://ardupilot.org/dev/docs/sitl-with-realflight.html",
     );
     add(
         "ardupilot",

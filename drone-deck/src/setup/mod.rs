@@ -215,6 +215,7 @@ pub(crate) fn request(s: &mut State, action: &str) {
         "detect" => "Inspecting the selected tool without changing it…",
         "start" => "Starting the reviewed setup job; complete any Windows approval prompt…",
         "cancel" => "Requesting cancellation at a safe step boundary…",
+        "browse" => "Choose the location in the window that opened…",
         _ => "Opening Linux initialization…",
     }
     .into();
@@ -359,10 +360,20 @@ fn apply_event(s: &mut State, value: Value) {
             s.setup.message="Setup started. Jobs and logs are retained across app restarts. Installation continues if you close Drone Deck.".into();
         }
         "browse" => {
-            if data["tool"].as_str() == Some(s.setup.recipes[s.setup.selected].id.as_str()) {
-                if let Some(location) = data["location"].as_str().filter(|s| !s.is_empty()) {
-                    s.setup.location = TextEdit::new(location);
-                    s.setup.candidate = None;
+            let tool = s.setup.recipes[s.setup.selected].id.clone();
+            if data["tool"].as_str() == Some(tool.as_str()) {
+                match data["location"].as_str().filter(|s| !s.is_empty()) {
+                    // A chosen location is kept for this tool (workflow checks use it) and
+                    // checked at once, so it never has to be typed.
+                    Some(location) => {
+                        s.setup.location = TextEdit::new(location);
+                        s.setup.candidate = None;
+                        s.setup.overrides.insert(tool, location.to_string());
+                        if s.setup.batch.is_none() {
+                            request(s, "detect");
+                        }
+                    }
+                    None => s.setup.message = "No location was chosen.".into(),
                 }
             }
         }

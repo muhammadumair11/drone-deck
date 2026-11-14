@@ -49,25 +49,18 @@ fn saved(s: &State) -> El {
 fn source(s: &State, on: bool, compact: bool) -> El {
     let h = &s.hardware;
     let bridged = systems::physical_bridge(s.systems.current());
-    let actions = row()
-        .gaps(8., 20.)
-        .center_y()
-        .flex_wrap()
-        .child(pill(
-            "monitor-start",
-            if on {
-                "Disconnect"
-            } else if bridged {
-                "Connect (bridged)"
-            } else {
-                "Connect read-only"
-            },
-            true,
-            toggle,
-        ))
-        .child(ghost("scan-serial", "Find serial devices", !on, |s| {
-            crate::studio::request(s, "ports")
-        }));
+    let actions = row().gaps(8., 20.).center_y().flex_wrap().child(pill(
+        "monitor-start",
+        if on {
+            "Disconnect"
+        } else if bridged {
+            "Connect (bridged)"
+        } else {
+            "Connect read-only"
+        },
+        true,
+        toggle,
+    ));
     let endpoint = field(&h.endpoint, "hardware-endpoint", "udp:127.0.0.1:14555");
     col()
         .w_full()
@@ -90,14 +83,6 @@ fn source(s: &State, on: bool, compact: bool) -> El {
             },
         ))
         .child(saved(s))
-        .child(
-            code(
-                "serial:COM4:115200   udp:0.0.0.0:14550   tcp:192.168.1.10:5760",
-                10.,
-                muted(),
-            )
-            .wrap_anywhere(),
-        )
         .child(actions)
         .child(if h.message != DEFAULT_MESSAGE {
             body(&h.message, 11., fg())
@@ -110,41 +95,12 @@ fn source(s: &State, on: bool, compact: bool) -> El {
         })
 }
 
+/// Serial ports, baud rates and network presets that fill the endpoint (disabled while the
+/// link is open).
 fn ports(s: &State, on: bool) -> El {
-    let list = col()
-        .key("serial-ports")
-        .w_full()
-        .min_w(0.)
-        .gap(4.)
-        .child(meta("Windows serial devices"));
-    let Some(ports) = s.studio.library["ports"].as_array() else {
-        return list.child(p(
-            "Not scanned. Find serial devices lists COM ports with their Windows names.",
-            11.,
-        ));
-    };
-    if ports.is_empty() {
-        return list.child(p(
-            "No serial devices found. Check the cable and driver, then scan again.",
-            11.,
-        ));
-    }
-    let mut list = list;
-    for port in ports {
-        let id = port["DeviceID"].as_str().unwrap_or("").to_string();
-        let name = port["Name"].as_str().unwrap_or("Unnamed device");
-        let endpoint = format!("serial:{id}:115200");
-        list = list.child(
-            ghost(
-                format!("port-{id}"),
-                &format!("Use {id} / {name}"),
-                !on,
-                move |s| s.hardware.endpoint = TextEdit::new(endpoint.clone()),
-            )
-            .help(format!("Sets the endpoint to serial:{id}:115200")),
-        );
-    }
-    list
+    crate::ui::vehicle_form::endpoint_picker(s, s.hardware.endpoint.text.trim(), !on, |s, value| {
+        s.hardware.endpoint = TextEdit::new(&value)
+    })
 }
 
 fn stat(key: &str, label: &str, value: String, color: Color) -> El {

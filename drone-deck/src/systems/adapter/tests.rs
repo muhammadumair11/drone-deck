@@ -19,13 +19,57 @@ fn every_stage_and_ros_profile_is_a_built_in() {
 }
 
 #[test]
-fn simulators_are_the_stage_profiles_and_are_exclusive() {
+fn simulators_are_the_stage_profiles_and_flight_stacks_are_exclusive() {
     assert_eq!(
         simulator_profiles().collect::<Vec<_>>(),
-        ["sih", "gazebo", "ardupilot"]
+        [
+            "sih",
+            "gazebo",
+            "ardupilot",
+            "jmavsim",
+            "px4-none",
+            "xplane",
+            "flightgear",
+            "ardupilot-webots",
+            "webots",
+            "realflight",
+            "ardupilot-realflight"
+        ]
     );
+    // The backend runs one flight stack at a time; X-Plane joins its PX4 instead.
     for p in crate::backend::defaults().profiles {
-        assert_eq!(p.exclusive, is_simulator(&p.id), "{}", p.id);
+        assert_eq!(p.exclusive, is_vehicle_profile(&p.id), "{}", p.id);
+    }
+    assert!(is_simulator("xplane") && !is_vehicle_profile("xplane"));
+    assert!(same_adapter("px4-none", "xplane") && !same_adapter("sih", "xplane"));
+}
+
+#[test]
+fn the_new_worlds_run_px4_through_the_router_with_their_recipes() {
+    let jmavsim = find(AutopilotKind::Px4, "jmavsim").unwrap();
+    assert_eq!(jmavsim.recipes, ["px4", "jmavsim"]);
+    assert_eq!(jmavsim.link, Link::Router);
+    assert_eq!(
+        readiness_of("jmavsim").agent_kind().as_deref(),
+        Some("px4-status")
+    );
+    let xplane = find(AutopilotKind::Px4, "xplane").unwrap();
+    let stages: Vec<_> = xplane.stages.iter().map(|s| s.profile).collect();
+    assert_eq!(stages, ["px4-none", "xplane"]);
+    assert_eq!(xplane.vehicle_profile(), "px4-none", "PX4 is the vehicle");
+    assert!(
+        world_for(AutopilotKind::ArduPilot, "jmavsim")
+            .unwrap_err()
+            .contains("PX4 only")
+    );
+    let recipes = crate::setup::catalog::load();
+    for a in &ALL {
+        for id in a.recipes {
+            assert!(recipes.iter().any(|r| r.id == *id), "{}: {id}", a.id);
+        }
+    }
+    for (id, ..) in WORLDS {
+        assert!(ALL.iter().any(|a| a.world == id), "no adapter offers {id}");
     }
 }
 
@@ -92,4 +136,53 @@ fn launch_env_gives_defaults_for_missing_details() {
     );
     let sim = template(systems::SIMULATION, "s", "S");
     assert!(launch_env(&sim, "sih").is_empty());
+}
+
+#[test]
+fn each_world_offers_only_the_autopilots_that_fly_in_it() {
+    use AutopilotKind::{ArduPilot, Px4};
+    assert!(world_for(Px4, "flightgear").is_ok());
+    assert!(
+        world_for(ArduPilot, "flightgear")
+            .unwrap_err()
+            .contains("PX4 only")
+    );
+    for world in ["webots", "realflight"] {
+        assert!(world_for(ArduPilot, world).is_ok(), "{world}");
+        assert!(
+            world_for(Px4, world)
+                .unwrap_err()
+                .contains("ArduPilot only"),
+            "{world}"
+        );
+    }
+}
+
+#[test]
+fn realflight_starts_before_the_autopilot_that_drives_it() {
+    let a = find(AutopilotKind::ArduPilot, "realflight").unwrap();
+    let stages: Vec<_> = a.stages.iter().map(|s| s.profile).collect();
+    assert_eq!(stages, ["realflight", "ardupilot-realflight"]);
+    assert_eq!(
+        a.vehicle_profile(),
+        "ardupilot-realflight",
+        "ArduPilot is the flight stack"
+    );
+    assert!(is_vehicle_profile("ardupilot-realflight") && !is_vehicle_profile("realflight"));
+    assert_eq!(a.link, Link::Direct);
+
+    let mut sys = template(systems::SIMULATION, "rf", "RF");
+    sys.vehicle = crate::systems::Vehicle::Simulated {
+        autopilot: crate::systems::model::Autopilot::ArduPilot {
+            vehicle: "plane".into(),
+        },
+        world: crate::systems::model::World::new("realflight", &[("host", "172.20.0.1")]),
+    };
+    let env = launch_env(&sys, "ardupilot-realflight");
+    assert!(env.contains(&("DRONE_DECK_FLIGHTAXIS_HOST".into(), "172.20.0.1".into())));
+    assert!(env.contains(&("DRONE_DECK_AP_VEHICLE".into(), "ArduPlane".into())));
+    assert_eq!(
+        crate::systems::session_stages(&sys),
+        ["realflight", "ardupilot-realflight", "link", "qgc"]
+    );
 }
