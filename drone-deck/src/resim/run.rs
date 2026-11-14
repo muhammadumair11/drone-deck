@@ -10,7 +10,7 @@
 //! 5. The run's processes stop, the temporary system goes and the previous one is active again.
 //!
 //! One run at a time; it refuses to start while any other work or link runs.
-use super::{DOMAIN, HOME, Msg, NAMESPACE, recipe::Recipe, transfer};
+use super::{DOMAIN, HOME, Msg, NAMESPACE, VEHICLE_DOMAIN, recipe::Recipe, transfer};
 use crate::systems::adapter::{Adapter, AutopilotKind};
 use crate::systems::model::{Autopilot, Consumers, Ros, SCRATCH, World, template};
 use crate::systems::{self, SIMULATION, System, Vehicle};
@@ -74,6 +74,8 @@ pub(crate) struct Active {
     same_world: bool,
     /// The run flies the recorded home position.
     home: bool,
+    /// The recorded (and fresh) autopilot.
+    autopilot: AutopilotKind,
 }
 
 /// Why a run cannot start now, or `None`.
@@ -90,8 +92,11 @@ pub(crate) fn refusal(s: &State) -> Option<String> {
             "This version of Drone Deck has no adapter for the flight's simulator.".into(),
         );
     };
-    if a.autopilot != AutopilotKind::Px4 {
-        return Some("Re-simulating ArduPilot flights is not supported yet.".into());
+    if a.ros.is_none() {
+        return Some(format!(
+            "{} has no ROS 2 bridge, so its flights keep no commands to replay.",
+            a.name
+        ));
     }
     if flight.recipe["commands"].as_u64().unwrap_or(0) == 0 {
         return Some("The recording kept no ROS 2 commands to replay.".into());
@@ -264,6 +269,7 @@ pub(crate) fn start(s: &mut State) {
         target: s.resim.target(),
         same_world: true,
         home: false,
+        autopilot: flight.adapter().map_or(AutopilotKind::Px4, |a| a.autopilot),
     });
     s.resim.message = format!("Re-simulating {}…", flight.label);
     agent_call(
@@ -326,6 +332,7 @@ pub(super) fn prepared(s: &mut State, reply: Result<Value, String>) {
     if let Some(active) = s.resim.run.as_mut() {
         active.same_world = target.same_world(&recipe);
         active.home = home;
+        active.autopilot = recipe.autopilot;
     }
     s.systems.add_scratch(sys);
     s.systems.set_active(SCRATCH);
@@ -569,6 +576,10 @@ fn replay(s: &mut State) {
     let (tolerance, floor, hold) = active.settings;
     let mut params = json!({"recording": active.flight, "namespace": NAMESPACE, "domain": DOMAIN,
         "skipped_params": skipped, "tolerance": tolerance, "floor": floor, "hold": hold});
+    // The fresh ArduPilot is on a domain of its own; the player joins it to the run's.
+    if active.autopilot == AutopilotKind::ArduPilot {
+        params["vehicle_domain"] = json!(VEHICLE_DOMAIN);
+    }
     if let Some(name) = active.code.as_ref().and_then(|p| p["name"].as_str()) {
         params["code"] = json!(name);
     }

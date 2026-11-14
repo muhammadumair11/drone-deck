@@ -11,6 +11,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 
 pub(crate) mod compare;
 pub(crate) mod import;
+pub(crate) mod import_ap;
 pub(crate) mod recipe;
 pub(crate) mod report;
 pub(crate) mod run;
@@ -28,6 +29,13 @@ pub(crate) const HOME: &str = "resim_home";
 pub(crate) const DOMAIN: u32 = 79;
 /// The fresh PX4's DDS namespace: only the arbiter publishes into it.
 pub(crate) const NAMESPACE: &str = "resim";
+/// The fresh ArduPilot's own ROS domain. Its DDS client takes no namespace, so it is kept apart
+/// on a domain of its own (`DDS_DOMAIN_ID`) and only the command player, which joins both, links
+/// it to the run's domain.
+pub(crate) const VEHICLE_DOMAIN: u32 = 80;
+/// Where the fresh ArduPilot SITL keeps its EEPROM and logs, wiped at each run, so the run never
+/// changes the parameters of the SITL you fly yourself.
+pub(crate) const AP_STATE: &str = "/tmp/drone-deck-resim-ardupilot";
 
 /// A previous re-simulation of one flight, as `resim.list` reports it.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
@@ -297,7 +305,9 @@ pub(crate) fn projects(s: &State) -> Vec<serde_json::Value> {
 }
 
 /// Extra environment for profile `id` of a re-simulation's temporary system: the fresh PX4
-/// takes the namespace and the isolated domain, and ROS tools stay on this computer.
+/// takes the namespace and the isolated domain; the fresh ArduPilot takes its own domain, a
+/// wiped state folder of its own; both start at the recorded home. ROS tools stay on this
+/// computer.
 pub(crate) fn launch_env(id: &str, sys: &crate::systems::System) -> Vec<(String, String)> {
     if !sys.scratch() {
         return Vec::new();
@@ -306,22 +316,28 @@ pub(crate) fn launch_env(id: &str, sys: &crate::systems::System) -> Vec<(String,
         ("ROS_AUTOMATIC_DISCOVERY_RANGE".into(), "LOCALHOST".into()),
         ("ROS_LOCALHOST_ONLY".into(), "1".into()),
     ];
-    if crate::systems::vehicle_profile(sys) == Some(id) {
-        env.push(("PX4_UXRCE_DDS_NS".into(), NAMESPACE.into()));
-        env.push(("ROS_DOMAIN_ID".into(), DOMAIN.to_string()));
-        let home = sys.param(HOME).and_then(|h| {
-            let parts: Vec<&str> = h.split(',').collect();
-            (parts.len() == 3 && parts.iter().all(|p| p.parse::<f64>().is_ok())).then_some(parts)
-        });
-        if let (Some(env_names), Some(parts)) = (sys.adapter().and_then(|a| a.home.as_ref()), home)
-        {
-            for (name, value) in [env_names.lat, env_names.lon, env_names.alt]
-                .into_iter()
-                .zip(parts)
-            {
-                env.push((name.into(), value.into()));
-            }
+    let Some(a) = sys.adapter().filter(|a| a.vehicle_profile() == id) else {
+        return env;
+    };
+    match a.autopilot {
+        crate::systems::adapter::AutopilotKind::Px4 => {
+            env.push(("PX4_UXRCE_DDS_NS".into(), NAMESPACE.into()));
+            env.push(("ROS_DOMAIN_ID".into(), DOMAIN.to_string()));
         }
+        crate::systems::adapter::AutopilotKind::ArduPilot => {
+            if let Some(name) = a.ros.as_ref().and_then(|r| r.domain_env) {
+                env.push((name.into(), VEHICLE_DOMAIN.to_string()));
+            }
+            env.push(("DRONE_DECK_AP_DIR".into(), AP_STATE.into()));
+            env.push(("DRONE_DECK_AP_WIPE".into(), "1".into()));
+        }
+    }
+    let home = sys.param(HOME).and_then(|h| {
+        let parts: Vec<&str> = h.split(',').collect();
+        (parts.len() == 3 && parts.iter().all(|p| p.parse::<f64>().is_ok())).then_some(parts)
+    });
+    if let (Some(start), Some(p)) = (&a.home, home) {
+        env.extend(start.env(p[0], p[1], p[2]));
     }
     env
 }
@@ -435,8 +451,13 @@ pub(crate) fn poll(s: &mut State) -> bool {
                     Ok(v) => {
                         let id = v["id"].as_str().unwrap_or("").to_string();
                         let found = import::counted(&v["counts"]);
+                        let physics = if v["recipe"]["autopilot"] == "ardupilot" {
+                            "ArduPilot SITL's"
+                        } else {
+                            "PX4's"
+                        };
                         s.resim.message = format!(
-                            "Imported {} as a real flight{}. It flies in PX4's built-in physics at its home position by default; real wind and the real vehicle cannot be reproduced.",
+                            "Imported {} as a real flight{}. It flies in {physics} built-in physics at its home position by default; real wind and the real vehicle cannot be reproduced.",
                             v["label"].as_str().unwrap_or("the flight"),
                             if found.is_empty() {
                                 String::new()

@@ -217,13 +217,13 @@ fn components_chain_and_stages_follow_vehicle_and_consumers() {
     assert_eq!(vehicle_profile(&sys), Some("ardupilot"));
     assert_eq!(
         session_stages(&sys),
-        ["ardupilot", "link"],
-        "ArduPilot SITL serves TCP 5760 itself; no router"
+        ["ardupilot", "link", "dds-ap"],
+        "ArduPilot SITL serves TCP 5760 itself (no router); its own DDS agent on UDP 2019"
     );
-    assert_eq!(chain_ids(&sys), ["ardupilot", "dds", "ros2"]);
+    assert_eq!(chain_ids(&sys), ["ardupilot", "dds-ap", "ros2"]);
     assert_eq!(
         crate::setup::presets::for_system(&sys).recipes,
-        ["ardupilot"],
+        ["ardupilot", "ros2", "dds", "ardupilot-dds"],
         "no QGroundControl consumer here"
     );
     assert!(!ids(&sys).contains(&"router"));

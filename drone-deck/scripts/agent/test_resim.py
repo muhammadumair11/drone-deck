@@ -136,10 +136,24 @@ class Import(Fixture, unittest.TestCase):
         self.assertTrue((self.root / both['id'] / 'bag' / mcap.name).is_file())
         alone = server.import_flight({'label': 'drone', 'mcap': str(mcap)}, topics)
         self.assertEqual(alone['recipe']['origin'], 'real')
-        with self.assertRaisesRegex(ValueError, 'no /fmu/in/'):
+        with self.assertRaisesRegex(ValueError, r'no PX4 \(/fmu/in/\) or ArduPilot'):
             server.import_flight({'mcap': str(mcap)}, lambda path: ['/camera'])
         with self.assertRaisesRegex(ValueError, 'Choose'):
             server.import_flight({}, topics)
+
+    def test_an_ardupilot_recording_flies_in_ardupilot_sitl(self):
+        mcap = self.root.parent / (self.root.name + '-ap.mcap')
+        mcap.write_bytes(b'mcap')
+        self.addCleanup(mcap.unlink)
+        topics = lambda path: ['/ap/cmd_vel', '/ap/status', '/ap/pose/filtered', '/ap/joy', '/camera']
+        result = self.server().import_flight({'label': 'ap', 'mcap': str(mcap)}, topics)
+        recipe = json.loads((self.root / result['id'] / 'recipe.json').read_text())
+        self.assertEqual((recipe['adapter'], recipe['autopilot'], recipe['vehicle']),
+                         ('ardupilot-sitl', 'ardupilot', 'copter'))
+        self.assertEqual(recipe['command_topics'], ['/ap/cmd_vel', '/ap/joy'])
+        self.assertEqual(recipe['evidence_topics'], ['/ap/status', '/ap/pose/filtered'])
+        with self.assertRaisesRegex(ValueError, 'different autopilots'):
+            self.server().import_flight({'label': 'mixed', 'folder': str(self.export()), 'mcap': str(mcap)}, topics)
 
 
 class Plan(Fixture, unittest.TestCase):
@@ -183,6 +197,34 @@ class Plan(Fixture, unittest.TestCase):
         (self.recording / 'recipe.json').write_text(json.dumps(dict(RECIPE, command_topics=[])))
         with self.assertRaisesRegex(ValueError, 'no ROS 2 commands'):
             resim.run_plan(good, self.root)
+
+
+class ArduPilotPlan(Fixture, unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        recipe = dict(RECIPE, adapter='ardupilot-sitl', autopilot='ardupilot', vehicle='copter',
+                      world={'id': 'internal', 'params': {}}, command_topics=['/ap/cmd_vel'],
+                      evidence_topics=['/ap/status', '/ap/pose/filtered'])
+        (self.recording / 'recipe.json').write_text(json.dumps(recipe))
+
+    def test_the_player_joins_the_vehicle_domain_to_the_run(self):
+        plan = resim.run_plan({'recording': SESSION_ID, 'domain': 79, 'vehicle_domain': 80}, self.root)
+        args = plan['commands']['arbiter']
+        self.assertEqual(args[args.index('--autopilot') + 1], 'ardupilot')
+        self.assertEqual(args[args.index('--vehicle-domain') + 1], '80')
+        self.assertEqual(args[args.index('--wait') + 1], str(resim.AP_WAIT_S), 'SITL settles before it can arm')
+        self.assertEqual(plan['env']['ROS_DOMAIN_ID'], '79', 'your code and the recorder stay on the run domain')
+        self.assertEqual(plan['commands']['record'][-2:], ['/ap/status', '/ap/pose/filtered'])
+        self.assertEqual((plan['autopilot'], plan['vehicle_domain']), ('ardupilot', 80))
+
+    def test_the_vehicle_needs_a_domain_of_its_own(self):
+        for bad in ({}, {'vehicle_domain': 79}, {'vehicle_domain': 300}, {'vehicle_domain': 'x'}):
+            with self.assertRaisesRegex(ValueError, 'domain of its own', msg=bad):
+                resim.run_plan(dict({'recording': SESSION_ID, 'domain': 79}, **bad), self.root)
+        (self.recording / 'recipe.json').write_text(json.dumps(RECIPE))
+        px4 = resim.run_plan({'recording': SESSION_ID, 'domain': 79, 'vehicle_domain': 80}, self.root)
+        self.assertNotIn('--vehicle-domain', px4['commands']['arbiter'], 'PX4 keeps its namespace instead')
+        self.assertEqual(px4['commands']['arbiter'][px4['commands']['arbiter'].index('--autopilot') + 1], 'px4')
 
 
 class Running(Fixture, unittest.TestCase):

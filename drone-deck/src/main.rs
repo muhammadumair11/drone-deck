@@ -2,6 +2,7 @@
 mod activity;
 mod agent;
 mod backend;
+mod dataflash;
 mod diagnostics;
 mod guided;
 mod hardware;

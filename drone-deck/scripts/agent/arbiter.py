@@ -1,5 +1,6 @@
 """Drone Deck re-simulation arbiter: plays a recording's autopilot commands into a fresh simulator
-at the time they were sent.
+at the time they were sent. This module is the PX4 player and the timing both autopilots share;
+ArduPilot's player is `arbiter_ap.py` (`--autopilot ardupilot`).
 
 Started as an owned agent process on the run's isolated, localhost-only domain:
 
@@ -36,15 +37,53 @@ import time
 sys.path.insert(0, os.environ.get('DRONE_DECK_AGENT') or str(Path(__file__).resolve().parent))
 
 ANCHOR = 'vehicle_status'
+# ArduPilot's status report (ardupilot_msgs/Status), sent on each change and twice a second.
+AP_ANCHOR = '/ap/status'
 # How far the fresh clock may run ahead of the autopilot's last report (µs): a stalled simulator
 # stalls the replay instead of letting commands race ahead of it.
 AHEAD_LIMIT_US = 200_000
+# A clock that moves this much against log time changed its base (µs): ArduPilot stamps with the
+# time since boot until its clock is set (GPS), then with UTC. A stalled simulator moves far less.
+BASE_JUMP_US = 3600 * 1_000_000
+# Recipe sources of real flights exported from a flight log (PX4's ULog, ArduPilot's DataFlash).
+FROM_LOG = ('ulog', 'dataflash')
 
 
 def is_anchor(topic):
-    """vehicle_status and its versioned names (`vehicle_status_v1`)."""
+    """vehicle_status and its versioned names (`vehicle_status_v1`), and ArduPilot's /ap/status."""
+    if topic.rstrip('/') == AP_ANCHOR:
+        return True
     name = topic.rstrip('/').rsplit('/', 1)[-1]
     return name == ANCHOR or name.startswith(ANCHOR + '_v')
+
+
+def stamp_us(message):
+    """The autopilot time of a message (µs): PX4's `timestamp`, a ROS `header.stamp`, or a bare
+    builtin_interfaces/Time (ArduPilot's /ap/time). None when it has none."""
+    if not isinstance(message, dict):
+        return None
+    stamp = message.get('timestamp')
+    if isinstance(stamp, int) and not isinstance(stamp, bool):
+        return stamp if stamp > 0 else None
+    header = message.get('header')
+    time = header.get('stamp') if isinstance(header, dict) else message
+    if isinstance(time, dict) and isinstance(time.get('sec'), int) and isinstance(time.get('nanosec'), int):
+        value = time['sec'] * 1_000_000 + time['nanosec'] // 1000
+        return value if value > 0 else None
+    return None
+
+
+def final_base(pairs):
+    """The log time (ns) from which the (log ns, autopilot µs) pairs keep their last clock base,
+    or None without pairs: ArduPilot's switch from time since boot to UTC is a jump far larger
+    than any stall."""
+    start, previous = None, None
+    for log_ns, ap_us in sorted(pairs):
+        offset = ap_us - log_ns / 1000
+        if previous is None or abs(offset - previous) > BASE_JUMP_US:
+            start = log_ns
+        previous = offset
+    return start
 
 
 def namespaced(topic, namespace):
@@ -94,13 +133,16 @@ def build_schedule(commands, evidence):
 
     `commands`: (topic, log_time_ns, message dict) from the recorded command topics.
     `evidence`: (topic, log_time_ns, message dict) from the recorded autopilot reports."""
+    stamped = [(topic, log_ns, stamp_us(message)) for topic, log_ns, message in evidence]
+    stamped = [row for row in stamped if row[2] is not None]
+    base = final_base([(log_ns, stamp) for _, log_ns, stamp in stamped])
     pairs, anchor = [], None
-    for topic, log_ns, message in evidence:
-        stamp = message.get('timestamp') if isinstance(message, dict) else None
-        if isinstance(stamp, int) and stamp > 0:
-            pairs.append((log_ns, stamp))
-            if is_anchor(topic) and (anchor is None or stamp < anchor):
-                anchor = stamp
+    for topic, log_ns, stamp in stamped:
+        if log_ns < base:
+            continue  # an earlier clock base (ArduPilot before its clock was set)
+        pairs.append((log_ns, stamp))
+        if is_anchor(topic) and (anchor is None or stamp < anchor):
+            anchor = stamp
     clock = ClockMap(pairs)
     if anchor is None:
         raise ValueError('The recording has no vehicle status to start the replay from.')
@@ -116,9 +158,16 @@ def build_schedule(commands, evidence):
 
 
 def rewrite(message, now_us):
-    """A copy of `message` stamped at `now_us` on the fresh clock. `timestamp_sample` keeps its
-    distance from `timestamp`."""
+    """A copy of `message` stamped at `now_us` on the fresh clock: PX4's `timestamp`
+    (`timestamp_sample` keeps its distance from it), or the `header.stamp` of a ROS message. A
+    message with neither (a service request) is copied unchanged."""
     out = dict(message)
+    if 'timestamp' not in message:
+        if isinstance(message.get('header'), dict):
+            now = int(now_us)
+            out['header'] = dict(message['header'], stamp={'sec': now // 1_000_000,
+                                                           'nanosec': (now % 1_000_000) * 1000})
+        return out
     old = message.get('timestamp')
     out['timestamp'] = int(now_us)
     sample = message.get('timestamp_sample')
@@ -247,7 +296,7 @@ def read_recording(recording, recipe):
     evidence = list(recipe.get('evidence_topics') or [])
     if not commands:
         raise ValueError('The recipe names no command topics to replay.')
-    if recipe.get('source') == 'ulog':
+    if recipe.get('source') in FROM_LOG:
         # A real flight imported from its log: the commands and reports it exported, timed by
         # the autopilot's own clock (log time is its timestamp).
         types = {t: k for t, k in (recipe.get('command_types') or {}).items() if isinstance(k, str)}
@@ -277,7 +326,13 @@ def main(argv=None):
     parser.add_argument('--floor', type=float, default=0.0,
                         help='absolute difference always allowed (same units as the field)')
     parser.add_argument('--hold', type=float, default=0.5, help='seconds a difference must last')
+    parser.add_argument('--autopilot', choices=('px4', 'ardupilot'), default='px4')
+    parser.add_argument('--vehicle-domain', type=int, default=None,
+                        help="ArduPilot: the fresh vehicle's own ROS domain (it takes no namespace)")
     args = parser.parse_args(argv)
+    if args.autopilot == 'ardupilot':
+        import arbiter_ap
+        raise SystemExit(arbiter_ap.main(args))
     import pipe
     from takeover import Takeover
 

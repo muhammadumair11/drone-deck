@@ -160,6 +160,24 @@ const AP_REALFLIGHT: Component = comp(
     Backing::Profile("ardupilot-realflight"),
     "Serves MAVLink on TCP 5760 and connects to FlightAxis on the system's RealFlight computer.",
 );
+const AP_FLIGHTGEAR: Component = comp(
+    "ardupilot-flightgear",
+    "ArduPilot SITL / FlightGear",
+    "Autopilot + SITL physics, drawn in FlightGear",
+    WSL,
+    "Simulation",
+    Backing::Profile("ardupilot-flightgear"),
+    "Serves MAVLink on TCP 5760 and sends each simulation step to FlightGear on UDP 5503. The Copter build only.",
+);
+const FGVIEW: Component = comp(
+    "fgview",
+    "FlightGear view",
+    "Draws the ArduPilot SITL flight",
+    WSL,
+    "Simulation",
+    Backing::Profile("fgview"),
+    "Only a view: the flight is SITL's own. The window needs WSLg; scenery outside the default area may be missing.",
+);
 const ROUTER: Component = comp(
     "router",
     "MAVLink router",
@@ -204,6 +222,15 @@ const DDS: Component = comp(
     "Transport",
     Backing::Profile("dds"),
     "Match the Agent, firmware DDS client and px4_msgs versions; installation alone does not establish ROS routing.",
+);
+const DDS_AP: Component = comp(
+    "dds-ap",
+    "DDS Agent (ArduPilot)",
+    "ArduPilot to ROS transport, UDP 2019",
+    WSL,
+    "Transport",
+    Backing::Profile("dds-ap"),
+    "ArduPilot's DDS client needs a SITL built with --enable-DDS and chooses its ROS domain itself (DDS_DOMAIN_ID, set by the launch).",
 );
 const ROSGZ: Component = comp(
     "rosgz",
@@ -288,7 +315,7 @@ const TLOG: Component = comp(
 );
 
 /// Every known component, in catalog order.
-const ALL: [&Component; 25] = [
+const ALL: [&Component; 28] = [
     &PX4,
     &GAZEBO,
     &ARDUPILOT,
@@ -300,11 +327,14 @@ const ALL: [&Component; 25] = [
     &WEBOTS,
     &REALFLIGHT,
     &AP_REALFLIGHT,
+    &AP_FLIGHTGEAR,
+    &FGVIEW,
     &ROUTER,
     &LINK,
     &QGC,
     &SCRIPTS,
     &DDS,
+    &DDS_AP,
     &ROSGZ,
     &ROS2,
     &MCAP,
@@ -380,8 +410,8 @@ fn chain_ids(sys: &System) -> Vec<&'static str> {
     let c = &sys.consumers;
     if let Some(vehicle) = vehicle_profile(sys) {
         let mut ids = vec![vehicle];
-        if c.ros.agent {
-            ids.extend(["dds", "ros2"]);
+        if let (true, Some(ros)) = (c.ros.agent, sys.adapter().and_then(|a| a.ros.as_ref())) {
+            ids.extend([ros.agent, "ros2"]);
             if c.ros.recorder {
                 ids.push("mcap");
             }
@@ -425,8 +455,7 @@ pub(crate) fn session_stages(sys: &System) -> Vec<&'static str> {
         stages.push("router");
     }
     stages.push("link");
-    // ArduPilot's agent is not started by the launch (see its adapter entry).
-    if let (true, Link::Router, Some(ros)) = (c.ros.agent, a.link, &a.ros) {
+    if let (true, Some(ros)) = (c.ros.agent, &a.ros) {
         stages.push(ros.agent);
         stages.extend(ros.extra.iter().copied());
     }

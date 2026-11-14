@@ -3,8 +3,11 @@ mod detection;
 use crate::agent::Launcher;
 use crate::store::Read;
 pub use builtins::defaults;
-pub(crate) use builtins::{ADDED_IN_4, RETIRED, launch_env};
-use builtins::{ARDUPILOT_ARGS, GAZEBO_ARGS, OLD_ARDUPILOT, OLD_GAZEBO, OLD_MAVSDK_PYTHON};
+pub(crate) use builtins::{ADDED_IN_4, ADDED_IN_5, RETIRED, ardupilot_binary, launch_env};
+use builtins::{
+    ARDUPILOT_ARGS, ARDUPILOT_ARGS_4, GAZEBO_ARGS, OLD_ARDUPILOT, OLD_GAZEBO, OLD_MAVSDK_PYTHON,
+    adopted_before_5,
+};
 use detection::detect;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -53,7 +56,7 @@ pub struct Config {
     pub profiles: Vec<Profile>,
 }
 /// The current `profiles.json` schema. A file without `"schema"` is schema 0.
-pub const SCHEMA: u64 = 4;
+pub const SCHEMA: u64 = 5;
 #[derive(Serialize)]
 struct Stored<'a> {
     schema: u64,
@@ -295,6 +298,23 @@ fn migrate_v1(value: &mut Value) -> (Vec<String>, bool) {
     }
     (dropped, kept)
 }
+/// Schema 4 → 5: an unedited ArduPilot command, built in or adopted, takes the variables a
+/// system and a re-simulation pass it (`DRONE_DECK_AP_*`); an edited one is kept.
+fn migrate_v4(config: &mut Config) {
+    for p in config.profiles.iter_mut().filter(|p| p.id == "ardupilot") {
+        let [command] = p.args.as_slice() else {
+            continue;
+        };
+        let new = if command == ARDUPILOT_ARGS_4 {
+            ARDUPILOT_ARGS.to_string()
+        } else if let Some((dir, exe)) = adopted_before_5(command) {
+            ardupilot_binary(dir, exe, "")
+        } else {
+            continue;
+        };
+        p.args = vec![new];
+    }
+}
 /// Parses `profiles.json`. The outer error marks a damaged file; the inner one a readable
 /// file this version must not use (a newer schema, or no profiles). `Some` is the notice of
 /// a migration (the file is then written back).
@@ -323,19 +343,26 @@ pub(crate) fn parse_config(
     if schema < 3 {
         crate::px4::migrate(&mut config);
     }
-    // Schema 4: built-ins for jMAVSim and X-Plane (PX4 waiting for it, and X-Plane itself).
+    // Schema 4: built-ins for jMAVSim, X-Plane, FlightGear, Webots and RealFlight. Schema 5:
+    // ArduPilot's DDS agent and ArduPilot + FlightGear.
     let mut added = Vec::new();
-    if schema < 4 {
+    for (since, ids) in [(4, &ADDED_IN_4[..]), (5, &ADDED_IN_5[..])] {
+        if schema >= since {
+            continue;
+        }
         for new in defaults()
             .profiles
             .into_iter()
-            .filter(|p| ADDED_IN_4.contains(&p.id.as_str()))
+            .filter(|p| ids.contains(&p.id.as_str()))
         {
             if !config.profiles.iter().any(|p| p.id == new.id) {
                 added.push(new.name.clone());
                 config.profiles.push(new);
             }
         }
+    }
+    if schema < 5 {
+        migrate_v4(&mut config);
     }
     for installation in config.px4_installations.values() {
         crate::px4::validate(installation)?;

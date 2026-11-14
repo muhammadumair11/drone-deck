@@ -516,13 +516,28 @@ def extract_request(params, root):
             'start': start, 'end': end, 'rate': rate, 'format': fmt}
 
 
+# The message workspaces Setup builds (px4_msgs, ardupilot_msgs), sourced over ROS when present so
+# recorders and the command player know the autopilots' message types.
+OVERLAYS = tuple(os.path.expanduser('~') + f'/.local/share/drone-deck/tools/{w}/install/setup.bash'
+                 for w in ('px4_ros_ws', 'ap_ros_ws'))
+
+
+def source_text(setup=ROS_SETUP, overlays=OVERLAYS):
+    """Shell text that sources ROS, then each message workspace that exists."""
+    text = f'source {shlex.quote(setup)}'
+    for overlay in overlays:
+        text += f' && {{ [ ! -f {shlex.quote(overlay)} ] || source {shlex.quote(overlay)}; }}'
+    return text
+
+
 def ros_environment(setup=ROS_SETUP):
-    """The ROS environment when ROS is installed, else this process's environment."""
+    """The ROS environment (with the message workspaces) when ROS is installed, else this
+    process's environment."""
     env = dict(os.environ)
     if not Path(setup).is_file():
         return env
     try:
-        result = subprocess.run(['bash', '-c', 'source "$1" && env -0', 'drone-deck', setup],
+        result = subprocess.run(['bash', '-c', source_text(setup) + ' && env -0'],
                                 capture_output=True, timeout=20, check=True)
     except (OSError, subprocess.SubprocessError):
         return env
@@ -534,9 +549,10 @@ def ros_environment(setup=ROS_SETUP):
 
 
 def ros_command(args, setup=ROS_SETUP):
-    """`bash -lc` text that sources ROS, drops discovery overrides and execs `args`."""
+    """`bash -lc` text that sources ROS and the message workspaces, drops discovery overrides and
+    execs `args`."""
     unset = 'unset ROS_DISCOVERY_SERVER ROS_STATIC_PEERS FASTDDS_DEFAULT_PROFILES_FILE FASTRTPS_DEFAULT_PROFILES_FILE'
-    return f'source {shlex.quote(setup)} && {unset} && exec {shlex.join(args)}'
+    return f'{source_text(setup)} && {unset} && exec {shlex.join(args)}'
 
 
 def bag_topics(recording, metadata):

@@ -118,6 +118,56 @@ class Report(unittest.TestCase):
         self.assertEqual(off['ai'][0]['old'], 0)
 
 
+UTC_S = 1_700_000_000
+
+
+def ap_flight(start_sec, easts, boot_rows=0, dt=0.1, statuses=()):
+    """An ArduPilot flight: its status, then its ENU pose flying east every `dt`; optional rows
+    stamped with the time since boot before its clock was set."""
+    def header(us):
+        return {'stamp': {'sec': us // 1_000_000, 'nanosec': (us % 1_000_000) * 1000}, 'frame_id': 'map'}
+    rows = [(compare.AP_STATUS, i * 10**8, {'header': header(1_000_000 + i * 100_000), 'vehicle_type': 2, 'armed': False,
+                                            'mode': 0, 'flying': False, 'failsafe': []}) for i in range(boot_rows)]
+    log0, us0 = 10**10, start_sec * 1_000_000
+    rows.append((compare.AP_STATUS, log0, {'header': header(us0), 'vehicle_type': 2, 'armed': False, 'mode': 4,
+                                           'flying': False, 'failsafe': []}))
+    for i, east in enumerate(easts):
+        us = us0 + int(i * dt * 1e6)
+        rows.append((compare.AP_POSE, log0 + int(i * dt * 1e9),
+                     {'header': header(us), 'pose': {'position': {'x': east, 'y': 0.0, 'z': 2.0}}}))
+    for t, armed, mode, flying, failsafe in statuses:
+        rows.append((compare.AP_STATUS, log0 + int(t * 1e9),
+                     {'header': header(us0 + int(t * 1e6)), 'vehicle_type': 2, 'armed': armed, 'mode': mode,
+                      'flying': flying, 'failsafe': failsafe}))
+    return rows
+
+
+class ArduPilot(unittest.TestCase):
+    def test_pose_is_turned_to_north_east_down_from_the_utc_status(self):
+        rows = compare.in_final_base(ap_flight(UTC_S, [0.0, 1.0], boot_rows=3))
+        self.assertEqual(len(rows), 3, 'the reports stamped before the clock was set are left out')
+        anchor, _ = compare.anchors(rows)
+        self.assertEqual(anchor, UTC_S * 1_000_000)
+        self.assertEqual(compare.positions(rows, anchor), [(0.0, 0.0, 0.0, -2.0), (0.1, 0.0, 1.0, -2.0)])
+
+    def test_status_changes_are_events_with_copter_mode_names(self):
+        rows = ap_flight(UTC_S, [], statuses=[(1.0, True, 4, False, []), (2.0, True, 4, True, []),
+                                              (9.0, True, 6, True, [24]), (12.0, False, 6, False, [])])
+        found = [(e['t'], e['kind'], e['value']) for e in compare.events(rows, UTC_S * 1_000_000)]
+        self.assertEqual(found, [(0.0, 'arming', 'Disarmed'), (0.0, 'mode', 'Guided'), (0.0, 'landed', 'Landed'),
+                                 (1.0, 'arming', 'Armed'), (2.0, 'landed', 'Flying'), (9.0, 'mode', 'RTL'),
+                                 (9.0, 'failsafe', 'On'), (12.0, 'arming', 'Disarmed'), (12.0, 'failsafe', 'Off'),
+                                 (12.0, 'landed', 'Landed')])
+
+    def test_an_unchanged_ardupilot_replay_keeps_its_course(self):
+        easts = [i * 0.5 for i in range(40)]
+        old = ap_flight(UTC_S, easts, boot_rows=2)
+        new = ap_flight(UTC_S + 600, [e + 0.2 for e in easts])
+        value = compare.report(old, new, [], [], {'tolerance': 10}, [])
+        self.assertEqual(value['verdict'], 'same', value['notes'])
+        self.assertAlmostEqual(value['path']['max_m'], 0.2)
+
+
 class Notes(unittest.TestCase):
     def test_what_the_run_changed_on_purpose_is_noted(self):
         notes = compare.setting_notes({'target': 'px4-jmavsim', 'recorded_adapter': 'px4-gazebo',

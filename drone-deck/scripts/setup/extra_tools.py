@@ -6,10 +6,23 @@ import shutil
 import subprocess
 import urllib.request
 
-TOOLS={'gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge','jmavsim','flightgear'}
+TOOLS={'gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge','jmavsim','flightgear','ardupilot-dds'}
 # jMAVSim inside a PX4 checkout: its Ant project and the jar `ant create_run_jar` builds.
 JMAVSIM=Path('Tools/simulation/jmavsim/jMAVSim')
 JMAVSIM_JAR=JMAVSIM/'out/production/jmavsim_run.jar'
+# ArduPilot's DDS client: SITL configured with --enable-DDS, whose types Micro-XRCE-DDS-Gen generates
+# (v4.5.1 for ArduPilot before 4.7), and ardupilot_msgs for ROS 2 (/ap/status, the arm, mode and
+# takeoff services). A Copter binary built with DDS carries the names of its DDS services.
+AP_DDS_GEN=('https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git','v4.5.1')
+AP_MSGS=Path('Tools/ros2/ardupilot_msgs')
+AP_DDS_MARK=b'arm_motorsService'
+def ardupilot_checkouts(base,requested):
+    return [requested] if requested else [base.ROOT/'ardupilot',Path.home()/'ardupilot']
+def has_dds(binary):
+    try:
+        return AP_DDS_MARK in binary.read_bytes()
+    except OSError:
+        return False
 # ROS 2 Jazzy apt packages: recipe id -> (package, ROS package directory under /opt/ros/jazzy/share).
 ROS_PACKAGES={'ros-gz':('ros-jazzy-ros-gz','ros_gz_bridge'),'foxglove-bridge':('ros-jazzy-foxglove-bridge','foxglove_bridge')}
 def ros_package(base,tool,share=Path('/opt/ros/jazzy/share')):
@@ -38,6 +51,22 @@ def probe(base,tool,location=''):
                 compatible=binary.is_file() and os.access(binary,os.X_OK)
                 result.update(found=True,compatible=compatible,path=str(path),executable=str(binary),version=base.output(['git','-C',str(path),'describe','--tags','--always']),reason='Built multirotor SITL; ground-station connection uses TCP 5760.' if compatible else 'Checkout found; build the Copter SITL target before reuse.')
                 if compatible:break
+    elif tool=='ardupilot-dds':
+        workspace=root/'ap_ros_ws'
+        setup=workspace/'install/setup.bash'
+        messages=(workspace/'install/ardupilot_msgs').is_dir()
+        for path in ardupilot_checkouts(base,requested):
+            if not (path/'Tools/autotest/sim_vehicle.py').is_file():continue
+            built=has_dds(path/'build/sitl/bin/arducopter')
+            compatible=built and messages and setup.is_file()
+            reason=('Copter SITL has its DDS client and ardupilot_msgs is built; a running ArduPilot system with ROS 2 shows the /ap/ topics.' if compatible else
+                    'Build ardupilot_msgs for ROS 2 (this recipe does).' if built else
+                    "The Copter SITL build has no DDS client. Rebuild it with ./waf configure --board sitl --enable-DDS (this recipe does, in Drone Deck's own checkout).")
+            result.update(found=built or messages,compatible=compatible,path=str(path),executable=str(setup),
+                          version=base.output(['git','-C',str(path),'describe','--tags','--always']),reason=reason)
+            if compatible:break
+        if not result['path']:
+            result['reason']='No ArduPilot checkout found. Install ArduPilot first, or choose your checkout.'
     elif tool in ROS_PACKAGES:
         result.update(ros_package(base,tool))
     elif tool=='flightgear':
@@ -104,9 +133,10 @@ def dependencies(base,tool):
         env={**os.environ,'DEBIAN_FRONTEND':'noninteractive'}
         base.run(['apt-get','update'],env=env);base.run(['apt-get','install','-y','--no-install-recommends','flightgear'],env=env)
         return
-    if tool=='ros-workspace':
+    if tool in ('ros-workspace','ardupilot-dds'):
         if not Path('/opt/ros/jazzy/setup.bash').is_file():raise RuntimeError('Install ROS 2 Jazzy in Setup before its message workspace.')
         packages+=['build-essential','cmake','python3-colcon-common-extensions','python3-rosdep','ros-jazzy-rosidl-default-generators']
+    if tool=='ardupilot-dds':packages+=['default-jdk-headless']
     env={**os.environ,'DEBIAN_FRONTEND':'noninteractive'}
     base.run(['apt-get','update'],env=env);base.run(['apt-get','install','-y','--no-install-recommends',*packages],env=env)
 
@@ -141,6 +171,27 @@ def install(base,tool):
                                'or build jMAVSim in your own checkout (make px4_sitl jmavsim) and choose that folder.')
         base.run(['git','-C',str(path),'submodule','update','--init',str(JMAVSIM)])
         base.run(['ant','create_run_jar','copy_res'],cwd=path/JMAVSIM)
+    elif tool=='ardupilot-dds':
+        # Built only inside Drone Deck's own ArduPilot checkout: an adopted checkout is never changed.
+        path=base.ROOT/'ardupilot'
+        if not (path/'.git').exists() or not (base.ROOT/'.owned-ardupilot').is_file():
+            raise RuntimeError("ArduPilot's DDS client builds inside Drone Deck's own ArduPilot checkout. Install ArduPilot with Drone Deck first, "
+                               'or build yours with ./waf configure --board sitl --enable-DDS and choose that folder.')
+        if not (path/AP_MSGS/'package.xml').is_file():
+            raise RuntimeError(f'This ArduPilot checkout has no {AP_MSGS}; it is older than ArduPilot 4.5.')
+        gen=base.owned_target('Micro-XRCE-DDS-Gen');url,revision=AP_DDS_GEN
+        if not (gen/'.git').exists():base.run(['git','clone','--recurse-submodules','--branch',revision,url,str(gen)])
+        if base.output(['git','-C',str(gen),'describe','--exact-match','--tags','HEAD'])!=revision:raise RuntimeError('Managed checkout revision changed. Review it manually; no reset was performed.')
+        base.run(['./gradlew','assemble'],cwd=gen)
+        environment=base.ROOT/'ardupilot-python'
+        env={**os.environ,'PATH':str(environment/'bin')+':'+os.environ['PATH']+':'+str(gen/'scripts')}
+        base.run([str(environment/'bin/python'),'waf','configure','--board','sitl','--enable-DDS'],cwd=path,env=env)
+        base.run([str(environment/'bin/python'),'waf','copter','-j2'],cwd=path,env=env)
+        workspace=base.owned_target('ap_ros_ws');(workspace/'src').mkdir(parents=True,exist_ok=True)
+        link=workspace/'src/ardupilot_msgs'
+        if not link.exists():link.symlink_to(path/AP_MSGS)
+        base.run(['bash','-c','source /opt/ros/jazzy/setup.bash && colcon build --packages-select ardupilot_msgs --executor sequential'],cwd=workspace)
+        (workspace/'drone-deck-workspace.json').write_text(json.dumps(dict(ardupilot=base.output(['git','-C',str(path),'describe','--tags','--always']),generator=revision,ros='jazzy')))
     elif tool=='ros-workspace':
         path=base.owned_target('px4_ros_ws');(path/'src').mkdir(parents=True,exist_ok=True)
         clone(base,path/'src/px4_msgs','https://github.com/PX4/px4_msgs.git','v1.17.0')

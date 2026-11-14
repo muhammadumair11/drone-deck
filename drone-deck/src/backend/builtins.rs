@@ -6,8 +6,40 @@ use std::collections::HashMap;
 const PX4_DIR: &str = "cd \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\"";
 /// The PX4 + Gazebo command; world and model come from the system (`launch_env`).
 pub(super) const GAZEBO_ARGS: &str = "cd \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\" && test -z \"$(pgrep -x px4)\" && PX4_GZ_WORLD=\"${DRONE_DECK_GZ_WORLD:-default}\" make px4_sitl \"gz_${DRONE_DECK_GZ_MODEL:-x500_mono_cam}\"";
-/// ArduPilot SITL serves MAVLink on TCP 5760 itself (`--no-mavproxy`).
-pub(super) const ARDUPILOT_ARGS: &str = "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" --no-mavproxy";
+/// ArduPilot SITL serves MAVLink on TCP 5760 itself (`--no-mavproxy`). With ROS 2 on, its DDS
+/// client joins the system's domain from a defaults file and is built in (`--enable-DDS`) when
+/// Micro-XRCE-DDS-Gen is found: `sim_vehicle.py` rebuilds with the options it gets, so without
+/// the generator SITL starts without the DDS client and says so, instead of failing to build. A
+/// re-simulation adds its home position, its own state folder and a wiped EEPROM. Every
+/// `DRONE_DECK_AP_*` variable is optional: unset, it changes nothing.
+pub(super) const ARDUPILOT_ARGS: &str = "cd ~/ardupilot && set -- && if [ -n \"${DRONE_DECK_AP_DOMAIN:-}\" ]; then P=\"${TMPDIR:-/tmp}/drone-deck-ardupilot-dds.parm\" && printf 'DDS_ENABLE 1\\nDDS_DOMAIN_ID %s\\n' \"$DRONE_DECK_AP_DOMAIN\" > \"$P\" && set -- --add-param-file \"$P\" && PATH=\"$PATH:$HOME/.local/share/drone-deck/tools/Micro-XRCE-DDS-Gen/scripts\" && if command -v microxrceddsgen >/dev/null; then set -- \"$@\" --enable-DDS; else echo \"Micro-XRCE-DDS-Gen not found: SITL starts without its DDS client (Setup: ArduPilot ROS 2 (DDS) support).\" >&2; fi; fi && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" --no-mavproxy \"$@\" ${DRONE_DECK_AP_HOME:+-l \"$DRONE_DECK_AP_HOME\"} ${DRONE_DECK_AP_DIR:+--use-dir \"$DRONE_DECK_AP_DIR\"} ${DRONE_DECK_AP_WIPE:+-w}";
+/// The schema 2–4 built-in ArduPilot command, replaced in schema 5 when it was never edited.
+pub(super) const ARDUPILOT_ARGS_4: &str = "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" --no-mavproxy";
+/// Only the Copter binary is built; another vehicle is refused with a reason.
+const COPTER_ONLY: &str = "{ [ \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" = ArduCopter ] || { echo \"This ArduPilot profile runs the adopted Copter build only, not $DRONE_DECK_AP_VEHICLE. Edit its command in Tools & config.\" >&2; exit 2; }; }";
+/// Runs the SITL Copter binary `exe` (quoted, absolute) of the checkout `dir` (quoted) with the
+/// checkout's Copter defaults and `extra` options, taking the `DRONE_DECK_AP_*` variables like
+/// `ARDUPILOT_ARGS`.
+pub(crate) fn ardupilot_binary(dir: &str, exe: &str, extra: &str) -> String {
+    format!(
+        "{COPTER_ONLY} && cd {dir} && test -z \"$(pgrep -x arducopter)\" && P=\"$PWD/Tools/autotest/default_params/copter.parm\" && if [ -n \"${{DRONE_DECK_AP_DOMAIN:-}}\" ]; then D=\"${{TMPDIR:-/tmp}}/drone-deck-ardupilot-dds.parm\" && printf 'DDS_ENABLE 1\\nDDS_DOMAIN_ID %s\\n' \"$DRONE_DECK_AP_DOMAIN\" > \"$D\" && P=\"$P,$D\"; fi && if [ -n \"${{DRONE_DECK_AP_DIR:-}}\" ]; then mkdir -p \"$DRONE_DECK_AP_DIR\" && cd \"$DRONE_DECK_AP_DIR\"; fi && exec {exe} --model + --defaults \"$P\"{extra} ${{DRONE_DECK_AP_HOME:+--home \"$DRONE_DECK_AP_HOME\"}} ${{DRONE_DECK_AP_WIPE:+-w}}"
+    )
+}
+/// The checkout and binary of an ArduPilot command adopted before schema 5, which ran the
+/// binary without the `DRONE_DECK_AP_*` variables.
+pub(super) fn adopted_before_5(command: &str) -> Option<(&str, &str)> {
+    let rest = command.strip_prefix(COPTER_ONLY)?.strip_prefix(" && cd ")?;
+    let (dir, rest) = rest.split_once(" && test -z \"$(pgrep -x arducopter)\" && exec ")?;
+    let exe =
+        rest.strip_suffix(" --model + --defaults Tools/autotest/default_params/copter.parm")?;
+    Some((dir, exe))
+}
+/// Drone Deck's own ArduPilot checkout, else `~/ardupilot`.
+const AP_DIR: &str = "A=\"$HOME/.local/share/drone-deck/tools/ardupilot\"; [ -x \"$A/build/sitl/bin/arducopter\" ] || A=\"$HOME/ardupilot\"";
+/// FlightGear drawing what ArduPilot SITL sends it (`--enable-fgview`): the quad or plane view.
+const FGVIEW_ARGS: &str = "A=\"$HOME/.local/share/drone-deck/tools/ardupilot\"; [ -d \"$A/Tools/autotest\" ] || A=\"$HOME/ardupilot\"; cd \"$A\" && case \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" in ArduPlane) exec sh Tools/autotest/fg_plane_view.sh;; *) exec sh Tools/autotest/fg_quad_view.sh;; esac";
+/// ArduPilot's DDS agent: the Agent the `dds` recipe built, else one on PATH.
+const DDS_AP_ARGS: &str = "A=\"$HOME/.local/share/drone-deck/tools/Micro-XRCE-DDS-Agent/build/MicroXRCEAgent\"; [ -x \"$A\" ] || A=MicroXRCEAgent; exec \"$A\" udp4 -p 2019";
 /// Camera image and camera_info of PX4's `x500_mono_cam` (sensor `camera` on `camera_link`,
 /// instance `_0`) into ROS as `/camera/image_raw` and `/camera/camera_info`.
 const ROSGZ_ARGS: &str = "source /opt/ros/jazzy/setup.bash && G=\"/world/${DRONE_DECK_GZ_WORLD:-default}/model/${DRONE_DECK_GZ_MODEL:-x500_mono_cam}_0/link/camera_link/sensor/camera\" && exec ros2 run ros_gz_bridge parameter_bridge \"$G/image@sensor_msgs/msg/Image[gz.msgs.Image\" \"$G/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo\" --ros-args -r \"$G/image:=/camera/image_raw\" -r \"$G/camera_info:=/camera/camera_info\"";
@@ -27,6 +59,8 @@ pub(crate) const ADDED_IN_4: [&str; 8] = [
     "realflight",
     "ardupilot-realflight",
 ];
+/// Built-in profiles schema 5 adds when a file lacks them.
+pub(crate) const ADDED_IN_5: [&str; 3] = ["dds-ap", "ardupilot-flightgear", "fgview"];
 /// ArduPilot SITL with the Webots Python model: it waits for the world opened in Webots.
 const ARDUPILOT_WEBOTS_ARGS: &str = "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" --model webots-python --no-mavproxy";
 /// ArduPilot SITL driving RealFlight over FlightAxis on the system's RealFlight computer.
@@ -241,6 +275,43 @@ pub fn defaults() -> Config {
         "test -x ~/ardupilot/Tools/autotest/sim_vehicle.py",
         "https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html",
     );
+    add(
+        "dds-ap",
+        "Micro XRCE-DDS Agent (ArduPilot)",
+        "Infrastructure",
+        "ArduPilot ↔ ROS 2 transport · UDP 2019",
+        "wsl",
+        vec![DDS_AP_ARGS.into()],
+        "command -v MicroXRCEAgent || test -x \"$HOME/.local/share/drone-deck/tools/Micro-XRCE-DDS-Agent/build/MicroXRCEAgent\"",
+        "https://ardupilot.org/dev/docs/ros2.html",
+    );
+    add(
+        "ardupilot-flightgear",
+        "ArduPilot SITL for FlightGear",
+        "Simulation",
+        "ArduPilot SITL drawn in FlightGear · serves MAVLink on TCP 5760",
+        "wsl",
+        vec![format!(
+            "{AP_DIR}; {}",
+            ardupilot_binary(
+                "\"$A\"",
+                "\"$A/build/sitl/bin/arducopter\"",
+                " --enable-fgview"
+            )
+        )],
+        "test -x \"$HOME/.local/share/drone-deck/tools/ardupilot/build/sitl/bin/arducopter\" || test -x ~/ardupilot/build/sitl/bin/arducopter",
+        "https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html",
+    );
+    add(
+        "fgview",
+        "FlightGear view",
+        "Simulation",
+        "FlightGear drawing ArduPilot SITL · UDP 5503",
+        "wsl",
+        vec![FGVIEW_ARGS.into()],
+        "command -v fgfs",
+        "https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html",
+    );
     Config {
         px4_installations: HashMap::new(),
         distro: "Ubuntu-24.04".into(),
@@ -249,12 +320,23 @@ pub fn defaults() -> Config {
 }
 /// Environment for profile `id` started for `sys`: the world and vehicle details its simulator
 /// adapter takes, and the ROS domain for ROS tools. Values reach the process through the
-/// agent's environment, never through the command line.
+/// agent's environment, never through the command line. A name set twice keeps its last value
+/// (a re-simulation's own domain over the system's).
 pub(crate) fn launch_env(id: &str, sys: &crate::systems::System) -> Vec<(String, String)> {
     let mut env = crate::systems::adapter::launch_env(sys, id);
-    if matches!(id, "dds" | "ros2" | "rosgz" | "foxglove" | "ros-workspace") {
+    if matches!(
+        id,
+        "dds" | "dds-ap" | "ros2" | "rosgz" | "foxglove" | "ros-workspace"
+    ) {
         env.push(("ROS_DOMAIN_ID".into(), sys.consumers.ros.domain.to_string()));
     }
     env.extend(crate::resim::launch_env(id, sys));
-    env
+    let mut out: Vec<(String, String)> = Vec::new();
+    for (name, value) in env.into_iter().rev() {
+        if !out.iter().any(|(n, _)| *n == name) {
+            out.push((name, value));
+        }
+    }
+    out.reverse();
+    out
 }

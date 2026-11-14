@@ -1,0 +1,1 @@
+- **Drone Deck: ArduPilot + FlightGear.** ArduPilot SITL flies its own physics and FlightGear draws it (`--enable-fgview`, ArduPilot's quad or plane view script), with the same ROS 2 bridge and re-simulation as plain SITL. FlightGear's recipe no longer requires PX4. Not run against FlightGear yet (VAL-23).

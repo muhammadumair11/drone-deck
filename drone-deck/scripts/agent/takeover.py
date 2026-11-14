@@ -6,9 +6,12 @@ namespace). For each recorded command the player sends, it compares the user's l
 the same topic:
 
 - numbers (setpoints, flags) differ when |recorded − yours| > max(tolerance × |recorded|, floor);
-  NaN (PX4's "unused") matches only NaN; text and true/false must be equal;
-- a `vehicle_command` matches when yours sent the same command id within 0.5 s of it; a missing
-  one is a difference at once;
+  NaN (PX4's "unused") matches only NaN; text and true/false must be equal; the time stamps
+  (PX4's `timestamp*`, a ROS `header`) are left out;
+- a `vehicle_command` matches when yours sent the same command id within 0.5 s of it, and an
+  ArduPilot service call (arm, mode switch, takeoff) when yours made the same call within 2 s
+  (3 s for takeoff: the recording's calls are worked out from /ap/status, which follows the
+  call); a missing one is a difference at once;
 - a topic your code has not published (or not for 0.5 s) is a difference, after a short grace at
   the start while your code comes up.
 
@@ -22,6 +25,10 @@ GRACE_US = 5_000_000
 STALE_US = 500_000
 COMMAND_WINDOW_US = 500_000
 COMMAND_TOPIC = 'vehicle_command'
+# ArduPilot's command services, as the player names them: (what the call is keyed by, window µs).
+SERVICES = {'/ap/arm_motors': ('arm', 2_000_000), '/ap/mode_switch': ('mode', 2_000_000),
+            '/ap/experimental/takeoff': (None, 3_000_000)}
+LONGEST_WINDOW_US = max(w for _, w in SERVICES.values())
 
 
 def topic_name(topic):
@@ -31,12 +38,28 @@ def topic_name(topic):
     return head if head and version.isdigit() else name
 
 
+def discrete(topic, message):
+    """(key, window µs, words) of a command that happens once rather than streams: PX4's
+    vehicle_command (keyed by its command id) and ArduPilot's arm, mode and takeoff calls. None for
+    a streamed command."""
+    if topic_name(topic) == COMMAND_TOPIC:
+        command = message.get('command') if isinstance(message, dict) else None
+        return command, COMMAND_WINDOW_US, f'vehicle_command {command}'
+    if topic in SERVICES:
+        field, window = SERVICES[topic]
+        value = message.get(field) if field and isinstance(message, dict) else None
+        key = (topic, value)
+        return key, window, f'the {topic} call' + (f' ({field} {value})' if field else '')
+    return None
+
+
 def flatten(value, prefix=''):
-    """{path: leaf} for a message dict; `timestamp*` fields are left out (they differ by design)."""
+    """{path: leaf} for a message dict; the time stamps (`timestamp*`, a ROS `header`) are left
+    out: they differ by design."""
     out = {}
     if isinstance(value, dict):
         for key, item in value.items():
-            if prefix == '' and str(key).startswith('timestamp'):
+            if prefix == '' and (str(key).startswith('timestamp') or key == 'header'):
                 continue
             out.update(flatten(item, f'{prefix}.{key}' if prefix else str(key)))
     elif isinstance(value, (list, tuple)):
@@ -94,8 +117,8 @@ class Takeover:
         self.grace_us = grace_us
         self.start = None
         self.latest = {}       # topic → (fresh µs, message)
-        self.sent = []         # your vehicle_commands: (fresh µs, command id)
-        self.pending = []      # recorded vehicle_commands awaiting yours: (deadline µs, command id, topic)
+        self.sent = []         # your one-off commands: (fresh µs, key)
+        self.pending = []      # recorded ones awaiting yours: (deadline µs, key, topic, words, window µs)
         self.since = {}        # topic → (fresh µs the difference began, reason)
         self.taken = None      # {'t', 'topic', 'reason'} once your code steers
         self.compared = 0
@@ -112,10 +135,11 @@ class Takeover:
     def observe(self, topic, message, now_us):
         """A command your code published."""
         self.latest[topic] = (now_us, message)
-        if topic_name(topic) == COMMAND_TOPIC and isinstance(message, dict):
-            command = message.get('command')
-            self.sent = [s for s in self.sent if now_us - s[0] <= COMMAND_WINDOW_US] + [(now_us, command)]
-            self.pending = [p for p in self.pending if p[1] != command]
+        once = discrete(topic, message)
+        if once is not None:
+            key = once[0]
+            self.sent = [s for s in self.sent if now_us - s[0] <= LONGEST_WINDOW_US] + [(now_us, key)]
+            self.pending = [p for p in self.pending if p[1] != key]
 
     def _take(self, now_us, anchor_us, topic, reason):
         self.taken = {'t': round((now_us - anchor_us) / 1e6, 3), 'topic': topic, 'reason': reason}
@@ -132,11 +156,12 @@ class Takeover:
             return self._take(now_us, anchor_us, topic, 'Tolerance 0%: your code flies from the start.')
         self.compared += 1
         name = topic_name(topic)
-        if name == COMMAND_TOPIC:
-            command = recorded.get('command') if isinstance(recorded, dict) else None
-            if any(c == command and now_us - t <= COMMAND_WINDOW_US for t, c in self.sent):
+        once = discrete(topic, recorded)
+        if once is not None:
+            key, window, words = once
+            if any(k == key and now_us - t <= window for t, k in self.sent):
                 return None
-            self.pending.append((now_us + COMMAND_WINDOW_US, command, topic))
+            self.pending.append((now_us + window, key, topic, words, window))
             return None
         seen = self.latest.get(topic)
         if seen is None or now_us - seen[0] > STALE_US:
@@ -157,14 +182,14 @@ class Takeover:
         return None
 
     def tick(self, now_us, anchor_us):
-        """A recorded vehicle_command yours never matched within 0.5 s hands over at once."""
+        """A recorded one-off command yours never matched within its window hands over at once."""
         if not self.watching or self.taken or not self.pending:
             return None
-        for deadline, command, topic in self.pending:
+        for deadline, _, topic, words, window in self.pending:
             if now_us >= deadline:
                 self.pending = []
                 return self._take(now_us, anchor_us, topic,
-                                  f'Your code did not send vehicle_command {command} within 0.5 s of the recording.')
+                                  f'Your code did not send {words} within {window / 1e6:g} s of the recording.')
         return None
 
     def report(self):

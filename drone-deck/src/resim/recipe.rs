@@ -124,7 +124,13 @@ pub(crate) fn capture(s: &State, topics: &[String]) -> Option<Recipe> {
         params: None,
         command_topics,
         evidence_topics,
-        anchor: "first vehicle status after the autopilot is ready".into(),
+        anchor: match a.autopilot {
+            AutopilotKind::Px4 => "first vehicle status after the autopilot is ready",
+            AutopilotKind::ArduPilot => {
+                "first /ap/status after the autopilot passes its pre-arm checks"
+            }
+        }
+        .into(),
         drone_deck: env!("CARGO_PKG_VERSION").into(),
         source: String::new(),
         command_types: BTreeMap::new(),

@@ -1,16 +1,28 @@
-//! Which recorded parameters a fresh simulator takes. Calibration, hardware ports, batteries
-//! and the airframe the launch picked are never copied; a simulator's own parameters are
+//! Which recorded parameters a fresh simulator takes (PX4 and ArduPilot). Calibration, hardware
+//! ports, batteries and the airframe the launch picked are never copied; a simulator's own parameters are
 //! copied only when the run uses the same world. Every parameter left out is reported with
 //! the reason.
 use crate::mavlink::{Param, ParamSet};
 
-/// Prefixes of parameters that describe one physical board or its wiring.
+/// Prefixes of parameters that describe one physical board or its wiring (PX4 and ArduPilot:
+/// sensors, outputs, GPS and CAN ports, rangefinders, notification LEDs, statistics).
 const HARDWARE: &[&str] = &[
-    "CAL_", "SENS_", "PWM_", "SER_", "BAT", "BATT", "INS_", "COMPASS_", "SERIAL", "BRD_", "RC_MAP_",
+    "CAL_", "SENS_", "PWM_", "SER_", "BAT", "BATT", "INS_", "COMPASS_", "SERIAL", "BRD_",
+    "RC_MAP_", "RCMAP_", "SERVO", "GPS", "CAN_", "RNGFND", "NTF_", "STAT_",
 ];
-/// Parameters the launch chooses for the world (the airframe, and the DDS client's domain and
-/// namespace, `UXRCE_DDS_*`), not the flight.
-const LAUNCH: &[&str] = &["SYS_AUTOSTART", "SYS_AUTOCONFIG", "MAV_SYS_ID"];
+/// Parameters the launch chooses for the world (the airframe, the system ids, and the DDS
+/// client's domain and namespace, PX4's `UXRCE_DDS_*` and ArduPilot's `DDS_*`), not the flight.
+const LAUNCH: &[&str] = &[
+    "SYS_AUTOSTART",
+    "SYS_AUTOCONFIG",
+    "MAV_SYS_ID",
+    "SYSID_THISMAV",
+    "SYSID_MYGCS",
+    "FRAME_CLASS",
+    "FRAME_TYPE",
+];
+/// Prefixes of the DDS client's settings.
+const DDS: &[&str] = &["UXRCE_DDS_", "DDS_"];
 /// Prefixes of a simulator's own parameters.
 const SIMULATOR: &[&str] = &["SIM_", "SIH_"];
 
@@ -54,7 +66,7 @@ fn is_mav_config(name: &str) -> bool {
 
 /// Why `name` is not copied, or `None` when it is.
 pub(crate) fn skip(name: &str, same_world: bool) -> Option<Skip> {
-    if LAUNCH.contains(&name) || name.starts_with("UXRCE_DDS_") {
+    if LAUNCH.contains(&name) || DDS.iter().any(|p| name.starts_with(p)) {
         Some(Skip::Launch)
     } else if HARDWARE.iter().any(|p| name.starts_with(p))
         || is_mav_config(name)

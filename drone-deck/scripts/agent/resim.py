@@ -4,8 +4,8 @@
   keep a `recipe.json`, with a summary of it and their runs (`<recording>/resim/<run>/run.json`).
 - `resim.prepare{recording}` → `{recipe, params}`: the recipe and the kept parameters
   (`params.params`, QGroundControl format, or null) the app needs before it starts the simulator.
-- `resim.run{recording, namespace, domain, tolerance?, floor?, hold?, code?, ai_topics?, target?,
-  conditions?, home?, skipped_params?}` starts two owned processes on the
+- `resim.run{recording, namespace, domain, vehicle_domain?, tolerance?, floor?, hold?, code?,
+  ai_topics?, target?, conditions?, home?, skipped_params?}` starts two owned processes on the
   run's isolated, localhost-only domain: a rosbag2 recorder of the fresh vehicle's reports
   (`fresh/`) and the command player (`arbiter.py`), and returns when the player ends or the
   request is cancelled. `run.json` records the settings, the parameters the app left out, the
@@ -17,9 +17,12 @@
   events, commands, AI output; run in a worker with the ROS environment so either MCAP reader
   works) and `run.json` gets the verdict. `resim.compare{recording, run}` compares again and
   `resim.report{recording, run}` returns `compare.json`.
+  For an ArduPilot flight, `vehicle_domain` is the fresh vehicle's own domain, which the player
+  (`arbiter_ap.py`) joins to the run's.
 - `resim.import{label, folder?, mcap?}` files a real flight in the library: `folder` is what the
   app exported from its flight log (recipe, `commands.jsonl`, `evidence.jsonl`, parameters, the
-  log); `mcap` is the drone's own ROS 2 recording, whose commands are preferred when it has any.
+  log: PX4's `flight.ulg` or ArduPilot's `flight.bin`); `mcap` is the drone's own ROS 2 recording
+  (PX4's /fmu/ or ArduPilot's /ap/ topics), whose commands are preferred when it has any.
 - `resim.status` → `{active}`: whether a run is still writing its folder.
 
 The app starts and stops the simulator itself, through its staged launch; this module never
@@ -46,9 +49,26 @@ COMPARE_TIMEOUT_S = 600
 # how long it keeps relaying after the last command.
 WAIT_S = 90
 TAIL_S = 5
+# A fresh ArduPilot SITL needs GPS and its estimator settled before it passes its pre-arm checks.
+AP_WAIT_S = 180
 
 
-IMPORT_FILES = ('recipe.json', 'commands.jsonl', 'evidence.jsonl', 'params.params', 'flight.ulg')
+IMPORT_FILES = ('recipe.json', 'commands.jsonl', 'evidence.jsonl', 'params.params', 'flight.ulg', 'flight.bin')
+# Topic prefixes that command each autopilot, and the prefix of what it reports.
+AUTOPILOT_TOPICS = {'px4': (('/fmu/in/',), '/fmu/out/'), 'ardupilot': (('/ap/cmd_', '/ap/joy'), '/ap/')}
+# The recipe an imported real flight starts from, per autopilot: its built-in physics.
+IMPORT_DEFAULTS = {'px4': {'adapter': 'px4-sih', 'autopilot': 'px4', 'anchor': 'first vehicle status'},
+                   'ardupilot': {'adapter': 'ardupilot-sitl', 'autopilot': 'ardupilot', 'vehicle': 'copter',
+                                 'anchor': 'first /ap/status'}}
+
+
+def split_topics(topics):
+    """(autopilot, commands, evidence) of an MCAP's topics, or (None, [], []) without commands."""
+    for autopilot, (commands, reports) in AUTOPILOT_TOPICS.items():
+        found = [t for t in topics if t.startswith(commands)]
+        if found:
+            return autopilot, found, [t for t in topics if t.startswith(reports) and t not in found]
+    return None, [], []
 IMPORT_LIMIT = 2 * 1024 ** 3
 
 
@@ -92,6 +112,15 @@ def run_plan(params, root, python='python3'):
         raise ValueError('The run domain must be a number.') from None
     if not 1 <= domain <= 232:
         raise ValueError('The run domain must be between 1 and 232.')
+    autopilot = 'ardupilot' if pipe.text(recipe.get('autopilot')) == 'ardupilot' else 'px4'
+    vehicle_domain = None
+    if autopilot == 'ardupilot':
+        try:
+            vehicle_domain = int(params.get('vehicle_domain'))
+        except (TypeError, ValueError):
+            vehicle_domain = 0
+        if not 1 <= vehicle_domain <= 232 or vehicle_domain == domain:
+            raise ValueError("The fresh ArduPilot needs a ROS domain of its own (1-232, not the run's).")
     skipped = params.get('skipped_params') or []
     if not isinstance(skipped, list):
         raise ValueError('skipped_params must be a list.')
@@ -123,16 +152,20 @@ def run_plan(params, root, python='python3'):
     reports = variants(topics(recipe, 'evidence_topics')) + [x for x in ai_topics if x not in topics(recipe, 'evidence_topics')]
     commands = {
         'arbiter': [python, '-u', str(pipe.HERE / 'arbiter.py'), '--recording', str(recording),
-                    '--namespace', namespace, '--out', str(folder), '--wait', str(WAIT_S), '--tail', str(TAIL_S),
+                    '--namespace', namespace, '--out', str(folder),
+                    '--wait', str(AP_WAIT_S if vehicle_domain else WAIT_S), '--tail', str(TAIL_S),
                     '--tolerance', 'off' if tolerance is None else f'{tolerance:g}',
-                    '--floor', f'{floor:g}', '--hold', f'{hold:g}'],
+                    '--floor', f'{floor:g}', '--hold', f'{hold:g}', '--autopilot', autopilot],
     }
+    if vehicle_domain:
+        commands['arbiter'] += ['--vehicle-domain', str(vehicle_domain)]
     if reports:
         commands['record'] = ['ros2', 'bag', 'record', '-s', 'mcap', '-o', str(folder / 'fresh'),
                               '--disable-keyboard-controls', '--topics', *reports]
     env = dict(pipe.LOCAL_ONLY, ROS_DOMAIN_ID=str(domain), DRONE_DECK_AGENT=str(pipe.HERE))
     return {'run': run, 'folder': folder, 'recording': recording, 'recipe': recipe, 'namespace': namespace,
-            'domain': domain, 'skipped': skipped[:5000], 'commands': commands, 'env': env,
+            'domain': domain, 'autopilot': autopilot, 'vehicle_domain': vehicle_domain,
+            'skipped': skipped[:5000], 'commands': commands, 'env': env,
             'tolerance': tolerance, 'floor': floor, 'hold': hold, 'code': code, 'ai_topics': ai_topics,
             'target': target or (pipe.text(recipe.get('adapter')) or ''), 'conditions': conditions,
             'home': bool(params.get('home'))}
@@ -230,18 +263,21 @@ class Resim:
                                  or mcap.stat().st_size > IMPORT_LIMIT):
             raise ValueError('Choose an .mcap file (up to 2 GiB) the Linux environment can read.')
         recipe = pipe.read_json(folder / 'recipe.json', limit=4_000_000) if folder else None
-        topics = []
+        autopilot = pipe.text((recipe or {}).get('autopilot')) or 'px4'
         if mcap is not None:
-            topics = (mcap_topics or read_mcap_topics)(mcap)
-            commands = [x for x in topics if x.startswith('/fmu/in/')]
-            if commands:
-                recipe = dict(recipe or {}, source='', command_topics=commands,
-                              evidence_topics=[x for x in topics if x.startswith('/fmu/out/')])
+            found, commands, evidence = split_topics((mcap_topics or read_mcap_topics)(mcap))
+            if found and recipe is not None and found != autopilot:
+                raise ValueError('The ROS 2 recording and the flight log come from different autopilots.')
+            if found:
+                autopilot = found
+                recipe = dict(recipe or {}, source='', command_topics=commands, evidence_topics=evidence)
             elif recipe is None:
-                raise ValueError('The ROS 2 recording has no /fmu/in/ commands to replay.')
-        recipe = dict({'schema': 1, 'origin': 'real', 'system': label, 'adapter': 'px4-sih', 'autopilot': 'px4',
+                raise ValueError('The ROS 2 recording has no PX4 (/fmu/in/) or ArduPilot (/ap/cmd_, /ap/joy) '
+                                 'commands to replay.')
+        defaults = IMPORT_DEFAULTS.get(autopilot, IMPORT_DEFAULTS['px4'])
+        recipe = dict({'schema': 1, 'origin': 'real', 'system': label, **defaults,
                        'world': {'id': 'internal', 'params': {}}, 'command_topics': [], 'evidence_topics': [],
-                       'anchor': 'first vehicle status', 'drone_deck': ''}, **(recipe or {}))
+                       'drone_deck': ''}, **(recipe or {}))
         slug = re.sub(r'[^a-z0-9]+', '-', label.lower()).strip('-')[:60] or 'flight'
         path = self.root / f'{pipe.stamp()}-{slug}'
         path.mkdir(parents=True)
@@ -356,6 +392,7 @@ class Resim:
         run = {'schema': 1, 'kind': 'resimulation', 'run': plan['run'], 'recording': plan['recording'].name,
                'status': 'Running', 'created': pipe.now(), 'adapter': (pipe.text(plan['recipe'].get('adapter')) or ''),
                'world': plan['recipe'].get('world'), 'namespace': plan['namespace'], 'domain': plan['domain'],
+               'autopilot': plan['autopilot'], 'vehicle_domain': plan['vehicle_domain'],
                'tolerance': 'off' if plan['tolerance'] is None else plan['tolerance'], 'floor': plan['floor'],
                'hold_s': plan['hold'], 'code': plan['code'], 'ai_topics': plan['ai_topics'], 'steering': 'recording',
                'target': plan['target'], 'recorded_adapter': (pipe.text(plan['recipe'].get('adapter')) or ''),

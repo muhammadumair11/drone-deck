@@ -130,10 +130,7 @@ pub(crate) fn adopt(s: &mut State) {
             profile.program = "wsl".into();
             // The adopted build is the Copter binary: a system naming another vehicle is
             // refused with a reason instead of silently flying a copter.
-            profile.args = vec![format!(
-                "{{ [ \"${{DRONE_DECK_AP_VEHICLE:-ArduCopter}}\" = ArduCopter ] || {{ echo \"This ArduPilot profile runs the adopted Copter build only, not $DRONE_DECK_AP_VEHICLE. Edit its command in Tools & config.\" >&2; exit 2; }}; }} && cd {} && test -z \"$(pgrep -x arducopter)\" && exec {exe} --model + --defaults Tools/autotest/default_params/copter.parm",
-                quote(&candidate.path)
-            )];
+            profile.args = vec![backend::ardupilot_binary(&quote(&candidate.path), &exe, "")];
             profile.probe = format!("test -x {exe}");
         }
         "gazebo" => {
@@ -146,8 +143,9 @@ pub(crate) fn adopt(s: &mut State) {
             profile.program = "wsl".into();
             profile.probe = format!("test -f {exe}");
         }
-        // Their commands come from the PX4 installation, like SIH and Gazebo.
-        "jmavsim" | "flightgear" => {}
+        // Their commands come from the PX4 installation, like SIH and Gazebo; ArduPilot's DDS
+        // build replaces the adopted binary in place and its agent is a built-in.
+        "jmavsim" | "flightgear" | "ardupilot-dds" => {}
         // Windows simulators the user installed and chose.
         "xplane" | "webots" | "realflight" => {
             profile.program = candidate.executable.clone();
@@ -169,6 +167,14 @@ pub(crate) fn adopt(s: &mut State) {
     }
     if profile.program == "wsl" {
         config.distro = candidate.environment.clone();
+    }
+    // ArduPilot's agent is the same program on its own port.
+    if candidate.tool == "dds"
+        && let Some(ap) = config.profiles.iter_mut().find(|p| p.id == "dds-ap")
+    {
+        ap.program = "wsl".into();
+        ap.args = vec![format!("exec {exe} udp4 -p 2019")];
+        ap.probe = format!("test -x {exe}");
     }
     if !s.headless {
         if let Err(e) = backend::save(&config) {

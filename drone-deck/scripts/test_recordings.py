@@ -59,10 +59,11 @@ class RecordingTests(unittest.TestCase):
         metadata = {'storage_identifier': 'mcap', 'message_count': 3,
                     'topics_with_message_count': [
                         {'topic_metadata': {'name': name}}
-                        for name in ['/imu', '/fmu/in/vehicle_command', '/robot/cmd_vel']]}
+                        for name in ['/imu', '/fmu/in/vehicle_command', '/robot/cmd_vel', '/ap/cmd_gps_pose',
+                                     '/ap/joy', '/ap/pose/filtered']]}
         with patch.object(rec, 'bag_metadata', return_value=metadata), patch.object(self.server, 'start_job') as launch:
             result = self.server.replay({'session': 'flight', 'domain': 77})
-        self.assertEqual(result['topics'], ['/imu'])
+        self.assertEqual(result['topics'], ['/imu', '/ap/pose/filtered'])
         self.assertTrue(launch.call_args.kwargs['local'])
         self.assertEqual(launch.call_args.args[2], 77)
 
