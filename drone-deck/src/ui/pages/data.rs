@@ -1,14 +1,15 @@
 //! 03 Data & models: recordings, models, pipelines, projects, flight logs.
 use super::*;
 mod logs;
-mod plot;
+pub(crate) mod plot;
 
-const TABS: [&str; 5] = [
+const TABS: [&str; 6] = [
     "Recordings",
     "Models",
     "Pipelines",
     "Projects",
     "Flight logs",
+    "Re-simulation",
 ];
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
@@ -37,7 +38,9 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
         .child(tabs("data-tab", &TABS, tab, |s: &mut State, i: usize| {
             s.ui.data_tab = i
         }))
-        .child(if tab == crate::ulog::LOGS_TAB {
+        .child(if tab == crate::resim::TAB {
+            crate::resim::view::tab(s, vp)
+        } else if tab == crate::ulog::LOGS_TAB {
             logs::tab(s, vp)
         } else if tab == 0 {
             crate::recordings::page(s, vp)

@@ -85,11 +85,37 @@ impl Systems {
         s
     }
     fn to_file(&self) -> file::File {
+        let systems: Vec<System> = self.saved().cloned().collect();
+        let active = if self.get(&self.active_id).is_some_and(System::scratch) {
+            systems.first().map_or_else(String::new, |x| x.id.clone())
+        } else {
+            self.active_id.clone()
+        };
         file::File {
             schema: file::SCHEMA,
-            active: self.active_id.clone(),
-            systems: self.list.clone(),
+            active,
+            systems,
         }
+    }
+    /// The systems the user keeps: every one but a run's temporary system (`add_scratch`).
+    pub fn saved(&self) -> impl Iterator<Item = &System> {
+        self.list.iter().filter(|x| !x.scratch())
+    }
+    /// Adds a temporary system that a run (re-simulation) starts and owns. It is never saved
+    /// or listed with the user's systems; `drop_scratch` removes it.
+    pub(crate) fn add_scratch(&mut self, mut sys: System) {
+        sys.id = model::SCRATCH.into();
+        self.list.retain(|x| !x.scratch());
+        self.list.push(sys);
+    }
+    /// Removes the temporary system, making `fallback` active if the temporary one was.
+    pub(crate) fn drop_scratch(&mut self, fallback: &str) {
+        let was_active = self.get(&self.active_id).is_some_and(System::scratch);
+        self.list.retain(|x| !x.scratch());
+        if was_active && self.get(fallback).is_some() {
+            self.active_id = fallback.into();
+        }
+        self.sync();
     }
     /// Keeps the list non-empty, the active id valid and `active` equal to its kind.
     fn sync(&mut self) {
@@ -286,6 +312,10 @@ impl Systems {
     /// Call it only for work that is not running yet.
     pub(crate) fn claim(&mut self, key: &str) {
         self.owners.insert(key.to_string(), self.active_id.clone());
+    }
+    /// Records that system `owner` starts `key` (a run's temporary system starting your code).
+    pub(crate) fn claim_for(&mut self, key: &str, owner: &str) {
+        self.owners.insert(key.to_string(), owner.to_string());
     }
     /// The system that started `key`, if it is owned.
     pub fn owner(&self, key: &str) -> Option<&str> {

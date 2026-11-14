@@ -263,15 +263,16 @@ def rosbag2_messages(bag, topics, start, end):
     return {'reader': 'rosbag2_py', 'ros': os.environ.get('ROS_DISTRO')}, base, iterate()
 
 
-def open_messages(recording, topics, start, end):
-    files = sorted((recording / 'bag').glob('*.mcap'))
+def open_messages(recording, topics, start, end, bag='bag'):
+    """`bag`: the folder of MCAP files inside `recording` (a re-simulation run keeps `fresh`)."""
+    files = sorted((recording / bag).glob('*.mcap'))
     if not files:
         raise ValueError('This recording has no MCAP files.')
     try:
         return files, mcap_messages(files, topics, start, end)
     except ImportError as mcap_error:
         try:
-            return files, rosbag2_messages(recording / 'bag', topics, start, end)
+            return files, rosbag2_messages(recording / bag, topics, start, end)
         except ImportError:
             raise RuntimeError(f'{MISSING_READER} ({mcap_error})') from None
 

@@ -15,7 +15,7 @@ fn label(v: f32, unit: &str) -> String {
 }
 
 /// `armed`: intervals (s) to wash; `marks`: failsafe times (s).
-pub(super) fn plot(p: &Plot, duration: f32, armed: &[(f64, f64)], marks: &[f64]) -> El {
+pub(crate) fn plot(p: &Plot, duration: f32, armed: &[(f64, f64)], marks: &[f64]) -> El {
     let (lo, hi) = p.range().unwrap_or((0., 1.));
     let pad = ((hi - lo) * 0.08).max(0.5);
     let (lo, hi) = (lo - pad, hi + pad);

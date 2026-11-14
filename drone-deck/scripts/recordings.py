@@ -63,6 +63,28 @@ def bag_metadata(path):
     metadata = document.get('rosbag2_bagfile_information', {})
     return metadata if isinstance(metadata, dict) else {}
 
+RECIPE_LIMIT = 64 * 1024
+PARAMS_LIMIT = 4 * 1024 * 1024
+
+
+def recipe_summary(path):
+    """What the library shows of a recording's recipe, or None without a readable one."""
+    manifest = path / 'recipe.json'
+    try:
+        if not manifest.is_file() or manifest.stat().st_size > RECIPE_LIMIT:
+            return None
+        recipe = json.loads(manifest.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(recipe, dict):
+        return None
+    world = recipe.get('world') if isinstance(recipe.get('world'), dict) else {}
+    return {'adapter': recipe.get('adapter', ''), 'autopilot': recipe.get('autopilot', ''),
+            'world': world.get('id', ''), 'system': recipe.get('system', ''),
+            'commands': len(recipe.get('command_topics') or []),
+            'params': bool(recipe.get('params'))}
+
+
 def atomic_json(path, value):
     temporary = path.with_suffix('.json.tmp')
     temporary.write_text(json.dumps(value, indent=2))
@@ -131,6 +153,7 @@ class Server:
                 row.setdefault('label', path.name)
                 row.setdefault('status', 'Unknown; inspect files')
                 metadata = bag_metadata(path)
+                row['recipe'] = recipe_summary(path)
                 row.update(id=path.name, path=str(path),
                     messages=metadata.get('message_count', 0),
                     duration=metadata.get('duration', {}).get('nanoseconds', 0) / 1e9,
@@ -180,6 +203,11 @@ class Server:
         stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
         path = self.session_path(f'{stamp}_{label}_{uuid.uuid4().hex[:8]}')
         path.mkdir()
+        recipe = request.get('recipe')
+        if recipe is not None:
+            if not isinstance(recipe, dict) or len(json.dumps(recipe)) > RECIPE_LIMIT:
+                raise ValueError('The re-simulation recipe must be a JSON object under 64 KiB.')
+            atomic_json(path / 'recipe.json', recipe)
         atomic_json(path / 'session.json', {
             'label': label, 'created': stamp, 'status': 'recording',
             'domain': domain_id, 'requested_topics': selected,
@@ -256,7 +284,23 @@ class Server:
                 del self.jobs[kind]
                 self.finish(kind, job, code)
 
-    def stop(self):
+    def keep_params(self, path, params):
+        """Writes the parameters a re-simulation applies beside a recording with a recipe."""
+        recipe_path = path / 'recipe.json'
+        if not isinstance(params, str) or not params or len(params) > PARAMS_LIMIT or not recipe_path.is_file():
+            return
+        (path / 'params.params').write_text(params)
+        recipe = json.loads(recipe_path.read_text())
+        recipe['params'] = 'params.params'
+        atomic_json(recipe_path, recipe)
+
+    def stop(self, params=None):
+        record = self.jobs.get('record')
+        if record and params is not None:
+            try:
+                self.keep_params(record['path'], params)
+            except (OSError, ValueError) as error:
+                emit({'kind': 'log', 'message': f'The parameters could not be kept with the recording: {error}'})
         for kind, job in list(self.jobs.items()):
             child = job['child']
             if child.poll() is None:
@@ -289,7 +333,7 @@ class Server:
         if action == 'replay':
             return self.replay(request)
         if action == 'stop':
-            return self.stop()
+            return self.stop(request.get('params'))
         raise ValueError('Unknown recording action.')
 
 def main():

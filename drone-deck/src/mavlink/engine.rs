@@ -5,7 +5,7 @@ use super::home::HomeRequest;
 use super::link::{Endpoint, Writer};
 use super::logs::{DownloadStep, ListStep, LogDownload, LogList};
 use super::modes;
-use super::params::{self, FetchStep, ParamFetch};
+use super::params::{self, FetchStep, ParamFetch, ParamWrite, WriteStep};
 use super::service::{
     Config, Event, Input, LinkOrigin, LinkState, LinkStatus, PeerStatus, Request, Shared,
     SystemSeen, VehicleSnapshot,
@@ -52,6 +52,7 @@ pub(super) struct Core {
     commands: Commands,
     home: HomeRequest,
     fetch: Option<ParamFetch>,
+    write: Option<ParamWrite>,
     list: Option<LogList>,
     download: Option<LogDownload>,
     shell_bytes: Vec<u8>,
@@ -134,6 +135,7 @@ impl Core {
             commands: Commands::new(config.command_timeout, config.command_attempts),
             home: HomeRequest::default(),
             fetch: None,
+            write: None,
             list: None,
             download: None,
             shell_bytes: Vec::new(),
@@ -199,6 +201,7 @@ impl Core {
         let timers = [
             self.commands.next_deadline(),
             self.fetch.as_ref().map(|f| f.next_deadline()),
+            self.write.as_ref().and_then(|w| w.next_deadline()),
             self.list.as_ref().map(|l| l.next_deadline()),
             self.download.as_ref().map(|d| d.next_deadline()),
         ];
@@ -404,6 +407,9 @@ impl Core {
                 {
                     self.progress = true;
                 }
+                if let Some(step) = self.write.as_mut().and_then(|w| w.on_value(v, now)) {
+                    self.write_step(step);
+                }
             }
             Msg::LOG_ENTRY(e) if primary => {
                 if let Some(list) = self.list.as_mut() {
@@ -452,6 +458,19 @@ impl Core {
                 self.fetch = Some(fetch);
                 self.progress = true;
                 self.send(&msg);
+            }
+            Request::SetParams(params) => {
+                if self.write.is_some() {
+                    return self.emit(Event::Unavailable(
+                        "A parameter write is already running".into(),
+                    ));
+                }
+                let (Some(target), Some(v)) = (self.target(), self.vehicle.as_ref()) else {
+                    return self.emit(no_vehicle());
+                };
+                let (write, step) = ParamWrite::new(target, v.autopilot, params, now);
+                self.write = Some(write);
+                self.write_step(step);
             }
             Request::ListLogs => {
                 if self.list.is_some() {
@@ -552,6 +571,17 @@ impl Core {
         }
     }
 
+    fn write_step(&mut self, step: WriteStep) {
+        match step {
+            WriteStep::Wait => {}
+            WriteStep::Send(msg) => self.send(&msg),
+            WriteStep::Done { applied, failed } => {
+                self.write = None;
+                self.emit(Event::ParamsWritten { applied, failed });
+            }
+        }
+    }
+
     fn timers(&mut self, now: Instant) {
         for step in self.commands.poll(self.vehicle.as_ref(), now) {
             self.command_step(step);
@@ -575,6 +605,9 @@ impl Core {
                 }
                 FetchStep::Incomplete(_) => self.finish_params(),
             }
+        }
+        if let Some(step) = self.write.as_mut().map(|w| w.poll(now)) {
+            self.write_step(step);
         }
         if let Some(list) = self.list.as_mut() {
             match list.poll(now) {

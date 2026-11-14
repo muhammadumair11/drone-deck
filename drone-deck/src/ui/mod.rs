@@ -3,6 +3,7 @@
 use super::*;
 pub(crate) mod kit;
 mod pages;
+pub(crate) use pages::series_plot;
 mod settings;
 #[cfg(test)]
 mod tests;
@@ -337,7 +338,7 @@ fn menu_option(key: String, label: &str, current: bool, on: impl Fn(&mut State) 
 /// "New system…" and the way to manage them.
 fn system_menu(s: &State, vp: &Viewport) -> El {
     let mut options = col().w_full().min_w(0.).gap(2.);
-    for (i, sys) in s.systems.list.iter().enumerate() {
+    for (i, sys) in s.systems.saved().enumerate() {
         let current = sys.id == s.systems.active_id();
         let running = systems::owns_work(s, &sys.id);
         let mut detail = format!(

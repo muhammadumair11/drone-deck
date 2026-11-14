@@ -1,5 +1,7 @@
 //! The supported (autopilot, world) pairs.
-use super::{Adapter, AutopilotKind, Link, Param, Readiness, Ros, Scope, Stage};
+use super::{
+    Adapter, AutopilotKind, Condition, HomeEnv, Link, Param, Readiness, Ros, Scope, Stage,
+};
 
 fn same(value: &str) -> String {
     value.to_string()
@@ -26,9 +28,17 @@ const ARDUPILOT_VEHICLE: Param = Param {
     map: ardupilot_vehicle,
 };
 
+/// PX4 SITL takes its home position from these (SIH, Gazebo and jMAVSim).
+const PX4_HOME: HomeEnv = HomeEnv {
+    lat: "PX4_HOME_LAT",
+    lon: "PX4_HOME_LON",
+    alt: "PX4_HOME_ALT",
+};
+
 const PX4_ROS: Ros = Ros {
     agent: "dds",
     topic_prefix: "/fmu/",
+    commands: &["/fmu/in/"],
     extra: &[],
 };
 
@@ -50,6 +60,8 @@ pub(crate) static ALL: [Adapter; 8] = [
         params: &[],
         recipes: &["px4"],
         shell: true,
+        home: Some(PX4_HOME),
+        conditions: &[],
     },
     Adapter {
         id: "px4-gazebo",
@@ -86,6 +98,12 @@ pub(crate) static ALL: [Adapter; 8] = [
         ],
         recipes: &["px4", "gazebo"],
         shell: true,
+        home: Some(PX4_HOME),
+        conditions: &[Condition {
+            key: "wind",
+            desc: "Flies in the windy world that ships with PX4's Gazebo models.",
+            set: &[("world", "windy")],
+        }],
     },
     Adapter {
         id: "ardupilot-sitl",
@@ -103,11 +121,14 @@ pub(crate) static ALL: [Adapter; 8] = [
         ros: Some(Ros {
             agent: "dds",
             topic_prefix: "/ap/",
+            commands: &["/ap/cmd_", "/ap/joy"],
             extra: &[],
         }),
         params: &[ARDUPILOT_VEHICLE],
         recipes: &["ardupilot"],
         shell: false,
+        home: None,
+        conditions: &[],
     },
     Adapter {
         id: "px4-jmavsim",
@@ -125,6 +146,8 @@ pub(crate) static ALL: [Adapter; 8] = [
         params: &[],
         recipes: &["px4", "jmavsim"],
         shell: true,
+        home: Some(PX4_HOME),
+        conditions: &[],
     },
     Adapter {
         id: "px4-xplane",
@@ -149,6 +172,8 @@ pub(crate) static ALL: [Adapter; 8] = [
         params: &[],
         recipes: &["px4", "xplane"],
         shell: true,
+        home: None,
+        conditions: &[],
     },
     Adapter {
         id: "px4-flightgear",
@@ -166,6 +191,8 @@ pub(crate) static ALL: [Adapter; 8] = [
         params: &[],
         recipes: &["px4", "flightgear"],
         shell: true,
+        home: None,
+        conditions: &[],
     },
     Adapter {
         id: "ardupilot-webots",
@@ -189,6 +216,8 @@ pub(crate) static ALL: [Adapter; 8] = [
         params: &[ARDUPILOT_VEHICLE],
         recipes: &["ardupilot", "webots"],
         shell: false,
+        home: None,
+        conditions: &[],
     },
     Adapter {
         id: "ardupilot-realflight",
@@ -222,5 +251,7 @@ pub(crate) static ALL: [Adapter; 8] = [
         ],
         recipes: &["ardupilot", "realflight"],
         shell: false,
+        home: None,
+        conditions: &[],
     },
 ];

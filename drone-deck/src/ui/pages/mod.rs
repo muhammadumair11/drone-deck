@@ -5,6 +5,7 @@ mod data;
 mod settings;
 mod system;
 mod tools;
+pub(crate) use data::plot::plot as series_plot;
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
     match s.page {

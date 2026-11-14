@@ -28,6 +28,7 @@ import channel  # noqa: E402
 import pipe  # noqa: E402
 import probe  # noqa: E402
 import procs  # noqa: E402
+import resim  # noqa: E402
 import router  # noqa: E402
 import services  # noqa: E402
 
@@ -101,7 +102,7 @@ def params_of(request):
 
 class Agent:
     def __init__(self, out, processes=None, mavlink=None, recorder=None, data=None, shell=('bash', '-lc'),
-                 pipes=None):
+                 pipes=None, resims=None):
         self.out = out
         self.shell = shell
         self.procs = processes or procs.Processes(out, shell=shell)
@@ -109,6 +110,7 @@ class Agent:
         self.recorder = recorder or services.Recorder(out)
         self.data = data or services.Data()
         self.pipes = pipes or pipe.Pipelines(out, self.procs, mounts=automount_root())
+        self.resim = resims or resim.Resim(out, self.procs)
         self.cancels = {}
         self.cancels_lock = threading.Lock()
         self.workers = []
@@ -140,6 +142,9 @@ class Agent:
         if name.startswith('pipe.'):
             return lambda p, c, i: self.pipes.call(
                 name[5:], p, c, lambda message: self.out.event('progress', id=i, message=message))
+        if name.startswith('resim.'):
+            return lambda p, c, i: self.resim.call(
+                name[6:], p, c, lambda message: self.out.event('progress', id=i, message=message))
         if name.startswith('data.'):
             return lambda p, c, i: self.data.call(
                 name[5:], p, lambda message: self.out.event('progress', id=i, message=message))

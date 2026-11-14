@@ -702,6 +702,34 @@ impl Ulog {
             })
         })
     }
+    /// Every message of one topic instance with all its numeric fields (padding and text left
+    /// out), sorted by timestamp: `(timestamp µs, [(field, type, value)])`.
+    pub(crate) fn rows(&self, name: &str, instance: u8) -> Vec<(u64, Vec<(&str, Base, f64)>)> {
+        let mut rows = Vec::new();
+        for t in self.topic(name).filter(|t| t.instance == instance) {
+            let Some(layout) = &t.layout else { continue };
+            let ts = layout.field("timestamp");
+            for &(at, len) in &t.samples {
+                let data = &self.bytes[at as usize..at as usize + len as usize];
+                let time = ts.and_then(|f| u64_at(data, f.offset)).unwrap_or_default();
+                let values = layout
+                    .fields
+                    .iter()
+                    .filter(|f| {
+                        !f.name.starts_with("_padding") && !(f.base == Base::Char && f.len > 1)
+                    })
+                    .filter_map(|f| {
+                        f.base
+                            .read(data, f.offset)
+                            .map(|v| (f.name.as_str(), f.base, v))
+                    })
+                    .collect();
+                rows.push((time, values));
+            }
+        }
+        rows.sort_by_key(|r| r.0);
+        rows
+    }
     pub(crate) fn info_text(&self, key: &str) -> Option<String> {
         self.info.get(key).map(|v| v.to_string())
     }

@@ -85,6 +85,37 @@ class RecordingTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]['status'], 'Incomplete; inspect logs')
 
+    def test_a_recipe_is_kept_with_the_recording_and_its_parameters_on_stop(self):
+        self.server.ready = True
+        recipe = {'schema': 1, 'adapter': 'px4-gazebo', 'autopilot': 'px4',
+                  'world': {'id': 'gazebo', 'params': {'world': 'default'}},
+                  'system': 'Lab', 'command_topics': ['/fmu/in/vehicle_command'],
+                  'evidence_topics': ['/fmu/out/vehicle_status']}
+        with patch.object(self.server, 'start_job'):
+            reply = self.server.record({'name': 'flight', 'topics': ['/fmu/in/vehicle_command'],
+                                        'domain': 0, 'recipe': recipe})
+        path = self.server.session_path(reply['id'])
+        self.assertEqual(json.loads((path / 'recipe.json').read_text()), recipe)
+        self.server.keep_params(path, 'SYS_AUTOSTART\t10016\n')
+        self.assertEqual((path / 'params.params').read_text(), 'SYS_AUTOSTART\t10016\n')
+        self.assertEqual(json.loads((path / 'recipe.json').read_text())['params'], 'params.params')
+        with patch.object(rec, 'bag_metadata', return_value={}):
+            row = next(r for r in self.server.sessions() if r['id'] == reply['id'])
+        self.assertEqual(row['recipe'], {'adapter': 'px4-gazebo', 'autopilot': 'px4', 'world': 'gazebo',
+                                         'system': 'Lab', 'commands': 1, 'params': True})
+
+    def test_a_recording_without_or_with_a_bad_recipe(self):
+        self.server.ready = True
+        with patch.object(self.server, 'start_job'):
+            plain = self.server.record({'name': 'plain', 'topics': ['/imu'], 'domain': 0})
+            with self.assertRaisesRegex(ValueError, 'recipe'):
+                self.server.record({'name': 'bad', 'topics': ['/imu'], 'domain': 0, 'recipe': ['not', 'an', 'object']})
+        path = self.server.session_path(plain['id'])
+        self.assertFalse((path / 'recipe.json').exists())
+        self.server.keep_params(path, 'A\t1\n')
+        self.assertFalse((path / 'params.params').exists(), 'no recipe, nothing to attach the parameters to')
+        self.assertIsNone(rec.recipe_summary(path))
+
     def test_command_uses_an_explicit_domain_without_changing_parent_environment(self):
         self.server.env = {**os.environ, 'ROS_DISCOVERY_SERVER': 'remote:11811'}
         command, env = self.server.command(['bag', 'play', 'path with spaces'], 77, local=True)

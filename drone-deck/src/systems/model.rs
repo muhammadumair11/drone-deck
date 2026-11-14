@@ -198,7 +198,14 @@ pub(crate) struct System {
     #[serde(default)]
     pub consumers: Consumers,
 }
+/// Id of the temporary system a run starts (`Systems::add_scratch`); a slug never has `_`.
+pub(crate) const SCRATCH: &str = "__run";
+
 impl System {
+    /// A run's temporary system, never saved.
+    pub fn scratch(&self) -> bool {
+        self.id == SCRATCH
+    }
     /// The simulator adapter of a simulated vehicle; `None` for a physical vehicle, a replay,
     /// or a world this version has no adapter for.
     pub fn adapter(&self) -> Option<&'static Adapter> {

@@ -2,7 +2,7 @@
 //! diffs between two snapshots.
 use super::frame::{Msg, dialect, text};
 use super::modes::Autopilot;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::time::{Duration, Instant};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -350,6 +350,145 @@ pub fn header_names(autopilot: Autopilot, vehicle_type: u8) -> (&'static str, &'
         _ => "Generic",
     };
     (stack, vehicle)
+}
+
+/// The raw float a PARAM_SET carries for `value`: the inverse of [`decode_value`]. PX4 packs
+/// integers into the float's bytes; ArduPilot sends them as float values.
+pub fn encode_value(value: &ParamValue, kind: u8, autopilot: Autopilot) -> f32 {
+    let i = match value {
+        ParamValue::Real(r) => return *r as f32,
+        ParamValue::Int(i) => *i,
+    };
+    if is_real(kind) || autopilot != Autopilot::Px4 {
+        return i as f32;
+    }
+    f32::from_bits(match kind {
+        1 | 2 => i as i8 as u8 as u32,
+        3 | 4 => i as i16 as u16 as u32,
+        5 => i as u32,
+        _ => i as i32 as u32,
+    })
+}
+
+fn param_type(kind: u8) -> dialect::MavParamType {
+    use dialect::MavParamType as T;
+    match kind {
+        1 => T::MAV_PARAM_TYPE_UINT8,
+        2 => T::MAV_PARAM_TYPE_INT8,
+        3 => T::MAV_PARAM_TYPE_UINT16,
+        4 => T::MAV_PARAM_TYPE_INT16,
+        5 => T::MAV_PARAM_TYPE_UINT32,
+        6 => T::MAV_PARAM_TYPE_INT32,
+        7 => T::MAV_PARAM_TYPE_UINT64,
+        8 => T::MAV_PARAM_TYPE_INT64,
+        10 => T::MAV_PARAM_TYPE_REAL64,
+        _ => T::MAV_PARAM_TYPE_REAL32,
+    }
+}
+
+/// What a parameter write asks of the engine.
+#[derive(Debug, PartialEq)]
+pub enum WriteStep {
+    Wait,
+    Send(Msg),
+    /// Every parameter was confirmed or given up on: names never confirmed are `failed`.
+    Done {
+        applied: usize,
+        failed: Vec<String>,
+    },
+}
+
+/// Writes parameters one at a time to an owned simulation (`Service::set_params` is refused on
+/// any other link), each confirmed by the PARAM_VALUE the autopilot answers with. One that
+/// never comes back with the value sent is tried again, then reported as not applied.
+pub struct ParamWrite {
+    target: (u8, u8),
+    autopilot: Autopilot,
+    queue: VecDeque<Param>,
+    current: Option<(Param, Instant, u8)>,
+    applied: usize,
+    failed: Vec<String>,
+    timeout: Duration,
+    tries: u8,
+}
+impl ParamWrite {
+    pub fn new(
+        target: (u8, u8),
+        autopilot: Autopilot,
+        params: Vec<Param>,
+        now: Instant,
+    ) -> (Self, WriteStep) {
+        let mut write = Self {
+            target,
+            autopilot,
+            queue: params.into(),
+            current: None,
+            applied: 0,
+            failed: Vec::new(),
+            timeout: Duration::from_millis(800),
+            tries: 3,
+        };
+        let step = write.next(now);
+        (write, step)
+    }
+    fn set(&self, p: &Param) -> Msg {
+        Msg::PARAM_SET(dialect::PARAM_SET_DATA {
+            param_value: encode_value(&p.value, p.kind, self.autopilot),
+            target_system: self.target.0,
+            target_component: self.target.1,
+            param_id: p.name.as_str().into(),
+            param_type: param_type(p.kind),
+        })
+    }
+    fn next(&mut self, now: Instant) -> WriteStep {
+        match self.queue.pop_front() {
+            Some(p) => {
+                let msg = self.set(&p);
+                self.current = Some((p, now, 1));
+                WriteStep::Send(msg)
+            }
+            None => {
+                self.current = None;
+                WriteStep::Done {
+                    applied: self.applied,
+                    failed: std::mem::take(&mut self.failed),
+                }
+            }
+        }
+    }
+    /// A PARAM_VALUE: when it confirms the parameter being written, the next one is sent.
+    pub fn on_value(&mut self, v: &dialect::PARAM_VALUE_DATA, now: Instant) -> Option<WriteStep> {
+        let (p, ..) = self.current.as_ref()?;
+        let confirmed = text(&v.param_id) == p.name
+            && v.param_value.to_bits() == encode_value(&p.value, p.kind, self.autopilot).to_bits();
+        if !confirmed {
+            return None;
+        }
+        self.applied += 1;
+        Some(self.next(now))
+    }
+    pub fn poll(&mut self, now: Instant) -> WriteStep {
+        let Some((p, sent, tries)) = self.current.as_mut() else {
+            return WriteStep::Wait;
+        };
+        if now < *sent + self.timeout {
+            return WriteStep::Wait;
+        }
+        if *tries < self.tries {
+            *tries += 1;
+            *sent = now;
+            let p = p.clone();
+            return WriteStep::Send(self.set(&p));
+        }
+        let name = p.name.clone();
+        self.failed.push(name);
+        self.next(now)
+    }
+    pub fn next_deadline(&self) -> Option<Instant> {
+        self.current
+            .as_ref()
+            .map(|(_, sent, _)| *sent + self.timeout)
+    }
 }
 
 #[cfg(test)]

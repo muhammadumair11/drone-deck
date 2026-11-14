@@ -1,7 +1,7 @@
 mod bridge;
 pub(crate) mod foxglove;
 pub(crate) mod pipelines;
-mod projects;
+pub(crate) mod projects;
 #[cfg(test)]
 mod tests;
 mod view;

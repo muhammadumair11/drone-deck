@@ -283,7 +283,7 @@ fn system_row(s: &State, i: usize, sys: &System, compact: bool) -> El {
 }
 
 pub(super) fn section(s: &State, compact: bool) -> El {
-    let n = s.systems.list.len();
+    let n = s.systems.saved().count();
     let right = row()
         .gaps(4., 16.)
         .center_y()
@@ -293,7 +293,7 @@ pub(super) fn section(s: &State, compact: bool) -> El {
             crate::guided::new_system(s)
         }));
     let mut list = col().key("system-rows").w_full().min_w(0.);
-    for (i, sys) in s.systems.list.iter().enumerate() {
+    for (i, sys) in s.systems.saved().enumerate() {
         list = list.child(system_row(s, i, sys, compact));
     }
     col()

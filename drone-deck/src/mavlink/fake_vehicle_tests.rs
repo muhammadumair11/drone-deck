@@ -59,6 +59,8 @@ pub struct Script {
     /// MAV_RESULT for every COMMAND_LONG; None = never acknowledge.
     pub ack: Option<dialect::MavResult>,
     pub params: Vec<(String, f32, dialect::MavParamType)>,
+    /// Parameter names whose PARAM_SET is never answered.
+    pub ignore_sets: Vec<String>,
     /// Indices left out of the answer to PARAM_REQUEST_LIST (still answered by index).
     pub drop_params: HashSet<u16>,
     pub log: Vec<u8>,
@@ -101,6 +103,7 @@ impl Default for Script {
             ack: Some(dialect::MavResult::MAV_RESULT_ACCEPTED),
             params,
             drop_params: HashSet::new(),
+            ignore_sets: Vec::new(),
             log: (0..20_000u32).map(|i| (i * 7 % 251) as u8).collect(),
             log_cut: None,
             log_drop_once: HashSet::new(),
@@ -347,6 +350,15 @@ fn run(mut wire: Wire, script: Arc<Mutex<Script>>, stop: Arc<AtomicBool>) {
                 Msg::PARAM_REQUEST_READ(r) => {
                     if (r.param_index as usize) < s.params.len() {
                         out.push(param_value(&s, r.param_index as usize));
+                    }
+                }
+                Msg::PARAM_SET(p) => {
+                    let name = super::frame::text(&p.param_id);
+                    if let Some(i) = s.params.iter().position(|(n, ..)| *n == name)
+                        && !s.ignore_sets.contains(&name)
+                    {
+                        s.params[i].1 = p.param_value;
+                        out.push(param_value(&s, i));
                     }
                 }
                 Msg::LOG_REQUEST_LIST(_) => {

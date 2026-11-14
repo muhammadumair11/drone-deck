@@ -279,6 +279,27 @@ fn readiness(s: &State, idle: bool) -> El {
     col
 }
 
+/// "Re-simulable / PX4 + Gazebo / …" for a recording that kept a recipe.
+pub(crate) fn resimulable(session: &super::Session) -> Option<String> {
+    let recipe = session.recipe.as_ref()?;
+    let id = recipe["adapter"].as_str().unwrap_or("");
+    let name = crate::systems::adapter::ALL
+        .iter()
+        .find(|a| a.id == id)
+        .map_or(id, |a| a.name);
+    let commands = recipe["commands"].as_u64().unwrap_or(0);
+    let mut line = format!("Re-simulable / {name}");
+    line.push_str(&match commands {
+        0 => " / no command topics recorded".to_string(),
+        1 => " / 1 command topic".to_string(),
+        n => format!(" / {n} command topics"),
+    });
+    if !recipe["params"].as_bool().unwrap_or(false) {
+        line.push_str(" / parameters not kept");
+    }
+    Some(line)
+}
+
 fn library(s: &State, vp: &Viewport) -> El {
     let r = &s.recorder;
     let mut list = col().w_full().min_w(0.);
@@ -290,7 +311,7 @@ fn library(s: &State, vp: &Viewport) -> El {
         } else {
             warn()
         };
-        let main = col()
+        let mut main = col()
             .w_full()
             .min_w(0.)
             .gap(4.)
@@ -304,6 +325,9 @@ fn library(s: &State, vp: &Viewport) -> El {
                 ),
                 11.,
             ));
+        if let Some(line) = resimulable(session) {
+            main = main.child(meta(line).key(format!("recording-recipe-{i}")).wrap());
+        }
         let entry = log_row(
             format!("recording-session-{i}"),
             meta_sized(
@@ -412,7 +436,15 @@ fn detail(session: &Session, vp: &Viewport) -> El {
                         let path = session.path.clone();
                         move |s| crate::studio::foxglove::open(s, path.clone())
                     },
-                )),
+                ))
+                .child(if session.recipe.is_some() {
+                    let id = session.id.clone();
+                    ghost("open-recording-resim", "Re-simulate ↗", true, move |s| {
+                        crate::resim::open(s, &id)
+                    })
+                } else {
+                    col()
+                }),
         )
 }
 

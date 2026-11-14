@@ -2,8 +2,8 @@
 //! radio) that fans packets out to local UDP peers, records a `.tlog`, and exposes the
 //! vehicle as a coalesced `VehicleSnapshot` plus discrete `Event`s.
 //!
-//! Flight commands and the console need `Authority::OwnedSimulation` and a service started
-//! with `LinkOrigin::SimulatorRouter`; parameter and log downloads are read-only and work on
+//! Flight commands, the console and parameter writes (for re-simulation) need
+//! `Authority::OwnedSimulation` and a service started with `LinkOrigin::SimulatorRouter`; parameter and log downloads are read-only and work on
 //! any link, as does the one HOME_POSITION request sent when a vehicle is first found (see
 //! `home`). On any link, fan-out peers are bridged both ways: what QGroundControl or a script
 //! sends reaches the vehicle unchanged, and on a physical link it is counted in

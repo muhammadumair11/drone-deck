@@ -145,6 +145,10 @@ pub(crate) struct Stage {
 pub(crate) struct Ros {
     pub agent: &'static str,
     pub topic_prefix: &'static str,
+    /// Prefixes of the topics that command the autopilot (the rest under `topic_prefix` is
+    /// what it reports). A recording keeps them apart for re-simulation; prefixes, not exact
+    /// names, so a release that versions a topic name still matches.
+    pub commands: &'static [&'static str],
     pub extra: &'static [&'static str],
 }
 
@@ -169,6 +173,25 @@ pub(crate) struct Param {
     pub map: fn(&str) -> String,
 }
 
+/// Environment variables the autopilot reads its home position from (degrees, metres AMSL).
+#[derive(Debug)]
+pub(crate) struct HomeEnv {
+    pub lat: &'static str,
+    pub lon: &'static str,
+    pub alt: &'static str,
+}
+
+/// A condition a re-simulation can change in this world, as world parameters it sets.
+#[derive(Debug)]
+pub(crate) struct Condition {
+    pub key: &'static str,
+    pub desc: &'static str,
+    pub set: &'static [(&'static str, &'static str)],
+}
+
+/// Conditions a re-simulation offers; a world without one shows it greyed.
+pub(crate) const CONDITIONS: [(&str, &str); 1] = [("wind", "Wind")];
+
 #[derive(Debug)]
 pub(crate) struct Adapter {
     pub id: &'static str,
@@ -189,11 +212,19 @@ pub(crate) struct Adapter {
     pub recipes: &'static [&'static str],
     /// Whether the autopilot answers the MAVLink shell (PX4 does, ArduPilot does not).
     pub shell: bool,
+    /// How a re-simulation gives the autopilot the recorded home position, if it can.
+    pub home: Option<HomeEnv>,
+    /// What a re-simulation can vary in this world (`CONDITIONS`).
+    pub conditions: &'static [Condition],
 }
 impl Adapter {
     /// The profile that runs the autopilot.
     pub(crate) fn vehicle_profile(&self) -> &'static str {
         self.vehicle
+    }
+    /// The condition `key` in this world, if it is offered.
+    pub(crate) fn condition(&self, key: &str) -> Option<&'static Condition> {
+        self.conditions.iter().find(|c| c.key == key)
     }
     /// Profiles that receive this adapter's `params` as environment: its stages and the
     /// extra ROS profiles started with it.

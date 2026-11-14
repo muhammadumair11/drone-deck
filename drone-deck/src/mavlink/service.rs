@@ -228,6 +228,12 @@ pub enum Event {
     },
     /// Console output (coalesced, ≤ 10 Hz).
     Shell(String),
+    /// A parameter write finished: how many the autopilot confirmed, and the names it never
+    /// confirmed.
+    ParamsWritten {
+        applied: usize,
+        failed: Vec<String>,
+    },
     /// A request that needs a vehicle arrived before one was seen.
     Unavailable(String),
     TlogStopped(String),
@@ -263,6 +269,7 @@ impl Update {
 pub(super) enum Request {
     Command { id: u64, kind: CommandKind },
     FetchParams,
+    SetParams(Vec<super::params::Param>),
     ListLogs,
     Download { entry: LogEntry, dir: PathBuf },
     CancelDownload,
@@ -448,6 +455,18 @@ impl Service {
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         self.request(Request::Command { id, kind })?;
         Ok(id)
+    }
+    /// Writes parameters, one confirmed at a time, to an owned simulation only: refused on a
+    /// physical link whatever `authority` says, and without the owned-simulation grant. The
+    /// result arrives as `Event::ParamsWritten`. Re-simulation uses it to give a fresh
+    /// simulator a recording's parameters.
+    pub fn set_params(
+        &self,
+        params: Vec<super::params::Param>,
+        authority: Authority,
+    ) -> Result<(), Refusal> {
+        self.check_flight(authority)?;
+        self.request(Request::SetParams(params))
     }
     /// Downloads every parameter (read-only; allowed on any link).
     pub fn fetch_params(&self) -> Result<(), Refusal> {

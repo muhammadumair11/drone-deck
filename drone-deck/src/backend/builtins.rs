@@ -255,5 +255,6 @@ pub(crate) fn launch_env(id: &str, sys: &crate::systems::System) -> Vec<(String,
     if matches!(id, "dds" | "ros2" | "rosgz" | "foxglove" | "ros-workspace") {
         env.push(("ROS_DOMAIN_ID".into(), sys.consumers.ros.domain.to_string()));
     }
+    env.extend(crate::resim::launch_env(id, sys));
     env
 }

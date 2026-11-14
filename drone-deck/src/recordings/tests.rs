@@ -129,3 +129,74 @@ fn the_capture_note_names_the_active_system_and_follows_its_ros_consumers() {
     rt.frame(0.2);
     assert!(rt.find("recording-system-note").is_none());
 }
+
+#[test]
+fn a_simulated_recording_carries_a_recipe_and_the_autopilot_topics() {
+    let mut s = State::new();
+    s.recorder.topics = TextEdit::new("/camera/image_raw");
+    s.recorder.discovered = [
+        "/fmu/in/vehicle_command",
+        "/fmu/out/vehicle_status_v1",
+        "/camera/image_raw",
+    ]
+    .iter()
+    .map(|n| Topic {
+        name: (*n).into(),
+        ..Default::default()
+    })
+    .collect();
+    let value = payload(&s, "record").unwrap();
+    let topics: Vec<&str> = value["topics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|t| t.as_str())
+        .collect();
+    assert_eq!(
+        topics,
+        [
+            "/camera/image_raw",
+            "/fmu/in/vehicle_command",
+            "/fmu/out/vehicle_status_v1"
+        ],
+        "the autopilot's topics are added to the selection"
+    );
+    assert_eq!(value["recipe"]["adapter"], "px4-sih");
+    assert_eq!(
+        value["recipe"]["command_topics"],
+        serde_json::json!(["/fmu/in/vehicle_command"])
+    );
+    assert_eq!(
+        value["recipe"]["evidence_topics"],
+        serde_json::json!(["/fmu/out/vehicle_status_v1"])
+    );
+    assert!(
+        payload(&s, "stop").unwrap().get("params").is_none(),
+        "no link, no parameters"
+    );
+
+    assert!(s.select_system(crate::systems::PHYSICAL));
+    let value = payload(&s, "record").unwrap();
+    assert!(
+        value["recipe"].is_null(),
+        "a physical vehicle records no recipe here"
+    );
+    assert_eq!(value["topics"], serde_json::json!(["/camera/image_raw"]));
+}
+
+#[test]
+fn the_library_says_which_recordings_can_be_flown_again() {
+    let mut session = Session::default();
+    assert_eq!(view::resimulable(&session), None);
+    session.recipe =
+        Some(serde_json::json!({"adapter": "px4-gazebo", "commands": 2, "params": true}));
+    assert_eq!(
+        view::resimulable(&session).as_deref(),
+        Some("Re-simulable / PX4 + Gazebo / 2 command topics")
+    );
+    session.recipe = Some(serde_json::json!({"adapter": "ardupilot-sitl", "commands": 0}));
+    assert_eq!(
+        view::resimulable(&session).as_deref(),
+        Some("Re-simulable / ArduPilot SITL / no command topics recorded / parameters not kept")
+    );
+}

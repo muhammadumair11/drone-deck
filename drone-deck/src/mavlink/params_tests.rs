@@ -167,3 +167,117 @@ fn diff_reports_added_removed_and_changed() {
     assert_eq!(changes[1].after, None);
     assert_eq!(changes[2].before, None);
 }
+
+#[test]
+fn encoding_is_the_inverse_of_decoding() {
+    for (value, kind) in [
+        (ParamValue::Int(4001), 6),
+        (ParamValue::Int(-5), 6),
+        (ParamValue::Int(-3), 2),
+        (ParamValue::Int(200), 1),
+        (ParamValue::Int(-1200), 4),
+        (ParamValue::Int(60000), 3),
+        (ParamValue::Int(3_000_000_000), 5),
+        (ParamValue::Real(0.25), 9),
+    ] {
+        for autopilot in [Autopilot::Px4, Autopilot::ArduPilot] {
+            let raw = encode_value(&value, kind, autopilot);
+            assert_eq!(
+                decode_value(raw, kind, autopilot),
+                value,
+                "{value:?} {kind} {autopilot:?}"
+            );
+        }
+    }
+    assert_eq!(
+        encode_value(&ParamValue::Int(4001), 6, Autopilot::Px4).to_bits(),
+        4001
+    );
+    assert_eq!(
+        encode_value(&ParamValue::Int(4001), 6, Autopilot::ArduPilot),
+        4001.0
+    );
+}
+
+fn param(name: &str, value: i64) -> Param {
+    Param {
+        name: name.into(),
+        value: ParamValue::Int(value),
+        kind: 6,
+    }
+}
+
+fn sent_name(step: &WriteStep) -> String {
+    match step {
+        WriteStep::Send(Msg::PARAM_SET(p)) => super::super::frame::text(&p.param_id),
+        other => panic!("expected a PARAM_SET, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_write_sends_one_parameter_at_a_time_and_waits_for_its_value() {
+    let t0 = Instant::now();
+    let (mut w, step) = ParamWrite::new(
+        (1, 1),
+        Autopilot::Px4,
+        vec![param("A", 1), param("B", 2)],
+        t0,
+    );
+    assert_eq!(sent_name(&step), "A");
+    let int32 = dialect::MavParamType::MAV_PARAM_TYPE_INT32;
+    assert!(
+        w.on_value(&value(0, 2, "B", f32::from_bits(2), int32), t0)
+            .is_none(),
+        "not the one being written"
+    );
+    assert!(
+        w.on_value(&value(0, 2, "A", f32::from_bits(9), int32), t0)
+            .is_none(),
+        "the old value"
+    );
+    let step = w
+        .on_value(&value(0, 2, "A", f32::from_bits(1), int32), t0)
+        .unwrap();
+    assert_eq!(sent_name(&step), "B");
+    assert_eq!(
+        w.on_value(&value(1, 2, "B", f32::from_bits(2), int32), t0),
+        Some(WriteStep::Done {
+            applied: 2,
+            failed: vec![]
+        })
+    );
+    assert_eq!(w.poll(t0 + Duration::from_secs(5)), WriteStep::Wait);
+    assert_eq!(w.next_deadline(), None);
+}
+
+#[test]
+fn an_unconfirmed_parameter_is_resent_then_reported() {
+    let t0 = Instant::now();
+    let (mut w, _) = ParamWrite::new(
+        (1, 1),
+        Autopilot::Px4,
+        vec![param("A", 1), param("B", 2)],
+        t0,
+    );
+    let step = Duration::from_millis(800);
+    assert_eq!(w.poll(t0 + step / 2), WriteStep::Wait);
+    assert_eq!(sent_name(&w.poll(t0 + step)), "A", "second try");
+    assert_eq!(sent_name(&w.poll(t0 + step * 2)), "A", "third try");
+    assert_eq!(sent_name(&w.poll(t0 + step * 3)), "B", "gave up on A");
+    let int32 = dialect::MavParamType::MAV_PARAM_TYPE_INT32;
+    assert_eq!(
+        w.on_value(&value(1, 2, "B", f32::from_bits(2), int32), t0 + step * 3),
+        Some(WriteStep::Done {
+            applied: 1,
+            failed: vec!["A".into()]
+        })
+    );
+    let (_, empty) = ParamWrite::new((1, 1), Autopilot::Px4, vec![], t0);
+    assert_eq!(
+        empty,
+        WriteStep::Done {
+            applied: 0,
+            failed: vec![]
+        }
+    );
+}

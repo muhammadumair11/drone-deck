@@ -85,6 +85,8 @@ pub(crate) struct Vehicle {
     pub params_missing: Vec<u16>,
     /// (received, total) while a parameter download runs.
     pub params_progress: Option<(usize, usize)>,
+    /// The last parameter write to an owned simulation: (confirmed, names never confirmed).
+    pub params_written: Option<(usize, Vec<String>)>,
     pub logs: Vec<LogEntry>,
     /// The last log list answered every entry.
     pub logs_complete: bool,
@@ -459,6 +461,15 @@ pub(crate) fn fetch_params(s: &mut State) -> Result<(), String> {
     Ok(())
 }
 
+/// Writes `params` to the simulator Drone Deck owns (re-simulation). Refused on any other
+/// link: the service checks the gate's authority and the link's origin.
+pub(crate) fn set_params(s: &mut State, params: Vec<mavlink::Param>) -> Result<(), String> {
+    let authority = authority(s);
+    request(s, "write parameters", |l| l.set_params(params, authority))?;
+    s.vehicle.params_written = None;
+    Ok(())
+}
+
 /// `<data root>\exports\params\<system>-<UTC stamp>.params` from the last download.
 pub(crate) fn export_params(s: &State) -> Result<PathBuf, String> {
     let params = s
@@ -621,6 +632,17 @@ fn apply(s: &mut State, event: Event) {
             s.vehicle.params = Some(set);
             s.vehicle.params_missing = missing;
             s.vehicle.params_progress = None;
+        }
+        Event::ParamsWritten { applied, failed } => {
+            s.notice = if failed.is_empty() {
+                format!("Wrote {applied} parameters to the simulator.")
+            } else {
+                format!(
+                    "Wrote {applied} parameters to the simulator; {} were not confirmed.",
+                    failed.len()
+                )
+            };
+            s.vehicle.params_written = Some((applied, failed));
         }
         Event::LogList { entries, complete } => {
             s.vehicle.logs = entries;

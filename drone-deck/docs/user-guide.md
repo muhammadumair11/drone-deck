@@ -142,7 +142,7 @@ Installation jobs are listed under **Activity → Installations**.
 
 ## 03 Data & models
 
-Five tabs: Recordings, Models, Pipelines, Projects and Flight logs. Each has a status block, a library and honest empty states.
+Six tabs: Recordings, Models, Pipelines, Projects, Flight logs and Re-simulation. Each has a status block, a library and honest empty states.
 
 ### Recordings (rosbag2 + MCAP)
 
@@ -157,6 +157,8 @@ Recordings run inside the selected WSL distribution with ROS 2 Jazzy (`/opt/ros/
 7. Select a session for message counts, duration, size, topic types, clock mode and source note. **Open folder ↗** opens the WSL location in File Explorer.
 
 Sessions are stored at `~/.local/share/drone-deck/recordings` inside the distribution (`session.json` plus a `bag` folder with `.mcap` files and `metadata.yaml`), so high-rate data never crosses the Windows mount. Nothing is deleted automatically. An interrupted recording is labelled for inspection; a finalized recording can contain zero messages if nothing was published, and cannot be replayed.
+
+**Recordings of a simulated system** also keep what a later re-simulation needs. Every discovered topic of the autopilot (`/fmu/…` for PX4, `/ap/…` for ArduPilot) is added to the selection, and `recipe.json` beside the bag names the simulator, world and details, the autopilot version setup found, the home position the vehicle reported, and which recorded topics command the autopilot and which it reports. Starting the recording also asks the simulator for its parameters (a read request) when the link has none yet; they are written as `params.params` when the recording stops. The library marks such a recording **Re-simulable**, with its simulator, the number of command topics, and whether the parameters were kept. Physical vehicles and replays record no recipe.
 
 **Replay**: pick a finalized, non-empty session, a replay domain different from both the capture domain and the session's original domain (default **77**), and a speed from 0.1× to 4×. Replay uses local-only discovery and filters known PX4 control-input and common command topics; custom topic names cannot be classified automatically, so keep live-vehicle bridges out of the replay graph. Run your analysis nodes in the same distribution:
 
@@ -214,6 +216,53 @@ Select a log to read it on a background thread. Drone Deck summarizes what was l
 - **`.tlog`**: read with the vehicle link's own MAVLink decoder (frames that fail their CRC check are not counted, any size is streamed): duration, vehicle, packets, heartbeats, message types, armed time, highest altitude above home, lowest battery, modes, status text and damage (CRC failures, skipped bytes, truncation).
 
 **Open in PX4 Flight Review ↗** opens Flight Review's upload page in your browser and shows the file in Explorer so you can drop it on the page; Drone Deck uploads nothing itself, and detailed analysis stays there. **Show in folder ↗** opens the file's folder. The ULog reader was tested with synthetic files only, not logs from a real PX4 (see [known issues](known-issues.md), VAL-10).
+
+### Re-simulation
+
+Re-simulation flies a recorded flight again in a fresh simulator: the same autopilot and world, the flight's parameters, and the recorded ROS 2 commands replayed at the times they were first sent. The tab lists every recording that keeps a recipe (a recording of a simulated PX4 system with ROS 2; see Recordings), with its earlier runs. **Re-simulate ↗** in a recording's details opens it here.
+
+Select a flight and choose **Re-simulate**. It refuses while a session, a link or another run is active, and says why. Then:
+
+1. A temporary system with the recorded autopilot and the chosen world starts through the usual staged launch. It is never saved or listed with your systems, and you can watch it on the System page. The fresh PX4 publishes under `/resim` on ROS domain 79, kept on this computer.
+2. Drone Deck reads the fresh autopilot's parameters, then writes the recorded ones that differ. It never copies calibration, sensor, port or battery parameters, or the airframe and DDS settings the launch chose. Parameter writes are possible only on a simulator Drone Deck started.
+3. If you chose **Your code**, that ROS 2 project starts on the run's domain. It reads the fresh vehicle on `/fmu/out/*` as usual, and what it publishes on `/fmu/in/*` reaches only the command player.
+4. The command player sends each recorded command into the fresh PX4 when its turn comes on the fresh autopilot's clock, and passes the fresh vehicle's reports on to `/fmu/out/*`. A recorder keeps those reports.
+5. When the last command has been sent and the vehicle has had a few seconds to settle, the run's processes stop and your previous system is active again.
+
+**Stop re-simulation** stops the run's processes (not a land command); what was recorded so far is kept. Each run writes `resim/<run>/` inside the recording: `run.json` (settings, the parameters left out and why, exit states), `commands.jsonl` (each command sent and when) and `fresh/` (an MCAP of the fresh vehicle's reports).
+
+**Takeover** decides when your code steers instead of the recording:
+
+- **Off** (the default): the recording steers the whole flight. Your code, if chosen, only runs alongside; this is the fair way to try a changed AI node on the same flight.
+- **Tolerance**: for each recorded command the player compares your code's latest command on the same topic. A number differs when it is off by more than the tolerance (percent of the recorded value) and more than the floor (an absolute amount in the field's units, so values near zero are not judged too strictly); unused fields (NaN) must stay unused. A recorded `vehicle_command` your code does not send within 0.5 s, or a topic it stops publishing, also counts. The first 5 s are a grace while your code comes up. Once a difference lasts the hold time, your code steers for the rest of the run: the recording never steers again. **0%** hands over at the first command.
+
+While a run plays, the tab says who steers ("Your code steering since 42.3 s"). The run's record says whether your code took over, when, on which topic and why; `commands.jsonl` marks each command `recording` or `your code`.
+
+**AI topics to compare** (optional) names your nodes' output topics, for example `/drone_deck/detections`. The run records them from the fresh flight too; the recording must already have them.
+
+When a run ends, Drone Deck compares the two flights and each run in the list shows its verdict. **Comparison ↓** opens the full comparison:
+
+- **The verdict.** Both flights are timed from their own first vehicle status. The course stays the same while the fresh vehicle is within the tolerance of how far the recorded one has flown from its start, and never less than 1 m. The run's own tolerance is used, or 10% when takeover was off. **Same course** gives the largest and average distance apart; **Changed at t = …** gives the moment it left that margin.
+- **The paths from above** (north up), and the distance between them over time against what the tolerance allowed. Red marks where the course changed and where your code took over.
+- **Events:** arming, flight mode, failsafe and landing in each flight, paired, with how much later or earlier each came. Events only one flight has are listed with a dash on the other side.
+- **Commands:** for each command topic, how many messages the recording had, and how many the run sent from the recording and from your code.
+- **AI output:** for each AI topic, the messages in each flight and how often the top label agrees at the same moment, with the first disagreements. This is agreement between the two runs, not accuracy: neither flight is ground truth.
+
+**Compare again** recomputes it, for example after installing the MCAP reader packages. The comparison is kept as `compare.json` in the run's folder.
+
+**Simulator** chooses where the fresh flight flies: the recorded world (the default, with its details such as the Gazebo world and model), or any other world for the same autopilot, such as a Gazebo flight flown again in PX4 SIH or jMAVSim. Different physics gives different paths even from the same commands, so the comparison says so. When the world changes, the recorded simulator's own parameters (`SIM_`, `SIH_`) are not copied, and the other world starts with its own details. PX4 SIH, Gazebo and jMAVSim start at the recorded home position when the recording kept one.
+
+**Conditions** change the world on purpose. **Wind** flies a Gazebo run in the windy world that comes with PX4's Gazebo models; worlds without a wind setting Drone Deck can change show it greyed with the reason. The run's record and its comparison list the simulator and conditions it flew with.
+
+**Real flights.** **Import a real flight → Browse…** takes a PX4 flight log (`.ulg`, for example one downloaded under System → Vehicle tools → Onboard logs) or the drone's own ROS 2 recording (`.mcap`), and files it in the library as a real flight:
+
+- From a flight log Drone Deck takes the commands the autopilot received from outside: offboard control, setpoints sent while in Offboard mode (PX4's own modes publish setpoints too, and those are left out), and commands from a ground station or ROS 2. It also keeps the parameters, home position, version and what the vehicle reported, for the comparison, and the log itself.
+- From a ROS 2 recording it takes the `/fmu/in/` commands exactly as sent; these are the more faithful source when you have them.
+- A flight flown by hand (RC or QGroundControl sticks) has nothing to replay, and the import says so.
+
+A real flight flies in PX4's built-in physics at its home position unless you choose another world, and starts with a 20% tolerance. The real wind, terrain and vehicle cannot be reproduced, so read a "Changed" verdict with that in mind.
+
+For now only PX4 flights can be re-simulated. Your code is chosen from the ROS 2 projects in Data & models → Projects. Nothing here has been run against a real PX4 yet (see [known issues](known-issues.md), VAL-21).
 
 ## 04 Activity
 

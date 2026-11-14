@@ -33,6 +33,11 @@ pub(crate) struct Session {
     pub clock: String,
     #[serde(default)]
     pub source: String,
+    /// Summary of the recipe a recording of a simulated system keeps (`resim::recipe`):
+    /// adapter, autopilot, world and system. `None` for a recording that cannot be
+    /// re-simulated yet.
+    #[serde(default)]
+    pub recipe: Option<Value>,
 }
 pub(crate) struct Recorder {
     pub name: TextEdit,
@@ -98,12 +103,28 @@ fn payload(s: &State, action: &str) -> Result<Value, String> {
     };
     let mut value = json!({"action":action,"domain":capture});
     if action == "record" {
-        let selected = topic_names(&r.topics.text);
+        let mut selected = topic_names(&r.topics.text);
         if selected.is_empty() {
             return Err("Discover and select topics, or enter absolute topic names.".into());
         }
+        // A simulated system's recording keeps the autopilot's commands and reports, and a
+        // recipe to fly it again (`resim::recipe`).
+        let recipe = crate::resim::recipe::capture(s, &selected).map(|_| {
+            for t in crate::resim::recipe::wanted_topics(s) {
+                if !selected.contains(&t) {
+                    selected.push(t);
+                }
+            }
+            crate::resim::recipe::capture(s, &selected)
+        });
         value = json!({"action":action,"domain":capture,"topics":selected,
-            "name":r.name.text.trim(),"source":r.source.text.trim(),"sim_time":r.sim_time});
+            "name":r.name.text.trim(),"source":r.source.text.trim(),"sim_time":r.sim_time,
+            "recipe":recipe.flatten()});
+    } else if action == "stop" {
+        // The parameters the link downloaded, kept with a recording's recipe.
+        if let Some(params) = crate::resim::recipe::params_text(s) {
+            value["params"] = params.into();
+        }
     } else if action == "replay" {
         let domain = parse_domain(&r.replay_domain.text)?;
         if domain == capture {
@@ -165,10 +186,16 @@ pub(crate) fn send(s: &mut State, action: &str) {
             }
         }
     }
+    let recipe = request["recipe"].is_object();
     match r.bridge.as_mut().unwrap().send(request) {
         Ok(()) => {
             r.pending = true;
             r.message = format!("{} requested…", action);
+            // Parameters go into the recipe when the recording stops: download them now
+            // (a read request) unless the link already has them.
+            if recipe && s.vehicle.params.is_none() && s.vehicle.owned_by(s.systems.active_id()) {
+                let _ = vehicle::fetch_params(s);
+            }
         }
         Err(e) => {
             r.message = e;

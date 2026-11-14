@@ -640,3 +640,67 @@ fn a_vehicle_without_parameters_is_not_reported_complete() {
         "an empty set read as complete"
     );
 }
+
+fn int_param(name: &str, value: i64) -> super::params::Param {
+    super::params::Param {
+        name: name.into(),
+        value: super::params::ParamValue::Int(value),
+        kind: 6,
+    }
+}
+
+#[test]
+fn parameter_writes_need_an_owned_simulation() {
+    let fake = FakeVehicle::tcp();
+    let physical = connected(&fake, LinkOrigin::Physical);
+    assert_eq!(
+        physical.set_params(vec![int_param("PARAM_00", 7)], sim()),
+        Err(Refusal::PhysicalLink),
+        "a physical link refuses even a forged grant"
+    );
+    assert_eq!(
+        physical.set_params(vec![int_param("PARAM_00", 7)], Authority::ReadOnly),
+        Err(Refusal::PhysicalLink)
+    );
+    std::thread::sleep(Duration::from_millis(300));
+    assert!(fake.received(|m| matches!(m, Msg::PARAM_SET(_))).is_empty());
+    drop(physical);
+    drop(fake);
+
+    let fake = FakeVehicle::tcp();
+    let sim_link = connected(&fake, LinkOrigin::SimulatorRouter);
+    assert_eq!(
+        sim_link.set_params(vec![int_param("PARAM_00", 7)], Authority::ReadOnly),
+        Err(Refusal::ReadOnly)
+    );
+    std::thread::sleep(Duration::from_millis(300));
+    assert!(
+        fake.received(|m| matches!(m, Msg::PARAM_SET(_))).is_empty(),
+        "a refused write reached the vehicle"
+    );
+}
+
+#[test]
+fn an_owned_simulation_confirms_each_parameter_written() {
+    let fake = FakeVehicle::tcp();
+    fake.with(|s| s.ignore_sets = vec!["PARAM_04".into()]);
+    let mut service = connected(&fake, LinkOrigin::SimulatorRouter);
+    let params = vec![
+        int_param("PARAM_00", 7),
+        int_param("PARAM_02", 9),
+        int_param("PARAM_04", 1),
+    ];
+    service.set_params(params, sim()).expect("allowed");
+    let (applied, failed) = event_until(&mut service, |e| match e {
+        Event::ParamsWritten { applied, failed } => Some((*applied, failed.clone())),
+        _ => None,
+    });
+    assert_eq!((applied, failed), (2, vec!["PARAM_04".to_string()]));
+    let sets = fake.received(|m| matches!(m, Msg::PARAM_SET(_)));
+    assert_eq!(sets.len(), 2 + 3, "two confirmed, one tried three times");
+    assert_eq!(
+        fake.with(|s| s.params[2].1.to_bits()),
+        9,
+        "PX4 packs the integer in the float"
+    );
+}

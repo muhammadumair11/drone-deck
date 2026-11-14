@@ -2,7 +2,7 @@
 //! MAVLink service's decoder (`mavlink::summarize_tlog`, CRC-checked and streamed), log discovery (PX4 SITL in WSL, vehicle downloads, telemetry captures) and the state behind
 //! Data & models Ã¢â€ â€™ Flight logs. Files are read and parsed on a worker thread; the UI keeps only
 //! summaries and reduced plot series, in a bounded cache.
-mod fixture;
+pub(crate) mod fixture;
 pub(crate) mod parse;
 pub(crate) mod plots;
 pub(crate) mod sources;

@@ -32,6 +32,29 @@ pub(super) fn run(s: &mut State, project: Value) {
         s.send(Request::Stop(id));
         return;
     }
+    match profile_for(s, &project) {
+        Ok(profile) => {
+            s.status.insert(id, "Starting".into());
+            s.send(Request::Start(profile, s.config.distro.clone()));
+            s.studio.message="Project requested. Output appears in the process console; Stop session includes project processes.".into();
+        }
+        Err(e) => s.studio.message = e,
+    }
+}
+
+/// The launch profile (`project-<name>`) that runs `project`'s `main.py` with its kind's
+/// verified runtime, or what to do first. Re-simulation starts a ROS 2 project's profile on its
+/// own isolated domain.
+pub(crate) fn profile_for(s: &State, project: &Value) -> Result<backend::Profile, String> {
+    let name = project["name"].as_str().unwrap_or("");
+    if name.is_empty()
+        || !name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+    {
+        return Err("The project's name is not usable. Review its manifest.".into());
+    }
+    let id = format!("project-{name}");
     let path = project["path"].as_str().unwrap_or("");
     let script = quote(&format!("{path}/main.py"));
     let kind = project["kind"].as_str().unwrap_or("");
@@ -40,12 +63,10 @@ pub(super) fn run(s: &mut State, project: Value) {
         "ros2" => "ros-workspace",
         "mavsdk" => "mavsdk",
         "training" => {
-            s.studio.message = "Drone Deck no longer runs PyTorch training projects. The project files are kept; run its main.py in your own environment.".into();
-            return;
+            return Err("Drone Deck no longer runs PyTorch training projects. The project files are kept; run its main.py in your own environment.".into());
         }
         _ => {
-            s.studio.message = "Unknown project type. Review its manifest.".into();
-            return;
+            return Err("Unknown project type. Review its manifest.".into());
         }
     };
     let Some(profile) = s.config.profiles.iter().find(|p| p.id == profile_id) else {
@@ -55,23 +76,21 @@ pub(super) fn run(s: &mut State, project: Value) {
             .iter()
             .find(|r| r.id == profile_id)
             .map_or(profile_id, |r| r.name.as_str());
-        s.studio.message = format!(
+        return Err(format!(
             "Install or adopt {profile_id} first: Tools & config → All registered tools → {name} → Review installation."
-        );
-        return;
+        ));
     };
     let configured = profile.args.join(" ");
     let command = match kind {
         "onnx" => {
             if s.studio.model_file.text.trim().is_empty() || s.studio.inputs.text.trim().is_empty()
             {
-                s.studio.message =
-                    "Enter an ONNX file and a correctly preprocessed NPZ input file first.".into();
-                return;
+                return Err(
+                    "Enter an ONNX file and a correctly preprocessed NPZ input file first.".into(),
+                );
             }
             let Some((python, _)) = configured.split_once(" -c ") else {
-                s.studio.message = "Apply the verified ONNX runtime configuration first.".into();
-                return;
+                return Err("Apply the verified ONNX runtime configuration first.".into());
             };
             // Paths chosen or typed on Windows map into the distribution, like Pipelines'.
             let mount = s.agent.hello.as_ref().map(|h| h.automount_root.clone());
@@ -82,8 +101,7 @@ pub(super) fn run(s: &mut State, project: Value) {
             ) {
                 (Ok(m), Ok(i)) => (m, i),
                 (Err(e), _) | (_, Err(e)) => {
-                    s.studio.message = e;
-                    return;
+                    return Err(e);
                 }
             };
             format!(
@@ -95,24 +113,21 @@ pub(super) fn run(s: &mut State, project: Value) {
         }
         "ros2" => {
             let Some((environment, _)) = configured.rsplit_once(" && ros2 ") else {
-                s.studio.message = "Apply the verified PX4 ROS workspace first.".into();
-                return;
+                return Err("Apply the verified PX4 ROS workspace first.".into());
             };
             format!("{environment} && python3 {script}")
         }
         _ => {
             // The adopted MAVSDK profile checks its interpreter with `<python> -c 'import mavsdk…'`.
             let Some((python, _)) = configured.split_once(" -c ") else {
-                s.studio.message =
-                    "Apply the verified MAVSDK interpreter configuration first.".into();
-                return;
+                return Err("Apply the verified MAVSDK interpreter configuration first.".into());
             };
             format!("{python} -u {script}")
         }
     };
-    let profile = backend::Profile {
+    Ok(backend::Profile {
         px4: None,
-        id: id.clone(),
+        id,
         name: format!("Project {name}"),
         category: "AI & data".into(),
         description: "User project with local runtime/assets".into(),
@@ -123,8 +138,5 @@ pub(super) fn run(s: &mut State, project: Value) {
         docs: String::new(),
         download_url: String::new(),
         exclusive: false,
-    };
-    s.status.insert(id, "Starting".into());
-    s.send(Request::Start(profile, s.config.distro.clone()));
-    s.studio.message="Project requested. Output appears in the process console; Stop session includes project processes.".into();
+    })
 }

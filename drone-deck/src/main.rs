@@ -12,6 +12,7 @@ mod profile_editor;
 mod px4;
 mod qgc_launch;
 mod recordings;
+mod resim;
 mod session;
 mod setup;
 mod store;
@@ -61,6 +62,7 @@ struct State {
     flight_logs: ulog::FlightLogs,
     agent: agent::AgentState,
     vehicle: vehicle::Vehicle,
+    resim: resim::Resim,
 }
 impl State {
     fn new() -> Self {
@@ -125,6 +127,7 @@ impl State {
             flight_logs: Default::default(),
             agent: Default::default(),
             vehicle: Default::default(),
+            resim: Default::default(),
         };
         ui::restore_preferences(&mut state);
         let notices = if headless {
@@ -413,6 +416,7 @@ fn poll(s: &mut State, _: f64, tx: &mut Tx) -> bool {
         | agent::poll(s)
         | vehicle::poll(s)
         | hardware::poll(s)
+        | resim::poll(s)
         | diagnostics::poll(s);
     let events: Vec<_> = s
         .backend
@@ -549,6 +553,8 @@ const SCENES: &[Scene] = &[
         s.navigate(Page::Data)
     }),
     ("flight-logs", ulog::preview),
+    ("resimulation", resim::preview),
+    ("resimulation-report", resim::preview_report),
     ("activity", |s| s.navigate(Page::Activity)),
     ("process-output", |s| {
         s.activity.tab = 1;

@@ -1,0 +1,1 @@
+- Add isolated PX4 re-simulation for recorded ROS 2 missions, with recipe capture, parameter restoration, command arbitration, comparison reports, and real-flight import.
