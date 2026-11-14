@@ -87,7 +87,7 @@ pub(crate) fn fake_baseline() -> ParamSet {
 }
 
 fn physical(s: &mut State) {
-    s.select_system(systems::PHYSICAL);
+    s.select_starter(systems::PHYSICAL);
     let id = s.systems.active_id().to_string();
     vehicle::preview(s, &id, true, false);
 }

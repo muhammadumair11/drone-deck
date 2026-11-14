@@ -144,9 +144,11 @@ impl State {
         }
         diagnostics::startup(&mut state);
         state.setup.distro = TextEdit::new(&state.config.distro);
-        // First use: nothing is prepared yet, so open in Guided setup rather than on an empty
-        // System page. Its header returns to System.
-        if !headless && !state.systems.any_prepared() {
+        // First use: with no system yet the wizard builds one; with systems none of which is
+        // prepared, Guided setup opens on the active one. Its header returns to System.
+        if !headless && state.systems.is_empty() {
+            guided::new_system(&mut state);
+        } else if !headless && !state.systems.any_prepared() {
             guided::open(&mut state);
         }
         state
@@ -165,12 +167,16 @@ impl State {
         }
         self.page = page;
     }
-    /// Switches the active system, by id or by kind (`systems::Pick`). Allowed while work
-    /// runs: processes stay with the system that started them and nothing is stopped.
-    /// Returns whether the named system is active afterwards (false when none exists).
-    fn select_system<'a>(&mut self, pick: impl Into<systems::Pick<'a>>) -> bool {
+    /// One of the four starters by its index, in tests and scenes (which start with them).
+    fn select_starter(&mut self, kind: usize) -> bool {
+        self.select_system(systems::model::STARTER_IDS[kind.min(3)])
+    }
+    /// Switches the active system. Allowed while work runs: processes stay with the system
+    /// that started them and nothing is stopped. Returns whether the named system is active
+    /// afterwards (false when none exists).
+    fn select_system(&mut self, id: &str) -> bool {
         self.ui.system_menu = false;
-        let Some(id) = self.systems.resolve(pick.into()) else {
+        let Some(id) = self.systems.get(id).map(|x| x.id.clone()) else {
             self.notice = "No such system. Create one with New system… in the system list.".into();
             return false;
         };
@@ -527,8 +533,8 @@ mod tests;
 fn guided_at(s: &mut State, chapter: usize) {
     guided::open(s);
     s.guided.chapter = chapter;
-    if s.guided.name.text.is_empty() {
-        s.guided.name = TextEdit::new("My first system");
+    if s.guided.draft.name.text.is_empty() {
+        s.guided.draft.name = TextEdit::new("My first system");
     }
 }
 /// Headless scenes: `drone-deck --scene <name> --snap out.png`.
@@ -556,6 +562,15 @@ const SCENES: &[Scene] = &[
     ("flight-logs", ulog::preview),
     ("resimulation", resim::preview),
     ("resimulation-report", resim::preview_report),
+    ("workspace-jmavsim", |s| ui::workspace_scene(s, "jmavsim")),
+    ("workspace-gazebo", |s| ui::workspace_scene(s, "gazebo")),
+    ("workspace-real", |s| ui::workspace_scene(s, "real")),
+    ("workspace-recording", |s| {
+        ui::workspace_scene(s, "recording")
+    }),
+    ("workspace-ardupilot", |s| {
+        ui::workspace_scene(s, "ardupilot")
+    }),
     ("activity", |s| s.navigate(Page::Activity)),
     ("process-output", |s| {
         s.activity.tab = 1;
@@ -567,13 +582,13 @@ const SCENES: &[Scene] = &[
     }),
     ("settings", |s| s.navigate(Page::Settings)),
     ("ros", |s| {
-        s.select_system(systems::ROS);
+        s.select_starter(systems::ROS);
     }),
     ("ai", |s| {
-        s.select_system(systems::AI);
+        s.select_starter(systems::AI);
     }),
     ("physical", |s| {
-        s.select_system(systems::PHYSICAL);
+        s.select_starter(systems::PHYSICAL);
     }),
     ("system-menu", |s| {
         s.systems.claim("sih");
@@ -582,7 +597,11 @@ const SCENES: &[Scene] = &[
     }),
     ("systems-settings", |s| {
         s.navigate(Page::Settings);
-        let id = s.systems.create(systems::ROS, "Gazebo camera lab");
+        let id = s.systems.add(systems::model::starter(
+            systems::ROS,
+            "",
+            "Gazebo camera lab",
+        ));
         s.systems.editor = s.systems.get(&id).map(systems::Draft::of);
     }),
     ("system-new", guided::new_system),
@@ -610,7 +629,7 @@ const SCENES: &[Scene] = &[
     }),
     ("tool-new", |s| profile_editor::create(s, "Development")),
     ("tools-ai", |s| {
-        s.select_system(systems::AI);
+        s.select_starter(systems::AI);
         s.navigate(Page::Tools);
         s.ui.expanded = Some("onnx".into());
     }),
@@ -704,7 +723,7 @@ const SCENES: &[Scene] = &[
     ("setup-applying", |s| guided::preview(s, "applying")),
     ("setup-attention", |s| guided::preview(s, "attention")),
     ("system-launch-demo", |s| {
-        s.session = Some(session::Launch::new(systems::SESSIONS[systems::SIMULATION]));
+        s.session = Some(session::Launch::new(["sih", "router", "link", "qgc"]));
         s.status.insert("sih".into(), "Starting".into());
     }),
     ("system-launch-failed", |s| {
@@ -726,7 +745,7 @@ const SCENES: &[Scene] = &[
         vehicle::preview(s, &id, true, true);
     }),
     ("physical-live-demo", |s| {
-        s.select_system(systems::PHYSICAL);
+        s.select_starter(systems::PHYSICAL);
         let id = s.systems.active_id().to_string();
         vehicle::preview(s, &id, true, false);
     }),
@@ -751,12 +770,12 @@ const SCENES: &[Scene] = &[
         s.guided.draft.autopilot = systems::adapter::AutopilotKind::ArduPilot;
     }),
     ("setup-run-physical", |s| {
-        s.select_system(systems::PHYSICAL);
+        s.select_starter(systems::PHYSICAL);
         guided_at(s, guided::RUN);
     }),
     ("setup-run-ai", |s| {
         studio::pipelines::preview(s);
-        s.select_system(systems::AI);
+        s.select_starter(systems::AI);
         guided_at(s, guided::RUN);
         s.guided.task = 2;
     }),

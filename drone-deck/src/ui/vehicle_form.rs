@@ -353,13 +353,21 @@ pub(crate) fn consumers(d: &Draft, at: At, compact: bool) -> El {
             |d| d.ros_agent = !d.ros_agent,
         ));
     }
+    boxes = boxes.child(toggle(
+        "consumer-recorder",
+        "rosbag2 / MCAP recorder",
+        d.recorder,
+        |d| d.recorder = !d.recorder,
+    ));
+    if d.recorder && d.vehicle == 0 {
+        boxes = boxes.child(toggle(
+            "consumer-record-on-start",
+            "Record when the session starts",
+            d.record_on_start,
+            |d| d.record_on_start = !d.record_on_start,
+        ));
+    }
     boxes = boxes
-        .child(toggle(
-            "consumer-recorder",
-            "rosbag2 / MCAP recorder",
-            d.recorder,
-            |d| d.recorder = !d.recorder,
-        ))
         .child(toggle(
             "consumer-inference",
             "ONNX inference project",

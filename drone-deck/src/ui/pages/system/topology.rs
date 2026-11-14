@@ -218,7 +218,7 @@ fn branches(s: &State, vp: &Viewport) -> Option<El> {
             compact,
         ));
     }
-    if let Some(addr) = c.scripts_udp.as_ref().filter(|_| !c.ros.agent) {
+    if let Some(addr) = c.scripts_udp.as_ref() {
         let (label, tone) = systems::component("scripts")
             .map(|c| systems::state(s, c))
             .unwrap_or_else(|| ("Not checked".into(), Tone::Idle));

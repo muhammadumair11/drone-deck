@@ -19,42 +19,30 @@ mod tests;
 mod vehicle_tests;
 
 pub(crate) use components::{
-    Backing, Component, SESSIONS, all_components, chain, component, components, filter_for, routed,
+    Backing, Component, all_components, chain, component, components, filter_for, routed,
     session_stages, vehicle_profile,
 };
 pub(crate) use edit::{Draft, endpoint_ok};
-pub(crate) use model::{AI, KINDS, MAX_NAME, PHYSICAL, ROS, SIMULATION, System, VEHICLES, Vehicle};
+pub(crate) use model::{AI, MAX_NAME, PHYSICAL, ROS, SIMULATION, System, VEHICLES, Vehicle};
 pub(crate) use state::{Tone, profile_state, running, state, tone_color};
 use std::collections::HashMap;
 
-/// How `State::select_system` names a system: by id, or by kind (the active system when it is
-/// of that kind, else the first system of that kind).
-pub(crate) enum Pick<'a> {
-    Kind(usize),
-    Id(&'a str),
-}
-impl From<usize> for Pick<'_> {
-    fn from(kind: usize) -> Self {
-        Pick::Kind(kind)
-    }
-}
-impl<'a> From<&'a str> for Pick<'a> {
-    fn from(id: &'a str) -> Self {
-        Pick::Id(id)
-    }
-}
-impl<'a> From<&'a String> for Pick<'a> {
-    fn from(id: &'a String) -> Self {
-        Pick::Id(id)
-    }
+/// What `current()` answers while no system is saved: a recording vehicle with no listeners,
+/// which starts nothing. Pages show "Build your first system" instead of using it.
+fn placeholder() -> &'static System {
+    static NONE: std::sync::OnceLock<System> = std::sync::OnceLock::new();
+    NONE.get_or_init(|| System {
+        id: String::new(),
+        name: "No system yet".into(),
+        prepared: false,
+        vehicle: Vehicle::replay(None),
+        consumers: model::Consumers::default(),
+    })
 }
 
 /// Saved systems plus the runtime state that belongs to them.
 pub(crate) struct Systems {
     pub list: Vec<System>,
-    /// Kind (`SIMULATION`, `ROS`, `AI`, `PHYSICAL`) of the active system, kept in sync by
-    /// every change. Read it; change the active system with `State::select_system`.
-    pub active: usize,
     active_id: String,
     /// Owned work (profile id, `session`, `recorder`) → id of the system that started it.
     owners: HashMap<String, String>,
@@ -65,16 +53,24 @@ pub(crate) struct Systems {
     /// over that file.
     newer_file: bool,
 }
+/// No systems: a fresh install, which opens the wizard.
 impl Default for Systems {
     fn default() -> Self {
-        Self::from_file(file::defaults())
+        Self::from_file(file::File {
+            schema: file::SCHEMA,
+            active: String::new(),
+            systems: Vec::new(),
+        })
     }
 }
 impl Systems {
+    /// The four starters, first active: what tests and headless scenes start with.
+    pub(crate) fn starters() -> Self {
+        Self::from_file(file::starters())
+    }
     fn from_file(f: file::File) -> Self {
         let mut s = Self {
             list: f.systems,
-            active: SIMULATION,
             active_id: f.active,
             owners: HashMap::new(),
             editor: None,
@@ -117,28 +113,29 @@ impl Systems {
         }
         self.sync();
     }
-    /// Keeps the list non-empty, the active id valid and `active` equal to its kind.
+    /// Keeps the active id on a system that exists (none while the list is empty).
     fn sync(&mut self) {
-        if self.list.is_empty() {
-            self.list = model::defaults();
-        }
         if !self.list.iter().any(|s| s.id == self.active_id) {
-            self.active_id = self.list[0].id.clone();
+            self.active_id = self.list.first().map_or_else(String::new, |s| s.id.clone());
         }
-        self.active = self.current().kind();
+    }
+    /// Whether no system is saved (a fresh install): pages offer the wizard instead.
+    pub fn is_empty(&self) -> bool {
+        self.saved().next().is_none()
     }
     fn path() -> std::path::PathBuf {
         backend::root().join("systems.json")
     }
     /// Reads `systems.json`; an older schema is migrated and written back as the current one.
+    /// A headless run (tests, scenes) starts with the four starters.
     pub fn load(headless: bool) -> Self {
         if headless {
-            return Self::default();
+            return Self::starters();
         }
         Self::load_at(&Self::path())
     }
-    /// [`Systems::load`] from `path`. A file of a newer schema is left in place with a
-    /// `.kept` copy, and the defaults run without replacing it.
+    /// [`Systems::load`] from `path`; no file means no systems (a fresh install). A file of a
+    /// newer schema is left in place with a `.kept` copy, and no systems are used.
     pub(crate) fn load_at(path: &std::path::Path) -> Self {
         let (f, migrated) = match crate::store::read(path, file::parse) {
             None => (None, false),
@@ -151,7 +148,7 @@ impl Systems {
                     ""
                 };
                 crate::store::note(format!(
-                    "{e}. It was left unchanged{copy}; the default systems are in use and changes to them are not saved."
+                    "{e}. It was left unchanged{copy}; no systems are loaded and new ones are not saved."
                 ));
                 let mut s = Self::default();
                 s.newer_file = true;
@@ -183,9 +180,11 @@ impl Systems {
         crate::store::write_json(path, &self.to_file())
     }
 
-    /// The active system.
+    /// The active system, or a do-nothing placeholder while none is saved (`is_empty`).
     pub fn current(&self) -> &System {
-        self.get(&self.active_id).unwrap_or(&self.list[0])
+        self.get(&self.active_id)
+            .or_else(|| self.list.first())
+            .unwrap_or_else(|| placeholder())
     }
     pub fn active_id(&self) -> &str {
         &self.active_id
@@ -199,17 +198,12 @@ impl Systems {
     pub fn position(&self, id: &str) -> Option<usize> {
         self.list.iter().position(|s| s.id == id)
     }
-    /// The id `pick` names, if such a system exists.
-    pub fn resolve(&self, pick: Pick) -> Option<String> {
-        match pick {
-            Pick::Id(id) => self.get(id).map(|s| s.id.clone()),
-            Pick::Kind(k) if self.current().kind() == k => Some(self.active_id.clone()),
-            Pick::Kind(k) => self
-                .list
-                .iter()
-                .find(|s| s.kind() == k)
-                .map(|s| s.id.clone()),
+    /// The first saved system that `pick` accepts: the active one if it does.
+    pub fn find(&self, pick: impl Fn(&System) -> bool) -> Option<String> {
+        if pick(self.current()) && !self.is_empty() {
+            return Some(self.active_id.clone());
         }
+        self.saved().find(|s| pick(s)).map(|s| s.id.clone())
     }
     /// Makes `id` active. Returns false when no such system exists.
     pub(crate) fn set_active(&mut self, id: &str) -> bool {
@@ -220,29 +214,9 @@ impl Systems {
         self.sync();
         true
     }
-    /// Called after editing a system in place, so `active` follows its kind.
+    /// Called after editing or adding systems, so the active id stays valid.
     pub(crate) fn changed(&mut self) {
         self.sync();
-    }
-
-    /// The active system's name when `kind` is the active kind, else the first system of that
-    /// kind, else the template name. Prefer `current().label()`.
-    pub fn name(&self, kind: usize) -> &str {
-        if kind == self.active {
-            return self.current().label();
-        }
-        self.list
-            .iter()
-            .find(|s| s.kind() == kind)
-            .map(System::label)
-            .unwrap_or(KINDS[kind.min(3)])
-    }
-    /// Like [`Self::name`], for the prepared flag.
-    pub fn prepared(&self, kind: usize) -> bool {
-        if kind == self.active {
-            return self.current().prepared;
-        }
-        self.list.iter().any(|s| s.kind() == kind && s.prepared)
     }
     pub fn any_prepared(&self) -> bool {
         self.list.iter().any(|s| s.prepared)
@@ -263,12 +237,22 @@ impl Systems {
         let taken: Vec<String> = self.list.iter().map(|s| s.id.clone()).collect();
         file::unique(&model::slug(name), &taken)
     }
-    /// Adds a system from template `kind` and returns its id. It does not become active.
-    pub fn create(&mut self, kind: usize, name: &str) -> String {
-        let name = clean_name(name).unwrap_or_else(|_| self.suggest_name(KINDS[kind.min(3)]));
-        let id = self.unique_id(&name);
-        self.list.push(model::template(kind, &id, &name));
+    /// Adds `sys` under a free id from its name (a blank or invalid name becomes a free
+    /// version of its suggested name) and returns that id. It becomes active only when it is
+    /// the first system.
+    pub fn add(&mut self, mut sys: System) -> String {
+        sys.name =
+            clean_name(&sys.name).unwrap_or_else(|_| self.suggest_name(&sys.suggested_name()));
+        sys.id = self.unique_id(&sys.name);
+        let id = sys.id.clone();
+        self.list.push(sys);
+        self.sync();
         id
+    }
+    /// Adds starter `kind` named `name` (tests).
+    #[cfg(test)]
+    pub fn add_starter(&mut self, kind: usize, name: &str) -> String {
+        self.add(model::starter(kind, "", name))
     }
     /// Renames `id`; its id stays the same.
     #[cfg(test)]
@@ -291,14 +275,9 @@ impl Systems {
         self.list.insert(at, copy);
         Some(new)
     }
-    /// Removes `id`. The last system cannot be removed; removing the active one activates the
-    /// first remaining system.
+    /// Removes `id`; removing the active one activates the first remaining system, and
+    /// removing the last leaves none (the wizard is offered).
     pub fn remove(&mut self, id: &str) -> Result<System, String> {
-        if self.list.len() <= 1 {
-            return Err(
-                "Keep at least one system. Create another before deleting this one.".into(),
-            );
-        }
         let i = self.position(id).ok_or("That system no longer exists.")?;
         let removed = self.list.remove(i);
         if self.editor.as_ref().is_some_and(|d| d.id == id) {
@@ -360,6 +339,8 @@ pub(crate) fn follow_active(s: &mut State) {
     } else if s.hardware.mode == 1 {
         s.hardware.mode = 0;
     }
+    crate::recordings::follow_system(s);
+    crate::studio::pipelines::follow_system(s);
 }
 
 /// Whether work started by system `id` still runs (processes, a staged launch, a capture).
@@ -477,6 +458,10 @@ pub(crate) fn start_workspace(s: &mut State) {
         // The monitor records its own start and refusal.
         Vehicle::Physical { .. } => hardware::toggle(s),
         Vehicle::Replay { .. } => {
+            // The recording and project this system chose are the ones selected.
+            crate::recordings::follow_system(s);
+            crate::studio::pipelines::follow_system(s);
+            let sys = s.systems.current();
             let inference = sys.consumers.inference.is_some();
             s.ui.data_tab = if inference { 3 } else { 0 };
             s.navigate(ui::Page::Data);

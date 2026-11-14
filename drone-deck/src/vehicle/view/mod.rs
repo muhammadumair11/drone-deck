@@ -83,7 +83,7 @@ pub(crate) fn silence(v: &VehicleState) -> String {
 /// system's connection panel), which an AI system's page does not show.
 pub(crate) fn follow(s: &mut State) -> bool {
     let drawn = s.page == crate::ui::Page::System
-        && s.systems.active != crate::systems::AI
+        && !s.systems.current().is_replay()
         && s.vehicle.owner.as_deref() == Some(s.systems.active_id());
     let v = &mut s.vehicle;
     let Some(snap) = v.snapshot.as_ref() else {

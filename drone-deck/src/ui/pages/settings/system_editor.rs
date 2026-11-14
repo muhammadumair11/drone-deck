@@ -61,8 +61,8 @@ pub(super) fn view(s: &State, sys: &System, compact: bool) -> El {
                 .w_full(),
         )
         .child(notice(format!(
-            "Template {}. Components, connections and the workspace launch follow the vehicle and consumers; nothing is installed or started by saving.",
-            crate::systems::KINDS[sys.template_index()]
+            "{}. Components, connections and the workspace launch follow the vehicle and listeners; nothing is installed or started by saving.",
+            sys.suggested_name()
         )))
         .child(
             row()

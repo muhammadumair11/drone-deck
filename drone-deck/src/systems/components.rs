@@ -459,19 +459,19 @@ pub(crate) fn session_stages(sys: &System) -> Vec<&'static str> {
         stages.push(ros.agent);
         stages.extend(ros.extra.iter().copied());
     }
+    // Foxglove relays the system's ROS 2 topics live, so it starts with them.
+    if c.foxglove {
+        stages.push("foxglove");
+    }
     if c.qgc {
         stages.push("qgc");
     }
+    // Last: it waits for the system's topics, which the stages before it publish.
+    if c.ros.recorder && c.ros.record_on_start {
+        stages.push("mcap");
+    }
     stages
 }
-
-/// Session stages of the four templates, indexed by kind.
-pub(crate) const SESSIONS: [&[&str]; 4] = [
-    &["sih", "router", "link", "qgc"],
-    &["gazebo", "router", "link", "dds", "rosgz", "qgc"],
-    &[],
-    &[],
-];
 
 /// The design filter for a profile that is not part of a system catalog.
 pub(crate) fn filter_for(profile: &crate::backend::Profile) -> &'static str {

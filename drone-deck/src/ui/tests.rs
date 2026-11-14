@@ -24,7 +24,7 @@ fn texts(s: State, page: Page, scroll_to: &str) -> Vec<String> {
 /// A physical system with QGroundControl enabled.
 fn bridged() -> State {
     let mut s = State::new();
-    assert!(s.select_system(systems::PHYSICAL));
+    assert!(s.select_starter(systems::PHYSICAL));
     let id = s.systems.active_id().to_string();
     s.systems.get_mut(&id).unwrap().consumers.qgc = true;
     s
@@ -39,7 +39,7 @@ fn the_rail_and_the_top_bar_name_the_environment_alike() {
     let t = texts(s, Page::System, "environment");
     assert!(!t.iter().any(|x| x.contains("not ready")), "{t:?}");
     let mut s = State::new();
-    assert!(s.select_system(systems::PHYSICAL));
+    assert!(s.select_starter(systems::PHYSICAL));
     assert_eq!(env_label(&s, false), "Windows native");
     assert_eq!(env_label(&s, true), "Windows native / no WSL required");
 }

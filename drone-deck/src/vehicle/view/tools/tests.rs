@@ -417,7 +417,7 @@ fn the_tools_read_a_fake_vehicle_end_to_end_and_never_write_to_it() {
     let fake = FakeVehicle::tcp();
     let mut s = State::new();
     s.headless = false;
-    let id = s.systems.create(crate::systems::PHYSICAL, "B3 bench");
+    let id = s.systems.add_starter(crate::systems::PHYSICAL, "B3 bench");
     s.select_system(&id);
     // No forwarding peers: every frame the vehicle receives was sent by Drone Deck.
     s.systems.get_mut(&id).unwrap().consumers.qgc = false;
@@ -541,7 +541,7 @@ fn the_tools_read_a_fake_vehicle_end_to_end_and_never_write_to_it() {
 #[test]
 fn saving_an_endpoint_refuses_text_that_is_not_one() {
     let mut s = State::new();
-    s.select_system(crate::systems::PHYSICAL);
+    s.select_starter(crate::systems::PHYSICAL);
     let before = hardware::saved_endpoint(&s).map(str::to_string);
     for bad in ["COM4", "udp:0.0.0.0", "serial:COM4:fast", "http://x:80"] {
         s.hardware.endpoint = TextEdit::new(bad);
@@ -579,7 +579,7 @@ fn an_export_is_offered_only_for_the_system_it_was_made_for() {
     let other = rt
         .state
         .systems
-        .create(crate::systems::PHYSICAL, "Second airframe");
+        .add_starter(crate::systems::PHYSICAL, "Second airframe");
     rt.update(move |s, _| {
         s.select_system(&other);
     });
@@ -711,7 +711,7 @@ fn comparisons_and_loads_are_kept_per_system() {
     let other = rt
         .state
         .systems
-        .create(crate::systems::PHYSICAL, "Second airframe");
+        .add_starter(crate::systems::PHYSICAL, "Second airframe");
     rt.update({
         let other = other.clone();
         move |s, _| {
@@ -788,7 +788,7 @@ fn comparisons_and_loads_are_kept_per_system() {
     let gone = rt
         .state
         .systems
-        .create(crate::systems::PHYSICAL, "Retired airframe");
+        .add_starter(crate::systems::PHYSICAL, "Retired airframe");
     rt.update({
         let gone = gone.clone();
         move |s, _| {
@@ -822,7 +822,7 @@ fn deleting_a_system_forgets_its_comparison_load_and_export() {
     let spare = rt
         .state
         .systems
-        .create(crate::systems::PHYSICAL, "Spare airframe");
+        .add_starter(crate::systems::PHYSICAL, "Spare airframe");
     rt.update({
         let (spare, first) = (spare.clone(), first.clone());
         move |s, _| {
@@ -871,7 +871,7 @@ fn deleting_a_system_forgets_its_comparison_load_and_export() {
     let again = rt
         .state
         .systems
-        .create(crate::systems::PHYSICAL, "Spare airframe");
+        .add_starter(crate::systems::PHYSICAL, "Spare airframe");
     assert_eq!(again, spare, "the same name takes the same id");
     let h = &rt.state.hardware;
     assert!(h.baseline(&again).is_none());

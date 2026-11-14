@@ -1,19 +1,48 @@
 //! 01 System: the active system's session, connections, live evidence and runtime.
 use super::*;
-use systems::{AI, PHYSICAL};
 mod details;
+mod listeners;
+pub(crate) mod panels;
 mod runtime;
 mod topology;
 
 const DESC: &str = "Manage the tools behind your UAV workflow. Configuration, process state and live connection evidence stay distinct.";
 
+/// A fresh install: no system yet, so the page offers the wizard.
+fn first_system(compact: bool) -> El {
+    col()
+        .key("system-page")
+        .w_full()
+        .min_w(0.)
+        .child(mast(
+            "No system yet",
+            "Build your first system.",
+            "A system is three pieces you choose: the vehicle, the world it flies in, and what listens to it. Drone Deck finds the tools you already have, installs only what is missing, and then shows a workspace with exactly those pieces.",
+            Some(row().child(pill(
+                "first-system",
+                "Start: choose a vehicle",
+                true,
+                crate::guided::new_system,
+            ))),
+            compact,
+        ))
+}
+
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
-    let kind = s.systems.active;
     let compact = vp.compact();
+    if s.systems.is_empty() {
+        return first_system(compact);
+    }
     let current = s.systems.current();
+    let vehicle = if current.is_physical() {
+        "Real drone"
+    } else if current.is_replay() {
+        "Recording"
+    } else {
+        "Simulated"
+    };
     let eyebrow = format!(
-        "{} / {}",
-        current.label(),
+        "{vehicle} / {}",
         if current.prepared {
             "Configured"
         } else {
@@ -22,7 +51,7 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
     );
     let mut page = col().key("system-page").w_full().min_w(0.).child(mast(
         &eyebrow,
-        "Your system. In one place.",
+        current.label(),
         DESC,
         Some(row().child(session_action(s))),
         compact,
@@ -33,27 +62,52 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
     if let Some((id, why)) = &s.launch_failure {
         page = page.child(launch_failure(id, why));
     }
-    page = page
-        .child(guidance(s, compact))
-        .child(topology::section(s, vp))
-        .child(details::section(s, vp));
-    if kind == PHYSICAL {
-        page = page.child(hardware::monitor(s, vp));
+    page = page.child(guidance(s, compact)).child(pieces(current));
+    // One panel per piece the system has (`panels`); flight controls only in the vehicle
+    // panel of a simulator Drone Deck started, never for a real drone.
+    for panel in panels::panels(current) {
+        page = page.child(panels::view(s, vp, panel));
     }
-    if kind != AI {
-        page = page.child(vehicle::view::live(s, vp));
+    let unused = panels::unused(current);
+    if !unused.is_empty() {
+        page = page.child(
+            body(
+                format!(
+                    "Not shown because this system doesn't use them: {}.",
+                    unused.join(", ")
+                ),
+                11.,
+                muted(),
+            )
+            .key("system-unused")
+            .wrap()
+            .pt(16.),
+        );
     }
-    // Flight actions and the console exist only for an app-owned simulation; a physical
-    // vehicle is read-only and never shows them.
-    if systems::compat::may_command(current) {
-        page = page
-            .child(vehicle::view::actions(s, vp))
-            .child(vehicle::view::console(s, vp));
+    page
+}
+
+/// The system's pieces in one line under the title: vehicle and world, then its listeners.
+fn pieces(sys: &systems::System) -> El {
+    let mut parts = vec![sys.summary()];
+    let listeners = sys.consumers_summary();
+    if !listeners.is_empty() {
+        parts.push(listeners);
     }
-    if kind == PHYSICAL {
-        page = page.child(vehicle::view::tools(s, vp));
-    }
-    page.child(runtime::section(s, vp))
+    row()
+        .key("system-pieces")
+        .w_full()
+        .min_w(0.)
+        .gaps(4., 12.)
+        .flex_wrap()
+        .center_y()
+        .child(code(parts.join(" / "), 12., fg()).wrap_anywhere())
+        .child(ghost(
+            "system-edit-pieces",
+            "Edit pieces ↗",
+            true,
+            crate::guided::open,
+        ))
 }
 
 fn session_action(s: &State) -> El {
@@ -80,7 +134,7 @@ fn session_action(s: &State) -> El {
 }
 
 fn environment_note(s: &State) -> Option<String> {
-    if s.systems.active == PHYSICAL || s.wsl_ready() {
+    if s.systems.current().is_physical() || s.wsl_ready() {
         return None;
     }
     Some(if s.headless {

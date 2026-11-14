@@ -1,11 +1,13 @@
+mod auto;
 mod bridge;
 #[cfg(test)]
 mod tests;
 mod view;
 use crate::*;
+pub(crate) use auto::{Auto, stage};
 use serde::Deserialize;
 use serde_json::{Value, json};
-pub(crate) use view::page;
+pub(crate) use view::{page, replay_panel};
 
 #[derive(Clone, Default, Deserialize)]
 pub(crate) struct Topic {
@@ -38,6 +40,9 @@ pub(crate) struct Session {
     /// re-simulated yet.
     #[serde(default)]
     pub recipe: Option<Value>,
+    /// The id of the system that recorded it (empty for recordings made before 0.10).
+    #[serde(default)]
+    pub system: String,
 }
 pub(crate) struct Recorder {
     pub name: TextEdit,
@@ -56,6 +61,13 @@ pub(crate) struct Recorder {
     pub discovered: Vec<Topic>,
     pub sessions: Vec<Session>,
     pub selected: Option<String>,
+    /// A recording requested for a system: its id and the topics to save to it once the
+    /// recorder confirms.
+    saving: Option<(String, Vec<String>)>,
+    /// The automatic recording a launch's `mcap` stage runs (`auto`).
+    pub auto: Auto,
+    /// The library lists every system's recordings, not only the active system's.
+    pub all_systems: bool,
     bridge: Option<bridge::Bridge>,
 }
 impl Default for Recorder {
@@ -77,6 +89,9 @@ impl Default for Recorder {
             discovered: Vec::new(),
             sessions: Vec::new(),
             selected: None,
+            saving: None,
+            auto: Auto::Idle,
+            all_systems: false,
             bridge: None,
         }
     }
@@ -88,6 +103,40 @@ fn parse_domain(text: &str) -> Result<u16, String> {
         .filter(|n| *n <= 232)
         .ok_or_else(|| "ROS domain must be 0–232.".into())
 }
+/// The active system's ROS domain when it has ROS 2 (a live system with the bridge or the
+/// recorder); recordings then always capture there.
+pub(crate) fn system_domain(s: &State) -> Option<u16> {
+    let sys = s.systems.current();
+    let ros = &sys.consumers.ros;
+    (!sys.is_replay() && (ros.agent || ros.recorder)).then_some(ros.domain.min(232) as u16)
+}
+
+/// The domain recordings capture on: the system's (`system_domain`), else the typed one.
+pub(crate) fn capture_domain(s: &State) -> Result<u16, String> {
+    match system_domain(s) {
+        Some(d) => Ok(d),
+        None => parse_domain(&s.recorder.capture_domain.text),
+    }
+}
+
+/// Points the recorder at the active system after a switch or edit: its domain, and the
+/// topics it saved. A recording or replay in progress keeps its settings.
+pub(crate) fn follow_system(s: &mut State) {
+    if s.recorder.recording || s.recorder.playing {
+        return;
+    }
+    if let Some(d) = system_domain(s) {
+        s.recorder.capture_domain = TextEdit::new(d.to_string());
+    }
+    let saved = &s.systems.current().consumers.ros.topics;
+    if !saved.is_empty() {
+        s.recorder.topics = TextEdit::new(saved.join(" "));
+    }
+    if let Some(name) = s.systems.current().vehicle_recording() {
+        s.recorder.selected = Some(name.to_string());
+    }
+}
+
 fn topic_names(text: &str) -> Vec<String> {
     text.split(|c: char| c.is_whitespace() || c == ',')
         .filter(|s| !s.is_empty())
@@ -97,7 +146,7 @@ fn topic_names(text: &str) -> Vec<String> {
 fn payload(s: &State, action: &str) -> Result<Value, String> {
     let r = &s.recorder;
     let capture = if ["record", "topics", "replay"].contains(&action) {
-        parse_domain(&r.capture_domain.text)?
+        capture_domain(s)?
     } else {
         0
     };
@@ -119,7 +168,7 @@ fn payload(s: &State, action: &str) -> Result<Value, String> {
         });
         value = json!({"action":action,"domain":capture,"topics":selected,
             "name":r.name.text.trim(),"source":r.source.text.trim(),"sim_time":r.sim_time,
-            "recipe":recipe.flatten()});
+            "recipe":recipe.flatten(),"system":s.systems.active_id()});
     } else if action == "stop" {
         // The parameters the link downloaded, kept with a recording's recipe.
         if let Some(params) = crate::resim::recipe::params_text(s) {
@@ -187,6 +236,12 @@ pub(crate) fn send(s: &mut State, action: &str) {
         }
     }
     let recipe = request["recipe"].is_object();
+    if action == "record" {
+        r.saving = Some((
+            s.systems.active_id().to_string(),
+            topic_names(&r.topics.text),
+        ));
+    }
     match r.bridge.as_mut().unwrap().send(request) {
         Ok(()) => {
             r.pending = true;
@@ -288,6 +343,9 @@ fn apply_event(s: &mut State, event: Value) {
                 }
                 "record" => {
                     r.selected = data["id"].as_str().map(str::to_owned);
+                    if let Some((id, topics)) = r.saving.take() {
+                        save_topics(s, &id, topics);
+                    }
                 }
                 "replay" => {
                     r.message = format!(
@@ -301,6 +359,23 @@ fn apply_event(s: &mut State, event: Value) {
         _ => {}
     }
 }
+/// Keeps `topics` as system `id`'s recording selection, so its next recording (and an
+/// automatic one at session start) records the same streams.
+fn save_topics(s: &mut State, id: &str, topics: Vec<String>) {
+    let Some(sys) = s.systems.get_mut(id) else {
+        return;
+    };
+    if sys.consumers.ros.topics == topics || topics.is_empty() {
+        return;
+    }
+    sys.consumers.ros.topics = topics;
+    if let Err(e) = s.systems.save(s.headless) {
+        s.log(format!(
+            "[recordings] The system's topics could not be saved: {e}"
+        ));
+    }
+}
+
 pub(crate) fn open_selected(s: &mut State) {
     if let Some(row) = s
         .recorder

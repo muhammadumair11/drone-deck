@@ -114,11 +114,7 @@ fn confirm_delete(s: &mut State) {
             // A guided preparation of the deleted system would otherwise recreate it from
             // its template under the old name.
             let g = &s.guided;
-            if [&g.base, &g.existing]
-                .iter()
-                .any(|x| x.as_deref() == Some(id.as_str()))
-                || g.opened_for == id
-            {
+            if g.existing.as_deref() == Some(id.as_str()) || g.opened_for == id {
                 s.guided = crate::guided::Guided::default();
             }
             match save(s) {
@@ -159,10 +155,8 @@ fn status(s: &State, sys: &System) -> (String, rune::Color) {
 
 fn delete_confirmation(s: &State, sys: &System) -> El {
     let busy = systems::owns_work(s, &sys.id);
-    let last = s.systems.list.len() <= 1;
-    let text = if last {
-        "This is the only system. Create another before deleting it.".to_string()
-    } else if busy {
+    let last = false;
+    let text = if busy {
         format!(
             "{} has running work. Stop its session first; deleting never stops processes.",
             sys.label()

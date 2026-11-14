@@ -1,6 +1,6 @@
 use super::recipe::*;
 use crate::State;
-use crate::systems::{self, Vehicle, adapter, model::template};
+use crate::systems::{self, Vehicle, adapter, model::starter};
 
 #[test]
 fn topics_split_into_commands_and_evidence_by_prefix() {
@@ -34,7 +34,7 @@ fn topics_split_into_commands_and_evidence_by_prefix() {
 #[test]
 fn a_recipe_names_the_adapter_world_and_details_of_the_system() {
     let mut s = State::new();
-    assert!(s.select_system(systems::ROS));
+    assert!(s.select_starter(systems::ROS));
     let r = capture(&s, &[]).expect("a simulated system");
     assert_eq!(
         (r.adapter.as_str(), r.world.id.as_str()),
@@ -54,14 +54,14 @@ fn a_recipe_names_the_adapter_world_and_details_of_the_system() {
     assert_eq!(r.autopilot, adapter::AutopilotKind::ArduPilot);
 
     for kind in [systems::AI, systems::PHYSICAL] {
-        assert!(s.select_system(kind));
+        assert!(s.select_starter(kind));
         assert!(capture(&s, &[]).is_none(), "{kind}");
     }
     let json = serde_json::to_value(
         capture(
             &{
                 let mut t = State::new();
-                t.systems.list[0] = template(systems::SIMULATION, "local-simulation", "Lab");
+                t.systems.list[0] = starter(systems::SIMULATION, "local-simulation", "Lab");
                 t
             },
             &[],

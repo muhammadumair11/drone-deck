@@ -1,19 +1,18 @@
 //! Guided setup: Vehicle → World → Listeners → Review & install → First run.
 //!
-//! A focused route for creating a system, from a starting point or piece by piece, or for
-//! preparing an existing one on this computer. The first three chapters edit a draft with the
-//! same controls as Settings → Systems (`steps`); leaving them saves the system. Review &
+//! A focused route for creating or editing a system on this computer. The first three
+//! chapters edit a draft with the same controls as Settings → Systems (`steps`). Review &
 //! install drives the real setup backend (host scan, workflow detection, reviewed batch
 //! installation, guided manual installs); First run collects evidence that it works.
 use crate::*;
-mod content;
+pub(crate) mod lifecycle;
 mod prep;
 mod run;
 mod steps;
+mod tasks;
 #[cfg(test)]
 mod tests;
 mod view;
-pub(crate) use content::STORIES;
 use setup::presets::{self, Preset};
 pub(crate) use view::{header, page};
 
@@ -40,25 +39,22 @@ pub(crate) enum Check {
 pub(crate) struct Guided {
     /// 0..5, see `CHAPTERS`.
     pub chapter: usize,
-    /// The template family being prepared (index into `systems::KINDS`): the starting point
-    /// chosen, then the kind of the saved system. Review & install and First run follow it.
-    pub choice: usize,
-    /// The vehicle, world and listeners being chosen, applied to the system when Listeners
-    /// is left.
+    /// The name the wizard last suggested from the pieces; while the name field still holds
+    /// it, it follows the pieces (`follow_name`).
+    pub suggested: String,
+    /// The one working copy, applied only by Save system in Review.
     pub draft: systems::Draft,
-    /// The saved system guided setup was opened to update; None for "New system…".
-    pub base: Option<String>,
-    /// The saved system this preparation updates: `base` while its template is chosen, or
-    /// the system created from the template. None until a new system is created.
+    /// Stable editing identity; None until an explicitly new system is saved.
     pub existing: Option<String>,
-    pub name: TextEdit,
-    pub name_error: String,
+    pub fingerprint: String,
+    pub saved_fingerprint: String,
     /// The reviewed-changes acknowledgement in Preparation.
     pub consent: bool,
     pub prep_error: String,
     pub check: Check,
     /// The reviewed plan was applied (or a saved queue resumed) in this preparation.
     pub applied: bool,
+    pub queue_unbound: bool,
     /// First run: current task, whether its action was requested, and completion.
     pub task: usize,
     pub awaiting: bool,
@@ -68,6 +64,9 @@ pub(crate) struct Guided {
     /// The process (profile id or `project-<name>`) seen Starting or Running after a First
     /// run step requested it; a finished status counts only for this process.
     pub launched: Option<String>,
+    pub prior_runs: Vec<String>,
+    pub run_recording: Option<String>,
+    pub playback_seen: bool,
     /// ROS publisher discovery: when topics were last requested, and how many requests were
     /// made once PX4 and the DDS agent were both up.
     pub last_query: Option<Instant>,
@@ -81,21 +80,24 @@ impl Default for Guided {
     fn default() -> Self {
         Self {
             chapter: 0,
-            choice: systems::SIMULATION,
+            suggested: String::new(),
             draft: systems::Draft::default(),
-            base: None,
             existing: None,
-            name: TextEdit::new(""),
-            name_error: String::new(),
+            fingerprint: String::new(),
+            saved_fingerprint: String::new(),
             consent: false,
             prep_error: String::new(),
             check: Check::Idle,
             applied: false,
+            queue_unbound: false,
             task: 0,
             awaiting: false,
             done: false,
             evidence: Vec::new(),
             launched: None,
+            prior_runs: Vec::new(),
+            run_recording: None,
+            playback_seen: false,
             last_query: None,
             queries: 0,
             came_from: ui::Page::System,
@@ -104,246 +106,76 @@ impl Default for Guided {
     }
 }
 
-/// The system whose preset the running workflow queue installs, if a queue runs and one
-/// matches.
-pub(crate) fn batch_system(s: &State) -> Option<usize> {
-    s.setup.batch.as_ref()?;
-    (0..systems::KINDS.len()).find(|&k| template_preset(k) == s.setup.workflow)
-}
+#[cfg(test)]
+use lifecycle::batch_system;
+use lifecycle::{candidate, follow_batch, reconcile, save_draft};
+pub(crate) use lifecycle::{
+    ensure_target, mark_prepared, new_system, open, open_workspace, restart,
+};
+pub(crate) use lifecycle::{saved, target};
 
-/// The saved system this preparation updates, if any.
-pub(crate) fn target(s: &State) -> Option<&systems::System> {
-    s.guided
-        .existing
-        .as_deref()
-        .and_then(|id| s.systems.get(id))
-}
-
-/// The workflow preset of template `kind`.
-pub(crate) fn template_preset(kind: usize) -> Preset {
-    presets::for_system(&systems::model::template(kind, "", ""))
-}
-
-/// The workflow preset for this preparation: the target system's vehicle and consumers, or
-/// the chosen template for a new system.
+/// Setup requirements always follow the current draft.
 pub(crate) fn preset(s: &State) -> Preset {
-    target(s).map_or_else(|| template_preset(s.guided.choice), presets::for_system)
-}
-
-/// The draft of the target system, or of the chosen template for a new one.
-fn draft_for(s: &State) -> systems::Draft {
-    target(s).map_or_else(
-        || systems::Draft::of(&systems::model::template(s.guided.choice, "", "")),
-        systems::Draft::of,
+    candidate(s).map_or_else(
+        |_| Preset {
+            name: "Invalid configuration".into(),
+            recipes: vec![],
+        },
+        |sys| presets::for_system(&sys),
     )
 }
 
-/// Preparation for the active system, unless a running queue installs another template.
-fn fresh(s: &State) -> Guided {
-    let current = s.systems.current();
-    let mut g = Guided {
-        choice: current.template_index(),
-        name: TextEdit::new(current.label()),
-        base: Some(current.id.clone()),
-        existing: Some(current.id.clone()),
-        opened_for: current.id.clone(),
-        ..Guided::default()
-    };
-    g.draft = systems::Draft::of(current);
-    if let Some(kind) = batch_system(s).filter(|k| *k != g.choice) {
-        g.choice = kind;
-        g.existing = None;
-        g.name = TextEdit::new(s.systems.suggest_name(systems::KINDS[kind]));
-        g.draft = systems::Draft::of(&systems::model::template(kind, "", ""));
-    }
-    g
+#[cfg(test)]
+pub(crate) fn template_preset(kind: usize) -> Preset {
+    presets::for_system(&systems::model::starter(kind, "", ""))
 }
 
-/// Changes the template being prepared, resetting everything tied to the previous choice.
-/// The system guided setup was opened for stays the target only for its own template;
-/// another template prepares a new system.
-pub(super) fn set_choice(s: &mut State, i: usize) {
-    if s.guided.choice == i {
-        return;
-    }
-    let g = &mut s.guided;
-    g.choice = i;
-    g.consent = false;
-    g.applied = false;
-    g.prep_error.clear();
-    g.check = Check::Idle;
-    g.task = 0;
-    g.awaiting = false;
-    g.done = false;
-    g.evidence.clear();
-    g.launched = None;
-    g.last_query = None;
-    g.queries = 0;
-    s.setup.queue.clear();
-    let base = s
-        .guided
-        .base
-        .as_deref()
-        .and_then(|id| s.systems.get(id))
-        .map(|b| (b.id.clone(), b.label().to_string(), b.template_index()));
-    let typed = s.guided.name.text.trim().to_string();
-    match base {
-        Some((id, label, template)) if template == i => {
-            s.guided.existing = Some(id);
-            s.guided.name = TextEdit::new(label);
-        }
-        base => {
-            s.guided.existing = None;
-            let suggested = systems::KINDS
-                .iter()
-                .any(|k| typed.starts_with(k) || s.systems.suggest_name(k) == typed);
-            if typed.is_empty() || suggested || base.is_some_and(|(_, label, _)| label == typed) {
-                s.guided.name = TextEdit::new(s.systems.suggest_name(systems::KINDS[i]));
-            }
-        }
-    }
-    s.guided.draft = draft_for(s);
-}
-
-/// A running workflow queue owns the preparation: follow the system it installs for.
-fn follow_batch(s: &mut State) {
-    if s.setup.batch.is_none() {
-        return;
-    }
-    if let Some(kind) = batch_system(s) {
-        set_choice(s, kind);
-    }
-    s.guided.applied = true;
-}
-
-/// Points the workflow at this preparation's preset. A tool check queued for another
-/// preset is dropped, so its progress never refers to the wrong tool list.
 pub(super) fn use_preset(s: &mut State) {
-    s.setup.queue.clear();
-    s.setup.workflow = preset(s);
-}
-
-/// Opens guided setup for the active system. A preparation already under way for the same
-/// active system is kept. A running workflow queue selects the system it installs for.
-pub(crate) fn open(s: &mut State) {
-    let from = if s.page == ui::Page::Setup {
-        s.guided.came_from
-    } else {
-        s.page
-    };
-    if s.guided.chapter == 0 || s.guided.opened_for != s.systems.active_id() {
-        s.guided = fresh(s);
+    if s.setup.active() {
+        return;
     }
-    follow_batch(s);
-    s.guided.came_from = from;
-    s.navigate(ui::Page::Setup);
-}
-
-/// "New system…": guided setup from the first chapter for a system that does not exist yet.
-/// It is created from the chosen template when its name is confirmed in The system.
-pub(crate) fn new_system(s: &mut State) {
-    let from = if s.page == ui::Page::Setup {
-        s.guided.came_from
-    } else {
-        s.page
-    };
-    s.guided = Guided {
-        name: TextEdit::new(s.systems.suggest_name(systems::KINDS[systems::SIMULATION])),
-        opened_for: s.systems.active_id().to_string(),
-        draft: systems::Draft::of(&systems::model::template(systems::SIMULATION, "", "")),
-        ..Guided::default()
-    };
-    follow_batch(s);
-    s.guided.came_from = from;
-    s.navigate(ui::Page::Setup);
-}
-
-/// Starts over with the same system (or a new one), keeping where guided setup returns to.
-pub(crate) fn restart(s: &mut State) {
-    let from = s.guided.came_from;
-    let base = s.guided.base.clone();
-    s.guided = fresh(s);
-    if base.is_none() {
-        s.guided.base = None;
-        s.guided.existing = None;
-        s.guided.choice = systems::SIMULATION;
-        s.guided.name = TextEdit::new(s.systems.suggest_name(systems::KINDS[0]));
-        s.guided.draft = draft_for(s);
+    let wanted = preset(s);
+    if s.setup.workflow != wanted {
+        s.setup.queue.clear();
     }
-    s.guided.came_from = from;
-    s.ui.reset_scroll = true;
+    s.setup.workflow = wanted;
 }
 
 pub(crate) fn go(s: &mut State, chapter: usize) {
-    s.guided.chapter = chapter.min(RUN);
-    s.ui.reset_scroll = true;
-}
-
-/// The target system's id, creating it from the chosen template under the entered name
-/// when this preparation is for a new system.
-pub(crate) fn ensure_target(s: &mut State) -> String {
-    if let Some(sys) = target(s) {
-        return sys.id.clone();
+    reconcile(s);
+    if chapter == REVIEW {
+        use_preset(s);
     }
-    let name = s.guided.name.text.trim().to_string();
-    let id = s.systems.create(s.guided.choice, &name);
-    s.guided.existing = Some(id.clone());
-    s.guided.base = Some(id.clone());
-    let label = s
-        .systems
-        .get(&id)
-        .map(|x| x.label().to_string())
-        .unwrap_or_default();
-    if let Err(e) = s.systems.save(s.headless) {
-        s.notice = format!("{label} was created, but it could not be saved: {e}");
-    }
-    activity::record(
-        s,
-        format!(
-            "Created system {label} from the {} template",
-            systems::KINDS[s.guided.choice.min(3)]
-        ),
-    );
-    id
-}
-
-/// Saves the system as prepared under its name and makes it the active system. Switching
-/// is always allowed (running work stays with the system that started it), so this returns
-/// true unless the system could not be found.
-pub(crate) fn mark_prepared(s: &mut State) -> bool {
-    let id = ensure_target(s);
-    let name = s.guided.name.text.trim().to_string();
-    let Some(sys) = s.systems.get_mut(&id) else {
-        return false;
+    let chapter = chapter.min(RUN);
+    s.guided.chapter = if chapter == 1 && s.guided.draft.vehicle != 0 {
+        2
+    } else {
+        chapter
     };
-    let first = !sys.prepared;
-    sys.prepared = true;
-    if systems::clean_name(&name).is_ok() {
-        sys.name = name;
-    }
-    let label = sys.label().to_string();
-    let active = s.select_system(&id);
-    s.guided.opened_for = s.systems.active_id().to_string();
-    if let Err(e) = s.systems.save(s.headless) {
-        s.notice = format!("The system is prepared, but it could not be saved: {e}");
-    }
-    if first {
-        activity::record(s, format!("Prepared {label}"));
-    }
-    active
-}
-
-/// Saves the system and returns to the management workspace once it is the active system.
-pub(crate) fn open_workspace(s: &mut State) {
-    if mark_prepared(s) {
-        s.navigate(ui::Page::System);
-    }
+    s.ui.reset_scroll = true;
 }
 
 /// Per-frame work: sequences the computer check (host scan → tool detection) and notices a
 /// workflow queue started or resumed outside this view.
+/// A new system's name follows its pieces ("PX4 + jMAVSim + ROS 2") until a name is typed.
+fn follow_name(s: &mut State) -> bool {
+    if s.guided.existing.is_some() || s.guided.draft.name.text != s.guided.suggested {
+        return false;
+    }
+    let Ok(next) = lifecycle::candidate(s) else {
+        return false;
+    };
+    let name = s.systems.suggest_name(&next.suggested_name());
+    if name == s.guided.suggested {
+        return false;
+    }
+    s.guided.draft.name = TextEdit::new(&name);
+    s.guided.suggested = name;
+    true
+}
+
 pub(crate) fn poll(s: &mut State) -> bool {
-    let mut changed = false;
+    let mut changed = reconcile(s) | follow_name(s);
     if s.setup.batch.is_some() && !s.guided.applied {
         follow_batch(s);
         changed = true;
@@ -383,8 +215,8 @@ pub(crate) fn preview(s: &mut State, phase: &str) {
     setup::preview(s);
     open(s);
     s.guided.chapter = REVIEW;
-    if s.guided.name.text.trim().is_empty() {
-        s.guided.name = TextEdit::new("My first system");
+    if s.guided.draft.name.text.trim().is_empty() {
+        s.guided.draft.name = TextEdit::new("My first system");
     }
     use_preset(s);
     let found = |tool: &str, ok: bool| setup::Candidate {

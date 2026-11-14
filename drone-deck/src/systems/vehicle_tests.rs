@@ -1,6 +1,6 @@
-//! The schema 3 vehicle model: migration from schema 2, worlds without an adapter, and the
+//! The vehicle model (schema 3 and later): migration from schema 2, worlds without an adapter, and the
 //! consumers a vehicle can feed.
-use super::model::{World, template};
+use super::model::{World, starter};
 use super::*;
 
 /// A schema 2 file with one system of each source.
@@ -16,8 +16,8 @@ const V2: &[u8] = br#"{"schema":2,"active":"gz","systems":[
 #[test]
 fn schema_2_sources_become_vehicles_with_the_same_launch() {
     let (f, migrated) = file::parse(V2).unwrap().unwrap();
-    assert!(migrated, "written back as schema 3");
-    assert_eq!(f.schema, 3);
+    assert!(migrated, "written back as schema 4");
+    assert_eq!(f.schema, file::SCHEMA);
     assert_eq!(f.active, "gz");
     let vehicles: Vec<_> = f.systems.iter().map(|s| s.vehicle.clone()).collect();
     assert_eq!(
@@ -38,7 +38,10 @@ fn schema_2_sources_become_vehicles_with_the_same_launch() {
     );
     assert_eq!(stages[2], ["ardupilot", "link"]);
     assert!(stages[3].is_empty() && stages[4].is_empty());
-    assert!(f.systems[0].prepared && f.systems[0].template == "local-simulation");
+    assert!(
+        f.systems[0].prepared && f.systems[0].id == "sih",
+        "an old template key is ignored"
+    );
     assert_eq!(f.systems[1].consumers.ros.domain, 3);
     assert_eq!(
         f.systems[1].summary(),
@@ -91,7 +94,7 @@ fn a_world_without_an_adapter_is_kept_and_refuses_to_start() {
 
 #[test]
 fn ardupilot_cannot_pick_gazebo_and_says_why() {
-    let base = template(SIMULATION, "lab", "Lab");
+    let base = starter(SIMULATION, "lab", "Lab");
     let mut d = Draft::of(&base);
     d.autopilot = adapter::AutopilotKind::ArduPilot;
     d.world = "gazebo".into();
@@ -108,7 +111,7 @@ fn ardupilot_cannot_pick_gazebo_and_says_why() {
 
 #[test]
 fn consumers_follow_what_the_vehicle_can_feed() {
-    let mut sys = template(SIMULATION, "x", "X");
+    let mut sys = starter(SIMULATION, "x", "X");
     sys.consumers.ros.agent = true;
     sys.vehicle = Vehicle::Simulated {
         autopilot: model::Autopilot::Px4,
@@ -126,12 +129,12 @@ fn consumers_follow_what_the_vehicle_can_feed() {
 #[test]
 fn only_a_simulator_drone_deck_owns_may_be_commanded() {
     for kind in [SIMULATION, ROS] {
-        assert!(compat::may_command(&template(kind, "s", "S")), "{kind}");
+        assert!(compat::may_command(&starter(kind, "s", "S")), "{kind}");
     }
     for kind in [AI, PHYSICAL] {
-        assert!(!compat::may_command(&template(kind, "x", "X")), "{kind}");
+        assert!(!compat::may_command(&starter(kind, "x", "X")), "{kind}");
     }
-    let mut unknown = template(SIMULATION, "u", "U");
+    let mut unknown = starter(SIMULATION, "u", "U");
     unknown.vehicle = Vehicle::Simulated {
         autopilot: model::Autopilot::Px4,
         world: World::new("future-sim", &[]),
@@ -144,7 +147,7 @@ fn only_a_simulator_drone_deck_owns_may_be_commanded() {
 
 #[test]
 fn a_physical_vehicle_keeps_the_flight_stack_the_user_names() {
-    let base = template(PHYSICAL, "rig", "Rig");
+    let base = starter(PHYSICAL, "rig", "Rig");
     let mut d = Draft::of(&base);
     assert_eq!(d.hint, None);
     d.endpoint = rune::TextEdit::new("serial:COM3:57600");

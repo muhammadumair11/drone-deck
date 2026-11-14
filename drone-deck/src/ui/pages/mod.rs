@@ -6,6 +6,7 @@ mod settings;
 mod system;
 mod tools;
 pub(crate) use data::plot::plot as series_plot;
+pub(crate) use system::panels::scene as workspace_scene;
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
     match s.page {

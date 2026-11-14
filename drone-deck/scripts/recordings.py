@@ -222,6 +222,7 @@ class Server:
             'clock': 'ROS /clock' if request.get('sim_time') else 'system time',
             'ros': 'jazzy', 'storage': 'mcap',
             'source': str(request.get('source', 'Unspecified'))[:200],
+            'system': str(request.get('system') or '')[:80],
             'wsl_distro': os.environ.get('WSL_DISTRO_NAME', ''),
         })
         args = ['bag', 'record', '-s', 'mcap', '-o', str(path / 'bag'),

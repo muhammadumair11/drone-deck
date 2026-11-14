@@ -94,6 +94,9 @@ pub(crate) struct Setup {
     pub jobs: Vec<Job>,
     pub selected_job: Option<String>,
     pub pending: bool,
+    /// A draft changed while a tool probe was pending; ignore that obsolete result.
+    pub discard_detect: bool,
+    pub probe_context: Option<String>,
     /// What the pending request starts (`start`), while it is still with its helper: a close
     /// then stops the helper and the job may not start (`close`).
     pub starting: Option<String>,
@@ -154,6 +157,8 @@ impl Default for Setup {
             jobs: Vec::new(),
             selected_job: None,
             pending: false,
+            discard_detect: false,
+            probe_context: None,
             starting: None,
             review: false,
             message: "Scan this computer to choose or install its tool environment.".into(),
@@ -202,6 +207,10 @@ pub(crate) fn request(s: &mut State, action: &str) {
         s.setup.message =
             "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) before installing shared dependencies.".into();
         return;
+    }
+    if action == "detect" {
+        s.setup.discard_detect = false;
+        s.setup.probe_context = Some(crate::guided::lifecycle::check_context(s));
     }
     let r = &mut s.setup;
     let tool = &r.recipes[r.selected].id;
@@ -337,6 +346,17 @@ fn apply_event(s: &mut State, value: Value) {
         "online" => {
             s.setup.online = serde_json::from_value(data).unwrap_or_default();
             s.setup.message="Choose a distribution from the live Microsoft catalog. Ubuntu 24.04 is the tested recipe baseline.".into();
+        }
+        "detect"
+            if s.setup.discard_detect
+                || s.setup.probe_context.as_ref().is_some_and(|context| {
+                    *context != crate::guided::lifecycle::check_context(s)
+                }) =>
+        {
+            s.setup.discard_detect = false;
+            s.setup.probe_context = None;
+            s.setup.message =
+                "Configuration changed; the previous tool check was discarded.".into();
         }
         "detect" => match serde_json::from_value::<Candidate>(data) {
             Ok(candidate) => {

@@ -7,6 +7,7 @@ use crate::ui::theme::*;
 #[path = "batch_tests.rs"]
 mod tests;
 pub(crate) struct Batch {
+    pub(crate) system: Option<String>,
     remaining: Vec<usize>,
     waiting: Option<String>,
     distro: String,
@@ -45,7 +46,7 @@ fn checkpoint(s: &State) -> Value {
     });
     let preset = &s.setup.workflow;
     json!({"app_version":env!("CARGO_PKG_VERSION"),"batch":batch,"workflow":preset.name,
-        "recipes":preset.recipes,"message":s.setup.batch_message})
+        "recipes":preset.recipes,"system":s.setup.batch.as_ref().and_then(|b| b.system.as_deref()),"message":s.setup.batch_message})
 }
 /// Resumes the queue of `value` when its preset (its recipe list, or the earlier preset name
 /// alone) names only known recipes and every remaining one is still automatic; anything else
@@ -95,6 +96,7 @@ pub(super) fn resume(s: &mut State, value: &Value) {
     }
     s.setup.workflow = preset;
     s.setup.batch = Some(Batch {
+        system: value["system"].as_str().map(str::to_owned),
         remaining,
         waiting: saved.waiting,
         distro: saved.distro,
@@ -196,6 +198,9 @@ pub(crate) fn begin(s: &mut State) {
         }
     }
     s.setup.batch = Some(Batch {
+        system: crate::guided::target(s)
+            .filter(|_| crate::guided::saved(s) && crate::guided::preset(s) == s.setup.workflow)
+            .map(|sys| sys.id.clone()),
         remaining,
         waiting: None,
         distro: s.setup.distro.text.clone(),
@@ -402,6 +407,7 @@ pub(crate) fn preview(s: &mut State) {
     }];
     s.setup.selected_job = Some(id.clone());
     s.setup.batch = Some(Batch {
+        system: None,
         remaining: rest.to_vec(),
         waiting: Some(id),
         distro: s.setup.distro.text.clone(),

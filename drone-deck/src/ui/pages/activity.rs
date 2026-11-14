@@ -8,13 +8,16 @@ const VISIBLE_LINES: usize = 400;
 
 /// The mast eyebrow shared by management pages: active system and whether it is prepared.
 pub(super) fn eyebrow(s: &State) -> String {
-    let kind = s.systems.active;
-    let state = if s.systems.prepared(kind) {
+    if s.systems.is_empty() {
+        return "No system yet".into();
+    }
+    let current = s.systems.current();
+    let state = if current.prepared {
         "Configured"
     } else {
         "Preparation required"
     };
-    format!("{} / {state}", s.systems.name(kind))
+    format!("{} / {state}", current.label())
 }
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {

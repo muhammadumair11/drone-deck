@@ -1,33 +1,34 @@
 //! A system: a named launch setup made of one vehicle (a simulated autopilot in a world, a
-//! physical vehicle or a recording) and the consumers fed by it. Templates reproduce the four
-//! 0.8 systems; everything else derives from vehicle + consumers.
+//! physical vehicle or a recording) and the consumers fed by it. Everything about a system
+//! derives from vehicle + consumers; the four starters (`starter`) only reproduce the 0.8
+//! systems for migration and give tests and scenes ready-made systems.
 pub(crate) use super::adapter::AutopilotKind;
 use super::adapter::{self, Adapter};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-/// Template families. `System::kind` maps any system onto one of them, so pages that only
-/// need "is this a physical / AI / ROS system" keep a single index.
+/// The four starters (`starter`): the 0.8 systems, for migrating old files and as ready-made
+/// systems in tests and scenes. Nothing decides behaviour from them.
 pub(crate) const SIMULATION: usize = 0;
 pub(crate) const ROS: usize = 1;
 pub(crate) const AI: usize = 2;
 pub(crate) const PHYSICAL: usize = 3;
-/// Template names, indexed by kind.
-pub(crate) const KINDS: [&str; 4] = [
+/// Starter names, indexed by starter; also the names old files gave their systems.
+pub(crate) const STARTER_NAMES: [&str; 4] = [
     "Local simulation",
     "ROS & sensor capture",
     "Offline AI workspace",
     "Physical vehicle",
 ];
-/// Template ids stored in `System::template`, indexed by kind.
-pub(crate) const TEMPLATE_IDS: [&str; 4] = [
+/// Starter ids, indexed by starter.
+pub(crate) const STARTER_IDS: [&str; 4] = [
     "local-simulation",
     "ros-sensor-capture",
     "offline-ai",
     "physical-vehicle",
 ];
 /// Labels for the vehicle kinds in the editor, in `Vehicle::index` order.
-pub(crate) const VEHICLES: [&str; 3] = ["Simulated", "Physical vehicle", "Recording replay"];
+pub(crate) const VEHICLES: [&str; 3] = ["Simulated drone", "Physical drone", "Recording"];
 pub(crate) const DEFAULT_DOMAIN: u32 = 0;
 pub(crate) const DEFAULT_SCRIPTS_UDP: &str = "127.0.0.1:14540";
 pub(crate) const MAX_NAME: usize = 60;
@@ -144,6 +145,13 @@ pub(crate) struct Ros {
     pub recorder: bool,
     #[serde(default)]
     pub domain: u32,
+    /// The topics this system records, saved from its last recording (empty: none chosen yet).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub topics: Vec<String>,
+    /// Start recording those topics when the session starts (a simulated system's `record`
+    /// launch stage).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub record_on_start: bool,
 }
 impl Default for Ros {
     fn default() -> Self {
@@ -151,6 +159,8 @@ impl Default for Ros {
             agent: false,
             recorder: false,
             domain: DEFAULT_DOMAIN,
+            topics: Vec::new(),
+            record_on_start: false,
         }
     }
 }
@@ -188,9 +198,6 @@ pub(crate) struct System {
     /// Stable slug; renaming keeps it.
     pub id: String,
     pub name: String,
-    /// The template id it was created from (`TEMPLATE_IDS`), kept for guided setup.
-    #[serde(default)]
-    pub template: String,
     /// Guided preparation finished for it on this computer.
     #[serde(default)]
     pub prepared: bool,
@@ -247,6 +254,13 @@ impl System {
         }
     }
     /// The endpoint of a physical vehicle.
+    /// The recording a recording vehicle replays, when one is chosen.
+    pub fn vehicle_recording(&self) -> Option<&str> {
+        match &self.vehicle {
+            Vehicle::Replay { recording } => recording.as_deref(),
+            _ => None,
+        }
+    }
     pub fn endpoint(&self) -> Option<&str> {
         match &self.vehicle {
             Vehicle::Physical { endpoint, .. } => Some(endpoint),
@@ -295,30 +309,43 @@ impl System {
             Vehicle::Replay { recording: Some(r) } => format!("Recording replay / {r}"),
         }
     }
-    /// The template family it behaves like, from its vehicle and consumers.
-    pub fn kind(&self) -> usize {
-        match self.vehicle {
-            Vehicle::Physical { .. } => PHYSICAL,
-            Vehicle::Replay { .. } => AI,
-            _ if self.consumers.ros.agent || self.consumers.ros.recorder => ROS,
-            _ => SIMULATION,
-        }
-    }
-    /// The template index guided setup uses: the stored template, else the kind.
-    pub fn template_index(&self) -> usize {
-        TEMPLATE_IDS
-            .iter()
-            .position(|t| *t == self.template)
-            .unwrap_or_else(|| self.kind())
-    }
-    /// The display name, or the template name when none was given.
+    /// The display name; a system saved without one shows "Unnamed system".
     pub fn label(&self) -> &str {
         let n = self.name.trim();
-        if n.is_empty() {
-            KINDS[self.template_index()]
-        } else {
-            n
+        if n.is_empty() { "Unnamed system" } else { n }
+    }
+    /// A name built from the pieces, which the wizard offers until a name is typed:
+    /// "PX4 + jMAVSim + ROS 2", "Real drone · COM7", "Recording replay + inference".
+    pub fn suggested_name(&self) -> String {
+        let c = &self.consumers;
+        let mut name = match &self.vehicle {
+            Vehicle::Simulated { autopilot, world } => match self.adapter() {
+                Some(a) => a.name.to_string(),
+                None => format!(
+                    "{} in {}",
+                    adapter::autopilot_name(autopilot.kind()),
+                    world.id
+                ),
+            },
+            Vehicle::Physical { endpoint, .. } => {
+                let parts: Vec<&str> = endpoint.split(':').collect();
+                match parts.as_slice() {
+                    ["serial", port, ..] => format!("Real drone · {port}"),
+                    [scheme, .., port] if !port.is_empty() => {
+                        format!("Real drone · {} {port}", scheme.to_ascii_uppercase())
+                    }
+                    _ => "Real drone".to_string(),
+                }
+            }
+            Vehicle::Replay { .. } => "Recording replay".to_string(),
+        };
+        if c.ros.agent {
+            name.push_str(" + ROS 2");
         }
+        if self.is_replay() && c.inference.is_some() {
+            name.push_str(" + inference");
+        }
+        name
     }
     /// Consumers in a short line for lists.
     pub fn consumers_summary(&self) -> String {
@@ -329,7 +356,8 @@ impl System {
         }
         if c.live_view {
             parts.push(
-                if self.is_physical() {
+                // A real drone's link is read-only only while nothing is bridged to it.
+                if self.is_physical() && !c.qgc && c.scripts_udp.is_none() {
                     "read-only live view"
                 } else {
                     "live view"
@@ -363,8 +391,8 @@ impl System {
     }
 }
 
-/// A new system from template `kind` (clamped to the four templates).
-pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
+/// Starter `kind` (clamped to the four starters) as a system with this id and name.
+pub(crate) fn starter(kind: usize, id: &str, name: &str) -> System {
     let kind = kind.min(PHYSICAL);
     let (vehicle, consumers) = match kind {
         SIMULATION => (
@@ -384,6 +412,7 @@ pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
                     agent: true,
                     recorder: true,
                     domain: DEFAULT_DOMAIN,
+                    ..Default::default()
                 },
                 foxglove: true,
                 ..Default::default()
@@ -408,17 +437,16 @@ pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
     System {
         id: id.into(),
         name: name.into(),
-        template: TEMPLATE_IDS[kind].into(),
         prepared: false,
         vehicle,
         consumers,
     }
 }
 
-/// The four template systems, as a first start and a schema 1 file describe them.
+/// The four starters, as a schema 1 file describes them (and tests and scenes start with).
 pub(crate) fn defaults() -> Vec<System> {
     (0..4)
-        .map(|k| template(k, TEMPLATE_IDS[k], KINDS[k]))
+        .map(|k| starter(k, STARTER_IDS[k], STARTER_NAMES[k]))
         .collect()
 }
 

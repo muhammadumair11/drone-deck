@@ -115,8 +115,8 @@ pub(super) fn lazy_load(s: &mut State) -> bool {
     if s.headless || s.studio.pending {
         return false;
     }
-    // The System page shows project and artifact counts for the offline AI system.
-    let on_system = s.page == Page::System && s.systems.active == crate::systems::AI;
+    // The System page shows project and artifact counts for a system that runs inference.
+    let on_system = s.page == Page::System && s.systems.current().consumers.inference.is_some();
     if (s.page, s.ui.data_tab) == (Page::Data, 2)
         && !s.studio.loaded.contains(&"pipe_list")
         && s.wsl_ready()

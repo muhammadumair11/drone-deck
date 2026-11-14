@@ -210,9 +210,9 @@ pub(crate) fn scene_gated(s: &mut State) {
 /// console say the launch is under way.
 pub(crate) fn scene_launching(s: &mut State) {
     simulation(s);
-    s.session = Some(crate::session::Launch::new(
-        systems::SESSIONS[systems::SIMULATION],
-    ));
+    s.session = Some(crate::session::Launch::new([
+        "sih", "router", "link", "qgc",
+    ]));
     s.status.insert("sih".into(), "Starting".into());
     s.ui.open.insert(super::console::KEY.into());
 }
@@ -220,7 +220,11 @@ pub(crate) fn scene_launching(s: &mut State) {
 /// `vehicle-ardupilot-console`: an ArduPilot SITL system with granted flight actions: the
 /// console is disabled, since ArduPilot has no MAVLink shell.
 pub(crate) fn scene_ardupilot_console(s: &mut State) {
-    let id = s.systems.create(systems::SIMULATION, "ArduPilot lab");
+    let id = s.systems.add(systems::model::starter(
+        systems::SIMULATION,
+        "",
+        "ArduPilot lab",
+    ));
     if let Some(sys) = s.systems.get_mut(&id) {
         sys.vehicle = Vehicle::ardupilot("copter");
     }
@@ -269,7 +273,7 @@ pub(crate) fn scene_readonly(s: &mut State) {
     {
         s.select_system(&id);
     } else {
-        s.select_system(systems::PHYSICAL);
+        s.select_starter(systems::PHYSICAL);
     }
     let id = s.systems.active_id().to_string();
     vehicle::preview(s, &id, true, false);

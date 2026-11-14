@@ -137,6 +137,7 @@ pub(crate) fn stage(s: &mut State, id: &str, step: Step) -> Option<Stage> {
             }
         }
         ("link", Step::Ready) => link_ready(s),
+        ("mcap", step) => crate::recordings::stage(s, step),
         _ => return None,
     })
 }
@@ -146,6 +147,7 @@ pub(crate) fn awaited(id: &str) -> Option<&'static str> {
     match id {
         "router" => Some("router listening"),
         "link" => Some("link up"),
+        "mcap" => Some("the system's topics to record"),
         _ => None,
     }
 }

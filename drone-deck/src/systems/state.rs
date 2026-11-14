@@ -17,6 +17,7 @@ pub(crate) fn running(s: &State, id: &str) -> bool {
     match id {
         "link" => s.vehicle.link.is_some(),
         "router" => vehicle::router_running(s),
+        "mcap" => s.recorder.recording,
         _ => s
             .status
             .get(id)

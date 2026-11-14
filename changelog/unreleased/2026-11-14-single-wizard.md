@@ -1,0 +1,1 @@
+- Replace preset selection with one Vehicle → World → Listeners wizard, explicit saving in Review, stable editing and installation ownership, and First run checks derived from the selected tools.

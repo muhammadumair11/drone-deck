@@ -74,7 +74,7 @@ fn layout_reflows_across_reference_sizes_and_live_resizing() {
         rt.set_viewport((w, h), 1.);
         for kind in 0..4 {
             rt.update(|s, _| {
-                s.select_system(kind);
+                s.select_starter(kind);
             });
             for page in PAGES {
                 rt.update(|s, _| s.navigate(page));
@@ -267,7 +267,7 @@ fn rail_navigation_and_profile_registry_are_interactive() {
 fn preview_never_starts_processes() {
     let mut s = State::new();
     s.headless = true;
-    s.bundle(systems::SESSIONS[systems::SIMULATION]);
+    s.bundle(["sih", "router", "link", "qgc"]);
     assert!(s.backend.is_none());
     assert!(s.status.is_empty());
 }
@@ -295,7 +295,7 @@ fn active_system_selector_switches_context_while_work_keeps_running() {
     tap(&mut rt, "system-select");
     assert!(rt.state.ui.system_menu);
     tap(&mut rt, "system-option-3");
-    assert_eq!(rt.state.systems.active, systems::PHYSICAL);
+    assert!(rt.state.systems.current().is_physical());
     assert!(!rt.state.ui.system_menu);
     assert_eq!(
         rt.state.hardware.mode, 1,
@@ -306,7 +306,7 @@ fn active_system_selector_switches_context_while_work_keeps_running() {
     assert!(!rt.state.ui.system_menu, "Escape closes the system list");
 
     rt.update(|s, _| {
-        s.select_system(systems::SIMULATION);
+        s.select_starter(systems::SIMULATION);
         s.systems.claim("sih");
         s.status.insert("sih".into(), "Running".into());
     });
@@ -314,7 +314,7 @@ fn active_system_selector_switches_context_while_work_keeps_running() {
     tap(&mut rt, "system-select");
     assert!(rt.find("system-option-1").is_some());
     tap(&mut rt, "system-option-1");
-    assert_eq!(rt.state.systems.active, systems::ROS);
+    assert_eq!(rt.state.systems.active_id(), "ros-sensor-capture");
     assert_eq!(
         rt.state.status.get("sih").map(String::as_str),
         Some("Running"),
@@ -341,12 +341,16 @@ fn active_system_selector_switches_context_while_work_keeps_running() {
 }
 
 #[test]
-fn new_system_from_guided_setup_is_created_from_its_template() {
+fn a_new_gazebo_ros_system_is_saved_on_review_and_opens_its_workspace() {
     let mut rt = runtime(State::new(), (1440., 900.));
     rt.update(|s, _| crate::guided::new_system(s));
     rt.frame(0.1);
-    tap(&mut rt, "intent-1");
-    rt.update(|s, _| s.guided.name = TextEdit::new("Camera rig"));
+    rt.update(|s, _| {
+        s.guided.draft.world = "gazebo".into();
+        s.guided.draft.ros_agent = true;
+        s.guided.draft.recorder = true;
+    });
+    rt.update(|s, _| s.guided.draft.name = TextEdit::new("Camera rig"));
     rt.frame(0.1);
     tap(&mut rt, "next");
     assert_eq!(
@@ -363,9 +367,11 @@ fn new_system_from_guided_setup_is_created_from_its_template() {
     );
     tap(&mut rt, "next");
     assert_eq!(rt.state.guided.chapter, crate::guided::REVIEW);
+    assert_eq!(rt.state.systems.list.len(), 4);
+    tap(&mut rt, "next");
     assert_eq!(rt.state.systems.list.len(), 5);
     let sys = rt.state.systems.get("camera-rig").expect("created");
-    assert_eq!(sys.template, "ros-sensor-capture");
+    assert!(sys.consumers.ros.agent);
     assert_eq!(sys.adapter().map(|a| a.id), Some("px4-gazebo"));
     assert!(!sys.prepared);
     assert_eq!(
@@ -374,6 +380,16 @@ fn new_system_from_guided_setup_is_created_from_its_template() {
         "preset from vehicle and consumers"
     );
     rt.update(|s, _| {
+        for id in s.setup.workflow.recipes.clone() {
+            s.setup.checks.insert(
+                id.clone(),
+                setup::Candidate {
+                    tool: id,
+                    compatible: true,
+                    ..Default::default()
+                },
+            );
+        }
         crate::guided::open_workspace(s);
     });
     rt.frame(0.1);
@@ -456,12 +472,12 @@ fn settings_systems_rename_duplicate_and_delete_with_confirmation() {
     tap(&mut rt, &format!("system-delete-{i}"));
     tap(&mut rt, "confirm-delete-system");
     assert!(rt.state.systems.get("physical-vehicle").is_none());
-    assert_ne!(rt.state.systems.active, systems::PHYSICAL);
+    assert!(!rt.state.systems.current().is_physical());
     assert_eq!(
         rt.state.hardware.mode, 0,
         "the monitor follows the new active system"
     );
-    assert!(rt.state.guided.existing.is_none() && rt.state.guided.base.is_none());
+    assert!(rt.state.guided.existing.is_none());
     rt.update(|s, _| crate::guided::open(s));
     assert_ne!(
         rt.state.guided.existing.as_deref(),
@@ -475,14 +491,14 @@ fn guided_setup_validates_the_name_and_returns_to_the_workspace() {
     tap(&mut rt, "open-guided-setup");
     assert_eq!(rt.state.page, Page::Setup);
     assert_eq!(rt.state.guided.chapter, 0);
-    tap(&mut rt, "intent-3");
-    assert_eq!(rt.state.guided.choice, systems::PHYSICAL);
-    rt.update(|s, _| s.guided.name = TextEdit::new("   "));
+    tap(&mut rt, "system-vehicle-1");
+    assert_eq!(rt.state.guided.draft.vehicle, 1);
+    rt.update(|s, _| s.guided.draft.name = TextEdit::new("   "));
     rt.frame(0.1);
     tap(&mut rt, "next");
     assert_eq!(rt.state.guided.chapter, 0, "a blank name does not advance");
-    assert!(!rt.state.guided.name_error.is_empty());
-    rt.update(|s, _| s.guided.name = TextEdit::new("Bench quad"));
+    assert!(!rt.state.guided.draft.error.is_empty());
+    rt.update(|s, _| s.guided.draft.name = TextEdit::new("Bench quad"));
     rt.frame(0.1);
     tap(&mut rt, "next");
     assert_eq!(
@@ -491,17 +507,12 @@ fn guided_setup_validates_the_name_and_returns_to_the_workspace() {
     );
     tap(&mut rt, "next");
     assert_eq!(rt.state.guided.chapter, crate::guided::REVIEW);
-    // Opened for Local simulation, another starting point prepares a new system.
-    let created = rt.state.systems.get("bench-quad").expect("created");
-    assert!(created.is_physical());
-    assert_eq!(
-        rt.state
-            .systems
-            .get("local-simulation")
-            .map(|x| x.name.as_str()),
-        Some("Local simulation"),
-        "the system it was opened for stays as it is"
-    );
+    assert_eq!(rt.state.systems.current().name, "Local simulation");
+    tap(&mut rt, "next"); // Save system
+    let updated = rt.state.systems.get("local-simulation").unwrap();
+    assert!(updated.is_physical());
+    assert_eq!(updated.name, "Bench quad");
+    assert_eq!(rt.state.systems.list.len(), 4);
     tap(&mut rt, "chapter-nav-0");
     assert_eq!(
         rt.state.guided.chapter, 0,
@@ -628,7 +639,7 @@ fn existing_installation_can_be_detected_and_adopted_from_a_tool_row() {
 #[test]
 fn an_open_vehicle_link_is_session_work_the_rail_and_the_system_page_agree_on() {
     let mut s = State::new();
-    assert!(s.select_system(systems::PHYSICAL));
+    assert!(s.select_starter(systems::PHYSICAL));
     assert_eq!(ui::session_label(&s), "No active session");
     let physical = s.systems.active_id().to_string();
     vehicle::preview(&mut s, &physical, true, false);
@@ -779,7 +790,7 @@ fn the_system_editor_greys_a_world_the_autopilot_has_no_adapter_for() {
 fn guided_setup_builds_a_system_piece_by_piece() {
     let mut rt = runtime(State::new(), (1440., 1100.));
     rt.update(|s, _| crate::guided::new_system(s));
-    rt.update(|s, _| s.guided.name = TextEdit::new("ArduPilot bench"));
+    rt.update(|s, _| s.guided.draft.name = TextEdit::new("ArduPilot bench"));
     rt.frame(0.1);
     tap(&mut rt, "system-autopilot-1");
     tap(&mut rt, "next");
@@ -799,9 +810,112 @@ fn guided_setup_builds_a_system_piece_by_piece() {
     );
     tap(&mut rt, "next");
     assert_eq!(rt.state.guided.chapter, crate::guided::REVIEW);
+    assert!(rt.state.systems.get("ardupilot-bench").is_none());
+    tap(&mut rt, "next"); // Save system on Review
     let sys = rt.state.systems.get("ardupilot-bench").expect("created");
     assert_eq!(sys.adapter().map(|a| a.id), Some("ardupilot-webots"));
     let preset = crate::guided::preset(&rt.state);
     assert_eq!(preset.recipes, ["ardupilot", "webots", "qgc"]);
     assert!(!sys.prepared, "prepared only after Review & install");
+}
+
+#[test]
+fn wizard_shows_one_vehicle_choice_without_presets_and_locks_during_installation() {
+    let mut s = State::new();
+    crate::guided::new_system(&mut s);
+    let mut rt = runtime(s, (1000., 800.));
+    assert!(rt.find("intent-list").is_none());
+    assert!(rt.find("intent-0").is_none());
+    assert!(rt.find("system-vehicle-0").is_some());
+    tap(&mut rt, "system-vehicle-2");
+    tap(&mut rt, "next");
+    assert_eq!(rt.state.guided.chapter, 2);
+    tap(&mut rt, "chapter-nav-0");
+    rt.update(|s, _| {
+        s.setup.jobs.push(setup::Job {
+            alive: true,
+            ..Default::default()
+        });
+    });
+    rt.frame(0.1);
+    tap(&mut rt, "system-vehicle-0");
+    assert_eq!(
+        rt.state.guided.draft.vehicle, 2,
+        "installation locks all nested controls"
+    );
+}
+
+#[test]
+fn wizard_incompatible_world_cannot_advance_and_zoom_reflows() {
+    for (w, h, zoom) in [(390., 844., 100), (1000., 700., 85), (1440., 900., 125)] {
+        let mut s = State::new();
+        crate::guided::new_system(&mut s);
+        s.ui.zoom_percent = zoom;
+        s.guided.draft.world = "jmavsim".into();
+        s.guided.draft.autopilot = systems::adapter::AutopilotKind::ArduPilot;
+        s.guided.chapter = 1;
+        let mut rt = runtime(s, (w, h));
+        assert!(rt.find("world-error").is_some());
+        assert_inside(&rt, "chapter-title", w, h, "world heading");
+        tap(&mut rt, "next");
+        assert_eq!(rt.state.guided.chapter, 1);
+    }
+}
+
+#[test]
+fn compact_wizard_navigation_and_long_first_run_titles_fit() {
+    for zoom in [85, 100, 125] {
+        let mut s = State::new();
+        s.select_starter(systems::AI);
+        crate::guided::open(&mut s);
+        s.guided.chapter = crate::guided::RUN;
+        s.ui.zoom_percent = zoom;
+        let rt = runtime(s, (390., 844.));
+        let (title, _) = rt.presented("run-title-0").unwrap();
+        assert!(
+            title[0] + title[2] <= 391.,
+            "task title overflows: {title:?}"
+        );
+        let (review, _) = rt.presented("chapter-label-3").unwrap();
+        let (last, _) = rt.presented("chapter-nav-4").unwrap();
+        assert!(
+            review[0] + review[2] <= last[0] + 1.,
+            "chapter labels overlap"
+        );
+    }
+}
+
+#[test]
+fn with_no_systems_every_page_renders_and_system_offers_the_wizard() {
+    let mut s = State::new();
+    s.systems = systems::Systems::default();
+    let mut rt = runtime(s, (1440., 900.));
+    for page in PAGES {
+        rt.update(move |s, _| s.navigate(page));
+        settle(&mut rt);
+    }
+    rt.update(|s, _| s.navigate(Page::System));
+    settle(&mut rt);
+    assert!(rt.find("first-system").is_some());
+    tap(&mut rt, "first-system");
+    assert_eq!(rt.state.page, Page::Setup);
+}
+
+#[test]
+fn a_new_systems_name_follows_its_pieces_until_one_is_typed() {
+    let mut s = State::new();
+    crate::guided::new_system(&mut s);
+    s.guided.draft.world = "jmavsim".into();
+    crate::guided::poll(&mut s);
+    assert_eq!(s.guided.draft.name.text, "PX4 + jMAVSim");
+    s.guided.draft.ros_agent = true;
+    crate::guided::poll(&mut s);
+    assert_eq!(s.guided.draft.name.text, "PX4 + jMAVSim + ROS 2");
+    s.guided.draft.name = TextEdit::new("Bench quad");
+    s.guided.draft.world = "internal".into();
+    crate::guided::poll(&mut s);
+    assert_eq!(
+        s.guided.draft.name.text, "Bench quad",
+        "a typed name is kept"
+    );
 }

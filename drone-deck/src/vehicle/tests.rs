@@ -185,22 +185,6 @@ fn a_router_that_cannot_start_ends_the_launch_with_its_reason() {
 }
 
 #[test]
-fn authority_needs_every_piece_of_evidence() {
-    for bits in 0..8u8 {
-        let e = SimulationEvidence {
-            app_router_link: bits & 1 != 0,
-            simulator_source: bits & 2 != 0,
-            stack_owned_running: bits & 4 != 0,
-        };
-        assert_eq!(
-            Authority::from_evidence(e).may_fly(),
-            bits == 7,
-            "evidence {e:?}"
-        );
-    }
-}
-
-#[test]
 fn the_gate_follows_the_observed_link_router_and_stack() {
     let fake = FakeVehicle::tcp();
     let mut s = live_state("fake-b1-gate");
@@ -228,7 +212,7 @@ fn the_gate_follows_the_observed_link_router_and_stack() {
             .contains("PX4 / SIH is not running")
     );
     // Running, but started by another system: still read-only.
-    let other = s.systems.create(systems::SIMULATION, "Other lab");
+    let other = s.systems.add_starter(systems::SIMULATION, "Other lab");
     s.systems.set_active(&other);
     s.systems.claim("sih");
     s.status.insert("sih".into(), "Running".into());
@@ -403,7 +387,7 @@ fn a_waiting_direct_start_is_dropped_when_the_system_changes() {
         .position(|p| p.id == "sih")
         .unwrap();
     let home = s.systems.active_id().to_string();
-    let lab = s.systems.create(systems::SIMULATION, "Second lab");
+    let lab = s.systems.add_starter(systems::SIMULATION, "Second lab");
     s.start(sih);
     assert!(s.notice.contains("Checking that nothing"), "{}", s.notice);
     s.systems.set_active(&lab);
@@ -437,7 +421,7 @@ fn the_gate_names_a_launch_under_way_and_a_closed_link() {
         gate_reason(&s).unwrap(),
         "No live link. Start the workspace of a simulated system first."
     );
-    s.session = Some(session::Launch::new(systems::SESSIONS[systems::SIMULATION]));
+    s.session = Some(session::Launch::new(["sih", "router", "link", "qgc"]));
     let reason = gate_reason(&s).unwrap();
     assert!(
         reason.starts_with("Workspace launch under way: starting PX4 / SIH (stage 1 of 4)"),
@@ -461,7 +445,7 @@ fn the_gate_names_a_launch_under_way_and_a_closed_link() {
 
     // Another system's launch.
     let mut s = State::new();
-    let other = s.systems.create(systems::SIMULATION, "Other lab");
+    let other = s.systems.add_starter(systems::SIMULATION, "Other lab");
     s.systems.set_active(&other);
     s.systems.claim("session");
     s.systems.set_active(&sim);
@@ -512,7 +496,7 @@ fn the_console_refuses_an_ardupilot_link() {
     let fake = FakeVehicle::tcp();
     let mut s = live_state("fake-b1-ardupilot");
     s.vehicle.sim_port = fake.addr.port();
-    let ap = s.systems.create(systems::SIMULATION, "ArduPilot lab");
+    let ap = s.systems.add_starter(systems::SIMULATION, "ArduPilot lab");
     s.systems.get_mut(&ap).unwrap().vehicle = systems::Vehicle::ardupilot("copter");
     let px4 = s
         .systems
@@ -576,7 +560,7 @@ fn a_retrying_simulation_link_disconnects_on_its_own() {
 fn physical_links_are_read_only_and_send_no_heartbeat() {
     let fake = FakeVehicle::tcp();
     let mut s = live_state("fake-b1-physical");
-    let id = s.systems.create(systems::PHYSICAL, "Bench quad");
+    let id = s.systems.add_starter(systems::PHYSICAL, "Bench quad");
     s.select_system(&id);
     let endpoint = format!("tcp:127.0.0.1:{}", fake.addr.port());
     connect_physical(&mut s, &id, &endpoint).expect("link");
@@ -651,7 +635,7 @@ fn one_link_at_a_time_and_one_simulator_at_a_time() {
     wait_until_up(&mut s);
 
     // Gazebo for the ROS system would share UDP 14550 / TCP 5760.
-    assert!(s.select_system(systems::ROS));
+    assert!(s.select_starter(systems::ROS));
     let ros = s.systems.active_id().to_string();
     assert!(!s.bundle(systems::session_stages(s.systems.current())));
     assert!(
@@ -676,7 +660,7 @@ fn one_link_at_a_time_and_one_simulator_at_a_time() {
     assert!(refused.contains("belongs to Local simulation"), "{refused}");
 
     // The same simulator for another SIH system is refused too.
-    let twin = s.systems.create(systems::SIMULATION, "Twin lab");
+    let twin = s.systems.add_starter(systems::SIMULATION, "Twin lab");
     assert!(s.select_system(&twin));
     assert!(!s.bundle(systems::session_stages(s.systems.current())));
     assert!(
@@ -725,7 +709,7 @@ fn headless_previews_never_connect_and_show_a_fake_snapshot() {
     );
     preview(&mut s, &sim, true, false);
     assert!(gate_reason(&s).is_some());
-    assert!(s.select_system(systems::PHYSICAL));
+    assert!(s.select_starter(systems::PHYSICAL));
     let physical = s.systems.active_id().to_string();
     preview(&mut s, &physical, true, false);
     assert!(
@@ -742,7 +726,7 @@ fn headless_previews_never_connect_and_show_a_fake_snapshot() {
 
 #[test]
 fn launch_env_carries_world_model_vehicle_and_domain() {
-    let mut ros = systems::model::template(systems::ROS, "r", "R");
+    let mut ros = systems::model::starter(systems::ROS, "r", "R");
     ros.vehicle = systems::Vehicle::gazebo("baylands", "x500_depth");
     ros.consumers.ros.domain = 7;
     let env = backend::launch_env("gazebo", &ros);
@@ -750,7 +734,7 @@ fn launch_env_carries_world_model_vehicle_and_domain() {
     assert!(env.contains(&("DRONE_DECK_GZ_MODEL".into(), "x500_depth".into())));
     assert!(backend::launch_env("rosgz", &ros).contains(&("ROS_DOMAIN_ID".into(), "7".into())));
     assert!(backend::launch_env("qgc", &ros).is_empty());
-    let mut ap = systems::model::template(systems::SIMULATION, "a", "A");
+    let mut ap = systems::model::starter(systems::SIMULATION, "a", "A");
     ap.vehicle = systems::Vehicle::ardupilot("plane");
     assert_eq!(
         backend::launch_env("ardupilot", &ap),

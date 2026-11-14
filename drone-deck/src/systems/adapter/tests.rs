@@ -1,5 +1,5 @@
 use super::*;
-use crate::systems::{self, model::template};
+use crate::systems::{self, model::starter};
 
 #[test]
 fn every_stage_and_ros_profile_is_a_built_in() {
@@ -90,13 +90,13 @@ fn pairs_name_their_route_bridge_and_shell() {
 
 #[test]
 fn systems_find_their_adapter_from_the_source() {
-    let sim = template(systems::SIMULATION, "s", "S");
+    let sim = starter(systems::SIMULATION, "s", "S");
     assert_eq!(sim.adapter().map(|a| a.id), Some("px4-sih"));
     assert_eq!(sim.autopilot(), Some(AutopilotKind::Px4));
-    let ros = template(systems::ROS, "r", "R");
+    let ros = starter(systems::ROS, "r", "R");
     assert_eq!(ros.adapter().map(|a| a.id), Some("px4-gazebo"));
     for kind in [systems::AI, systems::PHYSICAL] {
-        let sys = template(kind, "x", "X");
+        let sys = starter(kind, "x", "X");
         assert!(sys.adapter().is_none() && !sys.simulated());
     }
 }
@@ -129,14 +129,14 @@ fn readiness_needs_vehicle_status_only_where_the_stage_reports_it() {
 
 #[test]
 fn launch_env_gives_defaults_for_missing_details() {
-    let ros = template(systems::ROS, "r", "R");
+    let ros = starter(systems::ROS, "r", "R");
     let env = launch_env(&ros, "rosgz");
     assert!(env.contains(&("DRONE_DECK_GZ_MODEL".into(), "x500_mono_cam".into())));
     assert!(
         launch_env(&ros, "dds").is_empty(),
         "not a stage or extra of Gazebo"
     );
-    let sim = template(systems::SIMULATION, "s", "S");
+    let sim = starter(systems::SIMULATION, "s", "S");
     assert!(launch_env(&sim, "sih").is_empty());
 }
 
@@ -243,7 +243,7 @@ fn realflight_starts_before_the_autopilot_that_drives_it() {
     assert!(is_vehicle_profile("ardupilot-realflight") && !is_vehicle_profile("realflight"));
     assert_eq!(a.link, Link::Direct);
 
-    let mut sys = template(systems::SIMULATION, "rf", "RF");
+    let mut sys = starter(systems::SIMULATION, "rf", "RF");
     sys.vehicle = crate::systems::Vehicle::Simulated {
         autopilot: crate::systems::model::Autopilot::ArduPilot {
             vehicle: "plane".into(),

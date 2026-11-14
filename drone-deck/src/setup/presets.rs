@@ -21,7 +21,11 @@ impl PartialEq for Preset {
 }
 impl Default for Preset {
     fn default() -> Self {
-        for_system(&crate::systems::model::template(0, "", ""))
+        for_system(&crate::systems::model::starter(
+            crate::systems::SIMULATION,
+            "",
+            "",
+        ))
     }
 }
 
@@ -71,7 +75,13 @@ pub(crate) fn for_system(sys: &System) -> Preset {
     if c.inference.is_some() {
         recipes.push("onnx");
     }
-    if c.qgc || sys.is_physical() {
+    if (c.ros.recorder || c.foxglove || sys.is_replay()) && !recipes.contains(&"ros2") {
+        recipes.push("ros2");
+    }
+    if c.foxglove {
+        recipes.push("foxglove-bridge");
+    }
+    if c.qgc {
         recipes.push("qgc");
     }
     let recipes: Vec<String> = recipes.into_iter().map(String::from).collect();
@@ -83,6 +93,13 @@ pub(crate) fn for_system(sys: &System) -> Preset {
 
 /// The earlier preset name for these recipes, or one made from the vehicle and consumers.
 fn name(sys: &System, recipes: &[String]) -> String {
+    // Keep historical display names while adding the actual listener dependencies.
+    let naming: Vec<String> = recipes
+        .iter()
+        .filter(|r| r.as_str() != "foxglove-bridge" && !(sys.is_replay() && r.as_str() == "ros2"))
+        .cloned()
+        .collect();
+    let recipes = naming.as_slice();
     // QGroundControl alone was the physical preset; a replay with it is not one.
     let legacy = sys.is_physical() || recipes != ["qgc"];
     if let Some((n, _)) = LEGACY.iter().find(|(_, r)| legacy && *r == recipes) {

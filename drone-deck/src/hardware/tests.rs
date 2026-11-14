@@ -1,15 +1,4 @@
 use super::*;
-#[test]
-fn headless_previews_never_connect_a_physical_vehicle() {
-    let mut s = State::new();
-    s.select_system(systems::PHYSICAL);
-    s.hardware.endpoint = TextEdit::new("udp:127.0.0.1:0");
-    toggle(&mut s);
-    assert!(s.vehicle.link.is_none());
-    assert!(s.hardware.message.contains("Preview"));
-    assert!(s.status.is_empty());
-}
-
 /// The physical bridge is transparent, so the panel splits what reached the vehicle: Drone
 /// Deck's own read requests and what QGroundControl or scripts sent through it.
 #[test]
@@ -17,7 +6,7 @@ fn the_connection_panel_shows_what_peers_sent_a_physical_vehicle() {
     use rune::{Env, Runtime};
     let texts = |peers: bool, bridged: u64| {
         let mut s = State::new();
-        s.select_system(systems::PHYSICAL);
+        s.select_starter(systems::PHYSICAL);
         let id = s.systems.active_id().to_string();
         crate::vehicle::preview(&mut s, &id, true, false);
         let link = &mut s.vehicle.snapshot.as_mut().expect("snapshot").link;
@@ -77,7 +66,7 @@ fn endpoints_are_built_from_a_port_and_baud() {
 fn the_endpoint_is_chosen_from_ports_bauds_and_presets() {
     use rune::{Env, Runtime};
     let mut s = State::new();
-    s.select_system(systems::PHYSICAL);
+    s.select_starter(systems::PHYSICAL);
     s.hardware.ports.found = Some(vec![ports::Port {
         name: "COM7".into(),
         detail: "Pixhawk 6C / Holybro".into(),
@@ -121,7 +110,7 @@ fn the_endpoint_is_chosen_from_ports_bauds_and_presets() {
 #[test]
 fn every_endpoint_check_refuses_the_same_text() {
     let mut s = State::new();
-    s.select_system(systems::PHYSICAL);
+    s.select_starter(systems::PHYSICAL);
     s.hardware.endpoint = TextEdit::new("udpout:127.0.0.1:14550");
     save_endpoint(&mut s);
     assert!(

@@ -110,7 +110,9 @@ fn the_capture_note_names_the_active_system_and_follows_its_ros_consumers() {
         },
     );
     rt.update(|s, _| {
-        let id = s.systems.create(crate::systems::SIMULATION, "Bench sim");
+        let id = s
+            .systems
+            .add_starter(crate::systems::SIMULATION, "Bench sim");
         s.select_system(&id);
         s.navigate(crate::ui::Page::Data);
     });
@@ -175,7 +177,7 @@ fn a_simulated_recording_carries_a_recipe_and_the_autopilot_topics() {
         "no link, no parameters"
     );
 
-    assert!(s.select_system(crate::systems::PHYSICAL));
+    assert!(s.select_starter(crate::systems::PHYSICAL));
     let value = payload(&s, "record").unwrap();
     assert!(
         value["recipe"].is_null(),
@@ -198,5 +200,81 @@ fn the_library_says_which_recordings_can_be_flown_again() {
     assert_eq!(
         view::resimulable(&session).as_deref(),
         Some("Re-simulable / ArduPilot SITL / no command topics recorded / parameters not kept")
+    );
+}
+
+#[test]
+fn a_system_with_ros_records_on_its_own_domain_and_keeps_its_topics() {
+    let mut s = State::new();
+    let id = s.systems.active_id().to_string();
+    {
+        let ros = &mut s.systems.get_mut(&id).unwrap().consumers.ros;
+        ros.agent = true;
+        ros.domain = 5;
+        ros.topics = vec!["/camera/image_raw".into()];
+    }
+    s.recorder.capture_domain = TextEdit::new("0");
+    assert_eq!(
+        capture_domain(&s),
+        Ok(5),
+        "the system's domain, not the typed one"
+    );
+    follow_system(&mut s);
+    assert_eq!(s.recorder.capture_domain.text, "5");
+    assert_eq!(s.recorder.topics.text, "/camera/image_raw");
+    let value = payload(&s, "record").unwrap();
+    assert_eq!(
+        (value["domain"].as_u64(), value["system"].as_str()),
+        (Some(5), Some(id.as_str()))
+    );
+
+    // A confirmed recording saves the topics it was asked for to the system that asked.
+    s.recorder.topics = TextEdit::new("/camera/image_raw /imu");
+    s.recorder.saving = Some((id.clone(), topic_names(&s.recorder.topics.text)));
+    apply_event(
+        &mut s,
+        serde_json::json!({"kind":"result","action":"record","ok":true,"data":{"id":"rec-1"}}),
+    );
+    assert_eq!(
+        s.systems.get(&id).unwrap().consumers.ros.topics,
+        ["/camera/image_raw", "/imu"]
+    );
+    assert!(s.recorder.saving.is_none());
+
+    // A refused one keeps nothing.
+    s.recorder.saving = Some((id.clone(), vec!["/other".into()]));
+    apply_event(
+        &mut s,
+        serde_json::json!({"kind":"result","action":"record","ok":false,"error":"no"}),
+    );
+    assert_eq!(
+        s.systems.get(&id).unwrap().consumers.ros.topics,
+        ["/camera/image_raw", "/imu"]
+    );
+
+    // A recording in progress keeps its settings when the system changes.
+    s.recorder.recording = true;
+    s.systems.get_mut(&id).unwrap().consumers.ros.domain = 9;
+    follow_system(&mut s);
+    assert_eq!(s.recorder.capture_domain.text, "5");
+}
+
+#[test]
+fn without_ros_the_typed_domain_is_used_and_a_recording_vehicle_selects_its_recording() {
+    let mut s = State::new();
+    assert_eq!(system_domain(&s), None);
+    s.recorder.capture_domain = TextEdit::new("12");
+    assert_eq!(capture_domain(&s), Ok(12));
+    let id = s.systems.active_id().to_string();
+    s.systems.get_mut(&id).unwrap().vehicle =
+        systems::Vehicle::replay(Some("20261114T101500Z-offboard"));
+    systems::start_workspace(&mut s);
+    assert_eq!(
+        s.recorder.selected.as_deref(),
+        Some("20261114T101500Z-offboard")
+    );
+    assert_eq!(
+        s.studio.pipes.selected.as_deref(),
+        Some("20261114T101500Z-offboard")
     );
 }

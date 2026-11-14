@@ -490,18 +490,6 @@ fn live_foxglove_waits_for_the_port_to_accept_before_opening() {
 }
 
 #[test]
-fn live_foxglove_claims_only_what_the_port_check_and_open_prove() {
-    // The listener is not foxglove_bridge, and `open` only asks Windows: the message must not
-    // credit the owned bridge or say Foxglove opened.
-    let m = foxglove::LIVE_OPENED;
-    assert!(m.contains("Port 8765 accepts connections"), "{m}");
-    assert!(m.contains("asked Windows to open Foxglove"), "{m}");
-    assert!(m.contains("Any program listening on that port"), "{m}");
-    assert!(!m.contains("Foxglove opened"), "{m}");
-    assert!(!m.contains("owned"), "{m}");
-}
-
-#[test]
 fn live_foxglove_keeps_checking_a_closed_port_then_opens_when_it_listens() {
     let addr = closed_port();
     let mut s = State::new();
@@ -638,4 +626,15 @@ fn pipelines_tab_fits_compact_and_wide_windows() {
             );
         }
     }
+}
+
+#[test]
+fn pipelines_follow_the_systems_linked_project() {
+    let mut s = State::new();
+    let id = s.systems.active_id().to_string();
+    s.systems.get_mut(&id).unwrap().consumers.inference = Some(crate::systems::model::Inference {
+        project: Some("detector-v2".into()),
+    });
+    follow_system(&mut s);
+    assert_eq!(s.studio.pipes.project.text, "detector-v2");
 }

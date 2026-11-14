@@ -158,14 +158,25 @@ fn capture(s: &State, active: bool, idle: bool) -> El {
             active,
             |s| &mut s.recorder.source,
         ))
-        .child(input(
-            &r.capture_domain,
-            "capture-domain",
-            "Capture ROS_DOMAIN_ID / 0–232",
-            "0",
-            active,
-            |s| &mut s.recorder.capture_domain,
-        ))
+        .child(match super::system_domain(s) {
+            Some(d) => col()
+                .key("capture-domain-system")
+                .gap(4.)
+                .child(meta("Capture ROS_DOMAIN_ID"))
+                .child(body(
+                    format!("{d} / the domain of {}", s.systems.current().label()),
+                    12.,
+                    fg(),
+                )),
+            None => input(
+                &r.capture_domain,
+                "capture-domain",
+                "Capture ROS_DOMAIN_ID / 0–232",
+                "0",
+                active,
+                |s| &mut s.recorder.capture_domain,
+            ),
+        })
         .child(topics(s, active, idle))
         .child(input(
             &r.topics,
@@ -303,7 +314,10 @@ pub(crate) fn resimulable(session: &super::Session) -> Option<String> {
 fn library(s: &State, vp: &Viewport) -> El {
     let r = &s.recorder;
     let mut list = col().w_full().min_w(0.);
-    for (i, session) in r.sessions.iter().enumerate() {
+    let active = s.systems.active_id();
+    // A recording made before 0.10 names no system: it shows under every system.
+    let shown = |x: &&Session| r.all_systems || x.system.is_empty() || x.system == active;
+    for (i, session) in r.sessions.iter().enumerate().filter(|(_, x)| shown(x)) {
         let id = session.id.clone();
         let selected = r.selected.as_ref() == Some(&id);
         let tone = if session.status.eq_ignore_ascii_case("finalized") {
@@ -325,6 +339,14 @@ fn library(s: &State, vp: &Viewport) -> El {
                 ),
                 11.,
             ));
+        if !session.system.is_empty() {
+            let from = s
+                .systems
+                .get(&session.system)
+                .map_or(session.system.as_str(), |x| x.label());
+            main = main
+                .child(meta(format!("Recorded by {from}")).key(format!("recording-system-{i}")));
+        }
         if let Some(line) = resimulable(session) {
             main = main.child(meta(line).key(format!("recording-recipe-{i}")).wrap());
         }
@@ -370,9 +392,22 @@ fn library(s: &State, vp: &Viewport) -> El {
         .pt(16.)
         .child(section_head(
             "Recording library",
-            ghost("refresh-recordings", "Refresh library", !r.pending, |s| {
-                send(s, "list")
-            }),
+            row()
+                .gaps(4., 16.)
+                .flex_wrap()
+                .center_y()
+                .child(checkbox(
+                    "recordings-all-systems",
+                    "Every system's recordings",
+                    r.all_systems,
+                    |s| s.recorder.all_systems = !s.recorder.all_systems,
+                ))
+                .child(ghost(
+                    "refresh-recordings",
+                    "Refresh library",
+                    !r.pending,
+                    |s| send(s, "list"),
+                )),
             vp.compact(),
         ))
         .child(code(r.root.clone(), 11., muted()).wrap_anywhere().mb(12.))
@@ -514,6 +549,14 @@ fn replay(s: &State, active: bool, idle: bool, vp: &Viewport) -> El {
         .mt(16.)
         .border_sides([1., 0., 0., 0.], rule())
         .child(asset(left, right, vp.compact()))
+}
+
+/// Replay controls on their own: a recording system's vehicle panel on the System page.
+pub(crate) fn replay_panel(s: &State, vp: &Viewport) -> El {
+    let r = &s.recorder;
+    let active = r.recording || r.playing;
+    let idle = !active && !r.pending;
+    replay(s, active, idle, vp)
 }
 
 /// The Recordings tab of Data & models.

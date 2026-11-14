@@ -13,16 +13,7 @@ const TABS: [&str; 6] = [
 ];
 
 pub(super) fn page(s: &State, vp: &Viewport) -> El {
-    let kind = s.systems.active;
-    let eyebrow = format!(
-        "{} / {}",
-        s.systems.name(kind),
-        if s.systems.prepared(kind) {
-            "Configured"
-        } else {
-            "Preparation required"
-        }
-    );
+    let eyebrow = super::activity::eyebrow(s);
     let tab = s.ui.data_tab.min(TABS.len() - 1);
     col()
         .key("data-page")

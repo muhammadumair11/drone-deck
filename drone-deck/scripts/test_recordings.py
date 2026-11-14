@@ -94,8 +94,9 @@ class RecordingTests(unittest.TestCase):
                   'evidence_topics': ['/fmu/out/vehicle_status']}
         with patch.object(self.server, 'start_job'):
             reply = self.server.record({'name': 'flight', 'topics': ['/fmu/in/vehicle_command'],
-                                        'domain': 0, 'recipe': recipe})
+                                        'domain': 0, 'recipe': recipe, 'system': 'lab'})
         path = self.server.session_path(reply['id'])
+        self.assertEqual(json.loads((path / 'session.json').read_text())['system'], 'lab')
         self.assertEqual(json.loads((path / 'recipe.json').read_text()), recipe)
         self.server.keep_params(path, 'SYS_AUTOSTART\t10016\n')
         self.assertEqual((path / 'params.params').read_text(), 'SYS_AUTOSTART\t10016\n')

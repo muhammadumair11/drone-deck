@@ -167,11 +167,13 @@ pub(super) fn projects(s: &State, vp: &Viewport) -> El {
                     request(s, "data_library")
                 }))
                 .child(ghost("project-setup", "Prepare AI runtimes ↗", true, |s| {
-                    if s.systems.active != systems::AI {
-                        s.select_system(systems::AI);
-                    }
-                    if s.systems.active == systems::AI {
-                        crate::guided::open(s);
+                    // The system that runs inference prepares it; without one, build one.
+                    match s.systems.find(|x| x.consumers.inference.is_some()) {
+                        Some(id) => {
+                            s.select_system(&id);
+                            crate::guided::open(s);
+                        }
+                        None => crate::guided::new_system(s),
                     }
                 })),
         );

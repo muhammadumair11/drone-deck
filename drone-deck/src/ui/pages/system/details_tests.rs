@@ -1,5 +1,5 @@
 use super::*;
-use crate::systems::{self, Vehicle, model::template};
+use crate::systems::{self, Vehicle, model::starter};
 
 fn values(sys: &systems::System) -> Vec<(&'static str, String)> {
     lines(sys, 5760)
@@ -10,7 +10,7 @@ fn values(sys: &systems::System) -> Vec<(&'static str, String)> {
 
 #[test]
 fn a_simulation_lists_its_link_scripts_and_ground_station() {
-    let sim = template(systems::SIMULATION, "s", "S");
+    let sim = starter(systems::SIMULATION, "s", "S");
     assert_eq!(
         values(&sim),
         [
@@ -24,7 +24,7 @@ fn a_simulation_lists_its_link_scripts_and_ground_station() {
 
 #[test]
 fn ros_and_foxglove_lines_follow_the_consumers() {
-    let mut ros = template(systems::ROS, "r", "R");
+    let mut ros = starter(systems::ROS, "r", "R");
     ros.consumers.ros.domain = 7;
     let v = values(&ros);
     assert!(v.contains(&("ros", "export ROS_DOMAIN_ID=7".to_string())));
@@ -37,11 +37,11 @@ fn ros_and_foxglove_lines_follow_the_consumers() {
 
 #[test]
 fn a_physical_vehicle_shows_its_endpoint_and_a_replay_no_vehicle_lines() {
-    let mut rig = template(systems::PHYSICAL, "p", "P");
+    let mut rig = starter(systems::PHYSICAL, "p", "P");
     assert!(values(&rig).is_empty(), "no endpoint yet, nothing to copy");
     rig.vehicle = Vehicle::physical("serial:COM7:57600");
     assert_eq!(values(&rig), [("link", "serial:COM7:57600".to_string())]);
-    let mut replay = template(systems::AI, "a", "A");
+    let mut replay = starter(systems::AI, "a", "A");
     replay.consumers.qgc = true;
     replay.consumers.scripts_udp = Some("127.0.0.1:14540".into());
     assert_eq!(

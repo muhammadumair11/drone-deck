@@ -1,0 +1,1 @@
+- Drone Deck: systems are no longer sorted into four kinds. A fresh install starts with no systems and opens the wizard, new systems are named from their pieces until you type a name, the last system can be deleted, and `systems.json` schema 4 renames an old starter name ("Local simulation") whose pieces no longer match it.

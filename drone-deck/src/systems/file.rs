@@ -1,11 +1,12 @@
-//! `systems.json`: schema 3 (`{schema, active, systems}`), written through `store.rs`.
-//! Older files are migrated on read: schema 1 (four fixed records and an active index) and
-//! schema 2 (one `source` per system, such as `{"kind":"gazebo","world":..,"model":..}`).
-use super::model::{self, KINDS, ROS, System, TEMPLATE_IDS, Vehicle};
+//! `systems.json`: schema 4 (`{schema, active, systems}`), written through `store.rs`.
+//! Older files are migrated on read: schema 1 (four fixed records and an active index),
+//! schema 2 (one `source` per system, such as `{"kind":"gazebo","world":..,"model":..}`) and
+//! schema 3 (the same shape; a starter's old name that no longer fits its pieces is renamed).
+use super::model::{self, ROS, STARTER_IDS, STARTER_NAMES, System, Vehicle};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-pub(crate) const SCHEMA: u32 = 3;
+pub(crate) const SCHEMA: u32 = 4;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub(crate) struct File {
@@ -31,8 +32,8 @@ struct V1Record {
     prepared: bool,
 }
 
-/// The four template systems with the first one active.
-pub(crate) fn defaults() -> File {
+/// The four starters with the first one active.
+pub(crate) fn starters() -> File {
     let systems = model::defaults();
     File {
         schema: SCHEMA,
@@ -60,9 +61,13 @@ pub(crate) fn parse(bytes: &[u8]) -> Result<Result<(File, bool), String>, String
         2 => {
             let file: File =
                 serde_json::from_value(migrate_v2(value)?).map_err(|e| e.to_string())?;
-            Ok(Ok((normalize(file), true)))
+            Ok(Ok((rename_starters(normalize(file)), true)))
         }
         3 => {
+            let file: File = serde_json::from_value(value).map_err(|e| e.to_string())?;
+            Ok(Ok((rename_starters(normalize(file)), true)))
+        }
+        4 => {
             let file: File = serde_json::from_value(value).map_err(|e| e.to_string())?;
             Ok(Ok((normalize(file), false)))
         }
@@ -105,17 +110,33 @@ fn migrate_v2(mut value: Value) -> Result<Value, String> {
     Ok(value)
 }
 
-/// Four systems from the templates, keeping each record's name and prepared flag. The 0.8
+/// Schema 3 → 4: a system still called by a starter's name ("Local simulation") whose
+/// vehicle or listeners no longer match that starter is renamed to its suggested name, once.
+/// Every other name is kept.
+pub(crate) fn rename_starters(mut file: File) -> File {
+    for sys in &mut file.systems {
+        let Some(kind) = STARTER_NAMES.iter().position(|n| *n == sys.name.trim()) else {
+            continue;
+        };
+        let starter = model::starter(kind, "", "");
+        if sys.vehicle != starter.vehicle || sys.consumers != starter.consumers {
+            sys.name = sys.suggested_name();
+        }
+    }
+    file
+}
+
+/// Four systems from the starters, keeping each record's name and prepared flag. The 0.8
 /// ROS system ran PX4 SIH with the DDS Agent, so its migrated source stays SIH.
 fn migrate(v1: V1) -> File {
     let mut systems = Vec::new();
-    for (kind, template) in TEMPLATE_IDS.iter().enumerate() {
+    for (kind, id) in STARTER_IDS.iter().enumerate() {
         let record = v1.records.get(kind);
         let name = record
             .map(|r| r.name.trim())
             .filter(|n| !n.is_empty())
-            .unwrap_or(KINDS[kind]);
-        let mut sys = model::template(kind, template, name);
+            .unwrap_or(STARTER_NAMES[kind]);
+        let mut sys = model::starter(kind, id, name);
         sys.prepared = record.is_some_and(|r| r.prepared);
         if kind == ROS {
             sys.vehicle = Vehicle::sih();
@@ -124,7 +145,7 @@ fn migrate(v1: V1) -> File {
     }
     File {
         schema: SCHEMA,
-        active: TEMPLATE_IDS[v1.active.min(3)].into(),
+        active: STARTER_IDS[v1.active.min(3)].into(),
         systems,
     }
 }
@@ -133,7 +154,9 @@ fn migrate(v1: V1) -> File {
 /// an active id that does not exist, a world id in another case or with empty details.
 pub(crate) fn normalize(mut file: File) -> File {
     if file.systems.is_empty() {
-        return defaults();
+        file.active.clear();
+        file.schema = SCHEMA;
+        return file;
     }
     let mut seen: Vec<String> = Vec::new();
     for sys in &mut file.systems {

@@ -1,0 +1,1 @@
+- Drone Deck: every listener choice now takes effect. Recordings capture on the active system's ROS domain and reuse its saved topics, each recording names the system that made it, "Record when the session starts" ends a simulated system's launch with a recording, Foxglove starts with the session, and Pipelines and a recording system's Start use the chosen project and recording.

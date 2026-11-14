@@ -66,7 +66,7 @@ fn the_temporary_system_flies_the_recorded_world_on_the_isolated_domain() {
         "only the autopilot takes the namespace"
     );
 
-    let normal = template(crate::systems::ROS, "lab", "Lab");
+    let normal = starter(crate::systems::ROS, "lab", "Lab");
     assert!(
         !crate::backend::launch_env("gazebo", &normal)
             .iter()
@@ -116,7 +116,7 @@ fn a_fresh_ardupilot_gets_its_own_domain_state_folder_and_the_recorded_home() {
     );
     assert_eq!(value("PX4_UXRCE_DDS_NS"), None);
 
-    let mut normal = template(crate::systems::ROS, "lab", "Lab");
+    let mut normal = starter(crate::systems::ROS, "lab", "Lab");
     normal.vehicle = Vehicle::ardupilot("copter");
     let env = crate::backend::launch_env("ardupilot", &normal);
     assert!(

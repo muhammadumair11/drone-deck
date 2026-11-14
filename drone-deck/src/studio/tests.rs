@@ -65,7 +65,7 @@ fn new_workspace_panels_fit_small_and_wide_windows() {
         for variant in 0..5 {
             rt.update(|s, _| {
                 if variant == 4 {
-                    s.select_system(crate::systems::PHYSICAL);
+                    s.select_starter(crate::systems::PHYSICAL);
                     s.navigate(crate::ui::Page::System);
                 } else {
                     s.ui.data_tab = variant;

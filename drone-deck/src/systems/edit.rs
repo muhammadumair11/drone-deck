@@ -29,6 +29,8 @@ pub(crate) struct Draft {
     pub live_view: bool,
     pub ros_agent: bool,
     pub recorder: bool,
+    /// Record when the session starts (simulated systems with the recorder).
+    pub record_on_start: bool,
     pub domain: TextEdit,
     pub inference: bool,
     pub project: TextEdit,
@@ -39,7 +41,7 @@ pub(crate) struct Draft {
 }
 impl Default for Draft {
     fn default() -> Self {
-        Self::of(&super::model::template(0, "", ""))
+        Self::of(&super::model::starter(super::model::SIMULATION, "", ""))
     }
 }
 
@@ -159,6 +161,7 @@ impl Draft {
             live_view: c.live_view,
             ros_agent: c.ros.agent,
             recorder: c.ros.recorder,
+            record_on_start: c.ros.record_on_start,
             domain: text(&c.ros.domain.to_string()),
             inference: c.inference.is_some(),
             project: text(
@@ -303,12 +306,16 @@ impl Draft {
         c.ros.agent = self.ros_agent;
         c.ros.recorder = self.recorder;
         c.ros.domain = domain;
+        c.ros.record_on_start = self.record_on_start && self.recorder && self.vehicle == 0;
         c.inference = self.inference.then(|| Inference {
             project: (!project.is_empty()).then(|| project.to_string()),
         });
         c.foxglove = self.foxglove;
         c.scripts_udp = self.scripts.then(|| scripts_udp.to_string());
         compat::prune(&mut sys);
+        if sys.vehicle != base.vehicle || sys.consumers != base.consumers {
+            sys.prepared = false;
+        }
         Ok(sys)
     }
 }

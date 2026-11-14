@@ -12,7 +12,7 @@
 //! One run at a time; it refuses to start while any other work or link runs.
 use super::{DOMAIN, HOME, Msg, NAMESPACE, VEHICLE_DOMAIN, recipe::Recipe, transfer};
 use crate::systems::adapter::{Adapter, AutopilotKind};
-use crate::systems::model::{Autopilot, Consumers, Ros, SCRATCH, World, template};
+use crate::systems::model::{Autopilot, Consumers, Ros, SCRATCH, World, starter};
 use crate::systems::{self, SIMULATION, System, Vehicle};
 use crate::{State, activity, vehicle};
 use serde_json::{Value, json};
@@ -165,7 +165,7 @@ impl Target {
 /// parameters, the recorded home position where the world takes one, the live view and ROS 2
 /// on the run's domain; no QGroundControl, scripts address, recorder or Foxglove.
 pub(crate) fn system_for(r: &Recipe, target: &Target) -> System {
-    let mut sys = template(
+    let mut sys = starter(
         SIMULATION,
         SCRATCH,
         &format!("Re-simulation of {}", r.system),
@@ -204,6 +204,7 @@ pub(crate) fn system_for(r: &Recipe, target: &Target) -> System {
             agent: true,
             recorder: false,
             domain: DOMAIN,
+            ..Default::default()
         },
         ..Default::default()
     };

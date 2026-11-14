@@ -39,7 +39,7 @@ impl Activity {
 }
 /// Adds an entry (newest first) and persists the bounded history.
 pub(crate) fn record(s: &mut State, text: impl Into<String>) {
-    let system = s.systems.name(s.systems.active).to_string();
+    let system = s.systems.current().label().to_string();
     s.activity.entries.push_front(Entry {
         time: now(),
         system,

@@ -479,32 +479,6 @@ fn the_heartbeat_age_ticks_only_while_it_is_drawn() {
     assert!(!follow(&mut s), "another system's link is not drawn here");
 }
 
-/// No page but System draws the age, so an open link with a silent vehicle never ticks the
-/// window elsewhere; neither does an AI system's page, which has no live view.
-#[test]
-fn the_heartbeat_age_never_ticks_off_the_system_page() {
-    use crate::ui::Page;
-    let mut s = State::new();
-    let id = s.systems.active_id().to_string();
-    s.vehicle.owner = Some(id);
-    s.vehicle.snapshot = Some(vehicle::fake_snapshot(false));
-    for page in [
-        Page::Tools,
-        Page::Data,
-        Page::Activity,
-        Page::Settings,
-        Page::Setup,
-    ] {
-        s.page = page;
-        assert!(!follow(&mut s), "only the System page draws the age");
-    }
-    assert!(s.select_system(crate::systems::AI));
-    let ai = s.systems.active_id().to_string();
-    s.vehicle.owner = Some(ai);
-    s.page = Page::System;
-    assert!(!follow(&mut s), "an AI system's page draws no live view");
-}
-
 fn texts(rt: &Runtime<State>) -> Vec<String> {
     rt.elements().into_iter().filter_map(|e| e.text).collect()
 }
@@ -534,8 +508,8 @@ fn a_launch_under_way_disables_actions_with_its_stage() {
     assert!(!t.iter().any(|x| x.contains("Start the workspace of a")));
 }
 
-/// ArduPilot has no MAVLink shell: its console is disabled with the reason, flight actions
-/// stay granted, and PX4's console is unchanged.
+/// ArduPilot has no MAVLink shell: its System page shows no console (and a console request is
+/// refused with the reason), flight actions stay granted, and PX4's console is unchanged.
 #[test]
 fn the_ardupilot_console_is_disabled_and_px4s_is_not() {
     let mut rt = runtime(scene(scene_ardupilot_console), (1440., 900.));
@@ -546,9 +520,8 @@ fn the_ardupilot_console_is_disabled_and_px4s_is_not() {
     );
     let reason = console::console_blocked(&rt.state).expect("console off");
     assert!(reason.contains("no MAVLink shell"), "{reason}");
-    assert!(rt.find("console-gate").is_some());
+    assert!(rt.find("console-gate").is_none() && rt.find("console-send").is_none());
     rt.state.vehicle.ui.console_input = TextEdit::new("ver all");
-    tap(&mut rt, "console-send");
     console::submit(&mut rt.state);
     assert!(rt.state.vehicle.ui.history.is_empty(), "nothing was sent");
     assert!(
@@ -623,9 +596,9 @@ fn a_px4_takeoff_waits_for_home() {
 #[test]
 fn a_launching_workspace_says_so_in_place_of_no_link() {
     let mut s = scene(|s| {
-        s.session = Some(crate::session::Launch::new(
-            crate::systems::SESSIONS[crate::systems::SIMULATION],
-        ));
+        s.session = Some(crate::session::Launch::new([
+            "sih", "router", "link", "qgc",
+        ]));
     });
     s.navigate(crate::ui::Page::System);
     let mut rt = runtime(s, (1440., 900.));

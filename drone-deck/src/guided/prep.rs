@@ -1,4 +1,4 @@
-//! Chapter 3, Preparation: check this computer, review the plan, apply it and follow the
+//! Chapter 4, Preparation: save the system, check this computer, apply the reviewed plan and follow the
 //! installation queue until every tool is verified and configured.
 use super::view::{Frame, frame, next};
 use super::*;
@@ -8,6 +8,7 @@ use crate::ui::theme::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Phase {
+    Unsaved,
     Start,
     Checking,
     Environment,
@@ -22,13 +23,15 @@ pub(super) fn phase(s: &State) -> Phase {
     let preset = s.setup.workflow == super::preset(s);
     if s.setup.batch.is_some() {
         Phase::Applying
-    } else if g.applied && preset && workflow::verified_all(s) {
+    } else if !saved(s) {
+        Phase::Unsaved
+    } else if g.applied && preset && workflow::verified_all(s) && !g.queue_unbound {
         Phase::Prepared
     } else if g.applied {
         Phase::Attention
     } else if g.check != Check::Idle {
         Phase::Checking
-    } else if g.choice != systems::PHYSICAL && s.setup.host.is_some() && !s.wsl_ready() {
+    } else if workflow::needs_wsl(s) && s.setup.host.is_some() && !s.wsl_ready() {
         Phase::Environment
     } else if preset && workflow::checked_all(s) {
         Phase::Review
@@ -38,6 +41,10 @@ pub(super) fn phase(s: &State) -> Phase {
 }
 
 fn start_check(s: &mut State) {
+    if !saved(s) {
+        s.guided.prep_error = "Save the configuration before checking its tools.".into();
+        return;
+    }
     if s.headless {
         s.guided.prep_error =
             "Headless preview: checking this computer is disabled; nothing was read or changed."
@@ -45,17 +52,22 @@ fn start_check(s: &mut State) {
         return;
     }
     s.guided.prep_error.clear();
+    s.guided.queue_unbound = false;
     s.guided.applied = false;
     s.guided.consent = false;
     use_preset(s);
     s.setup.batch_message.clear();
     crate::setup::request(s, "scan");
     s.guided.check = Check::Host;
-    let kind = systems::KINDS[s.guided.choice];
+    let kind = s.guided.draft.name.text.clone();
     activity::record(s, format!("Checked this computer for {kind}"));
 }
 
 fn apply(s: &mut State) {
+    if !saved(s) {
+        s.guided.prep_error = "Save the configuration before applying installation changes.".into();
+        return;
+    }
     if !s.guided.consent {
         s.guided.prep_error = "Review the changes and check the acknowledgement first.".into();
         return;
@@ -66,7 +78,7 @@ fn apply(s: &mut State) {
         s.guided.applied = true;
         s.guided.consent = false;
         s.guided.prep_error.clear();
-        let kind = systems::KINDS[s.guided.choice];
+        let kind = s.guided.draft.name.text.clone();
         activity::record(
             s,
             format!("Applied the reviewed preparation plan for {kind}"),
@@ -180,11 +192,15 @@ fn failed_job(s: &State) -> El {
 pub(super) fn view(s: &State, f: &Frame) -> El {
     let g = &s.guided;
     let compact = f.narrow();
-    let story = &STORIES[g.choice];
     let phase = phase(s);
-    let deps = workflow::dependencies(s, compact, story.builtin);
+    let deps = workflow::dependencies(s, compact, &[]);
     let groundwork = "Let us do the groundwork.";
     let (title, lead, note): (&str, String, &str) = match phase {
+        Phase::Unsaved => (
+            "Review your system.",
+            "Check the vehicle, world and listeners, then save this configuration. Installation is a separate step.".into(),
+            "Saving starts no tool or installation.",
+        ),
         Phase::Start | Phase::Checking => (
             groundwork,
             "First, check this computer for compatible tools. Existing installations stay intact. Nothing installs as a result of checking.".into(),
@@ -224,8 +240,25 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
             "Configured is not connected: run the system to verify its links.",
         ),
     };
-    let mut content = col().w_full().min_w(0.).gap(16.);
+    let summary = candidate(s)
+        .map(|sys| {
+            format!(
+                "{} / {}\nListeners: {}",
+                sys.name,
+                sys.summary(),
+                sys.consumers_summary()
+            )
+        })
+        .unwrap_or_else(|e| e);
+    let mut content = col()
+        .w_full()
+        .min_w(0.)
+        .gap(16.)
+        .child(p(summary, 13.).key("review-system-summary"));
     match phase {
+        Phase::Unsaved => {
+            content = content.child(deps);
+        }
         Phase::Start => {
             content = content.child(deps).child(jobs(s));
         }
@@ -309,14 +342,16 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
                 "continue-first-run",
                 "Continue to first run",
                 |s| {
-                    mark_prepared(s);
-                    go(s, RUN);
+                    if mark_prepared(s) {
+                        go(s, RUN);
+                    }
                 },
             )));
         }
     }
     content = content.child(error_line(s));
     let action = match phase {
+        Phase::Unsaved => next("Save system", !s.setup.active(), save_draft),
         Phase::Start | Phase::Environment => next("Check this computer", true, start_check),
         Phase::Checking => next("Checking…", false, |_| {}),
         Phase::Review => next("Apply reviewed plan", true, apply),
@@ -327,7 +362,7 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
     frame(
         s,
         f,
-        "03 / Prepare only what you need",
+        "04 / Review & install",
         title,
         &lead,
         content,

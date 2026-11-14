@@ -209,6 +209,27 @@ pub(crate) fn select(s: &mut State, id: &str) {
     p.image_topic = TextEdit::new(images.first().map_or("", String::as_str));
 }
 
+/// Points Pipelines at the active system: the project its inference listener links and, for
+/// a recording vehicle, its recording. A running job keeps its form.
+pub(crate) fn follow_system(s: &mut State) {
+    if s.studio.pipes.job.is_some() {
+        return;
+    }
+    let sys = s.systems.current();
+    let project = sys
+        .consumers
+        .inference
+        .as_ref()
+        .and_then(|i| i.project.clone());
+    let recording = sys.vehicle_recording().map(str::to_string);
+    if let Some(project) = project {
+        s.studio.pipes.project = TextEdit::new(project);
+    }
+    if let Some(id) = recording {
+        select(s, &id);
+    }
+}
+
 /// Adds or removes a topic from the extract selection.
 pub(crate) fn toggle_topic(s: &mut State, name: &str) {
     let mut topics = topic_list(&s.studio.pipes.topics.text);
@@ -548,6 +569,11 @@ pub(crate) fn poll(s: &mut State) -> bool {
                 p.runs = rows(&value["runs"]);
                 if p.selected.is_some() && p.recording().is_none() {
                     p.selected = None;
+                } else if let Some(id) = p.selected.clone()
+                    && p.topics.text.trim().is_empty()
+                {
+                    // Chosen before the list arrived (a recording vehicle): fill its topics.
+                    select(s, &id);
                 }
             }
             Msg::Listed(Err(e)) => {

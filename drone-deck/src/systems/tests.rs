@@ -1,4 +1,4 @@
-use super::model::{self, Consumers, Inference, Ros, TEMPLATE_IDS, template};
+use super::model::{self, Consumers, Inference, Ros, STARTER_IDS, starter};
 use super::*;
 
 fn set(d: &mut Draft, key: &str, value: &str) {
@@ -17,7 +17,7 @@ fn schema_1_migrates_to_four_systems_keeping_names_prepared_flags_and_active() {
     let v1 = br#"{"active":3,"records":[{"name":"Lab","prepared":true},{"name":"","prepared":true},{"name":"Models","prepared":false},{"name":"Bench quad","prepared":true}]}"#;
     let (f, migrated) = file::parse(v1).unwrap().unwrap();
     assert!(migrated);
-    assert_eq!(f.schema, 3);
+    assert_eq!(f.schema, file::SCHEMA);
     assert_eq!(f.systems.len(), 4);
     let names: Vec<_> = f.systems.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
@@ -27,17 +27,15 @@ fn schema_1_migrates_to_four_systems_keeping_names_prepared_flags_and_active() {
     let prepared: Vec<_> = f.systems.iter().map(|s| s.prepared).collect();
     assert_eq!(prepared, [true, true, false, true]);
     assert_eq!(f.active, "physical-vehicle");
-    let kinds: Vec<_> = f.systems.iter().map(System::kind).collect();
-    assert_eq!(kinds, [SIMULATION, ROS, AI, PHYSICAL]);
+    assert!(f.systems[PHYSICAL].is_physical() && f.systems[AI].is_replay());
     // The 0.8 ROS system ran SIH with the DDS Agent; a migrated one keeps working that way.
     assert_eq!(f.systems[ROS].vehicle, Vehicle::sih());
     assert_eq!(
         session_stages(&f.systems[ROS]),
-        ["sih", "router", "link", "dds", "qgc"]
+        ["sih", "router", "link", "dds", "foxglove", "qgc"]
     );
-    for (sys, template) in f.systems.iter().zip(TEMPLATE_IDS) {
-        assert_eq!(sys.template, template);
-        assert_eq!(sys.id, template);
+    for (sys, id) in f.systems.iter().zip(STARTER_IDS) {
+        assert_eq!(sys.id, id);
     }
 }
 
@@ -51,13 +49,13 @@ fn schema_1_without_records_and_an_out_of_range_index_still_migrates() {
 }
 
 #[test]
-fn schema_3_round_trips_and_newer_schemas_are_refused() {
-    let mut systems = Systems::default();
-    let id = systems.create(ROS, "Camera lab");
+fn schema_4_round_trips_and_newer_schemas_are_refused() {
+    let mut systems = Systems::starters();
+    let id = systems.add_starter(ROS, "Camera lab");
     systems.set_active(&id);
     let json = serde_json::to_vec(&systems.to_file()).unwrap();
     let text = String::from_utf8(json.clone()).unwrap();
-    assert!(text.contains(r#""schema":3"#), "{text}");
+    assert!(text.contains(r#""schema":4"#), "{text}");
     assert!(text.contains(r#""kind":"simulated""#), "{text}");
     assert!(text.contains(r#""id":"gazebo""#), "{text}");
     assert!(text.contains(r#""model":"x500_mono_cam""#), "{text}");
@@ -66,9 +64,8 @@ fn schema_3_round_trips_and_newer_schemas_are_refused() {
     assert_eq!(back, systems.to_file());
     let restored = Systems::from_file(back);
     assert_eq!(restored.active_id(), "camera-lab");
-    assert_eq!(restored.active, ROS);
 
-    let err = file::parse(br#"{"schema":4,"active":"x","systems":[]}"#)
+    let err = file::parse(br#"{"schema":5,"active":"x","systems":[]}"#)
         .expect("readable, not damaged")
         .unwrap_err();
     assert!(err.contains("newer Drone Deck"), "{err}");
@@ -81,10 +78,10 @@ fn a_newer_systems_file_is_kept_in_place_and_never_overwritten() {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("systems.json");
-    let body = br#"{"schema":4,"active":"x","systems":[{"id":"x"}]}"#;
+    let body = br#"{"schema":5,"active":"x","systems":[{"id":"x"}]}"#;
     std::fs::write(&path, body).unwrap();
     let systems = Systems::load_at(&path);
-    assert_eq!(systems.list, model::defaults(), "the defaults run");
+    assert!(systems.is_empty(), "nothing from it is used");
     let err = systems.save_at(&path).unwrap_err();
     assert!(err.contains("newer Drone Deck"), "{err}");
     assert_eq!(
@@ -117,28 +114,27 @@ fn a_hand_edited_file_is_repaired() {
     let (empty, _) = file::parse(br#"{"schema":2,"active":"","systems":[]}"#)
         .unwrap()
         .unwrap();
-    assert_eq!(
-        empty.systems.len(),
-        4,
-        "an empty list falls back to the templates"
+    assert!(
+        empty.systems.is_empty() && empty.active.is_empty(),
+        "an empty list stays empty: the wizard is offered"
     );
 }
 
 #[test]
 fn templates_reproduce_the_four_systems() {
-    let sim = template(SIMULATION, "a", "A");
+    let sim = starter(SIMULATION, "a", "A");
     assert_eq!(sim.vehicle, Vehicle::sih());
     assert!(sim.consumers.qgc && sim.consumers.live_view);
     assert_eq!(ids(&sim), ["sih", "router", "link", "qgc", "scripts"]);
     assert_eq!(chain_ids(&sim), ["sih", "router", "link", "qgc"]);
     assert_eq!(session_stages(&sim), ["sih", "router", "link", "qgc"]);
-    assert_eq!(session_stages(&sim), SESSIONS[SIMULATION]);
+    assert_eq!(session_stages(&sim), ["sih", "router", "link", "qgc"]);
     assert_eq!(
         crate::setup::presets::for_system(&sim).name,
         "PX4 SIH simulation"
     );
 
-    let ros = template(ROS, "b", "B");
+    let ros = starter(ROS, "b", "B");
     assert_eq!(ros.vehicle, Vehicle::gazebo("default", "x500_mono_cam"));
     assert!(ros.consumers.ros.agent && ros.consumers.ros.recorder && ros.consumers.foxglove);
     assert_eq!(
@@ -150,15 +146,22 @@ fn templates_reproduce_the_four_systems() {
     assert_eq!(chain_ids(&ros), ["gazebo", "dds", "ros2", "mcap"]);
     assert_eq!(
         session_stages(&ros),
-        ["gazebo", "router", "link", "dds", "rosgz", "qgc"]
+        [
+            "gazebo", "router", "link", "dds", "rosgz", "foxglove", "qgc"
+        ]
     );
-    assert_eq!(session_stages(&ros), SESSIONS[ROS]);
+    assert_eq!(
+        session_stages(&ros),
+        [
+            "gazebo", "router", "link", "dds", "rosgz", "foxglove", "qgc"
+        ]
+    );
     assert_eq!(
         crate::setup::presets::for_system(&ros).name,
         "PX4 + Gazebo with ROS 2 and recordings"
     );
 
-    let ai = template(AI, "c", "C");
+    let ai = starter(AI, "c", "C");
     assert_eq!(ai.vehicle, Vehicle::replay(None));
     assert_eq!(ai.consumers.inference, Some(Inference::default()));
     assert_eq!(chain_ids(&ai), ["onnx", "project", "pipelines"]);
@@ -168,7 +171,7 @@ fn templates_reproduce_the_four_systems() {
         "Offline CPU inference"
     );
 
-    let physical = template(PHYSICAL, "d", "D");
+    let physical = starter(PHYSICAL, "d", "D");
     assert!(!physical.consumers.qgc, "QGroundControl is optional");
     assert_eq!(chain_ids(&physical), ["endpoint", "link", "tlog"]);
     assert!(
@@ -179,15 +182,11 @@ fn templates_reproduce_the_four_systems() {
         crate::setup::presets::for_system(&physical).name,
         "Physical vehicle"
     );
-    assert_eq!(
-        [sim.kind(), ros.kind(), ai.kind(), physical.kind()],
-        [SIMULATION, ROS, AI, PHYSICAL]
-    );
 }
 
 #[test]
 fn components_chain_and_stages_follow_vehicle_and_consumers() {
-    let mut sys = template(SIMULATION, "x", "X");
+    let mut sys = starter(SIMULATION, "x", "X");
     sys.consumers.live_view = false;
     sys.consumers.scripts_udp = None;
     assert_eq!(chain_ids(&sys), ["sih", "router", "link", "qgc"]);
@@ -197,8 +196,8 @@ fn components_chain_and_stages_follow_vehicle_and_consumers() {
         agent: true,
         recorder: false,
         domain: 7,
+        ..Default::default()
     };
-    assert_eq!(sys.kind(), ROS);
     assert_eq!(chain_ids(&sys), ["sih", "dds", "ros2"]);
     assert_eq!(session_stages(&sys), ["sih", "router", "link", "dds"]);
     assert_eq!(
@@ -247,7 +246,7 @@ fn components_chain_and_stages_follow_vehicle_and_consumers() {
     assert_eq!(chain_ids(&sys), ["mcap"]);
     // Chains only list stations that are components.
     for k in 0..4 {
-        let t = template(k, "t", "T");
+        let t = starter(k, "t", "T");
         let comps = ids(&t);
         assert!(chain_ids(&t).iter().all(|c| comps.contains(c)));
     }
@@ -255,11 +254,11 @@ fn components_chain_and_stages_follow_vehicle_and_consumers() {
 
 #[test]
 fn create_rename_duplicate_and_delete() {
-    let mut systems = Systems::default();
+    let mut systems = Systems::starters();
     assert_eq!(systems.list.len(), 4);
-    let a = systems.create(SIMULATION, "  My Lab  ");
+    let a = systems.add_starter(SIMULATION, "  My Lab  ");
     assert_eq!(a, "my-lab");
-    let b = systems.create(SIMULATION, "My lab");
+    let b = systems.add_starter(SIMULATION, "My lab");
     assert_eq!(b, "my-lab-2", "ids stay unique");
     assert_eq!(systems.get(&a).unwrap().name, "My Lab");
 
@@ -293,39 +292,100 @@ fn create_rename_duplicate_and_delete() {
         systems.remove(&id).unwrap();
     }
     let last = systems.list[0].id.clone();
-    assert!(systems.remove(&last).is_err(), "the last system stays");
+    systems.remove(&last).unwrap();
+    assert!(
+        systems.is_empty(),
+        "the last system can go: the wizard is offered"
+    );
+    assert_eq!(systems.current().label(), "No system yet");
+    assert!(systems.current().is_replay() && session_stages(systems.current()).is_empty());
 }
 
 #[test]
-fn kind_lookups_answer_for_the_active_system() {
+fn a_fresh_library_is_empty_and_the_first_system_added_is_active() {
     let mut systems = Systems::default();
-    let id = systems.create(PHYSICAL, "Rig");
-    systems.get_mut(&id).unwrap().prepared = true;
-    systems.set_active(&id);
-    assert_eq!(systems.active, PHYSICAL);
-    assert_eq!(systems.name(PHYSICAL), "Rig");
-    assert!(systems.prepared(PHYSICAL));
-    assert_eq!(systems.name(AI), "Offline AI workspace");
+    assert!(systems.is_empty());
+    assert_eq!(systems.active_id(), "");
+    assert_eq!(systems.find(System::is_physical), None);
+    let mut rig = starter(PHYSICAL, "", "");
+    rig.name = "  ".into();
+    let id = systems.add(rig);
     assert_eq!(
-        systems.resolve(Pick::Kind(PHYSICAL)).as_deref(),
-        Some("rig")
+        (id.as_str(), systems.active_id()),
+        ("real-drone", "real-drone"),
+        "named from its pieces"
+    );
+    let sim = systems.add(starter(SIMULATION, "", "Lab"));
+    assert_eq!(
+        systems.active_id(),
+        "real-drone",
+        "only the first becomes active"
     );
     assert_eq!(
-        systems.resolve(Pick::Kind(AI)).as_deref(),
-        Some("offline-ai")
+        systems.find(System::simulated).as_deref(),
+        Some(sim.as_str())
     );
-    assert_eq!(systems.resolve(Pick::Id("nope")), None);
-    systems.get_mut(&id).unwrap().vehicle = Vehicle::sih();
-    systems.changed();
     assert_eq!(
-        systems.active, SIMULATION,
-        "the kind follows an edited vehicle"
+        systems.find(System::is_physical).as_deref(),
+        Some("real-drone"),
+        "the active one first"
     );
+    let f = systems.to_file();
+    assert_eq!((f.schema, f.systems.len()), (file::SCHEMA, 2));
+}
+
+#[test]
+fn names_come_from_the_pieces() {
+    assert_eq!(starter(SIMULATION, "", "").suggested_name(), "PX4 SIH");
+    assert_eq!(
+        starter(ROS, "", "").suggested_name(),
+        "PX4 + Gazebo + ROS 2"
+    );
+    assert_eq!(
+        starter(AI, "", "").suggested_name(),
+        "Recording replay + inference"
+    );
+    let mut real = starter(PHYSICAL, "", "");
+    assert_eq!(real.suggested_name(), "Real drone");
+    real.vehicle = Vehicle::physical("serial:COM7:57600");
+    assert_eq!(real.suggested_name(), "Real drone · COM7");
+    real.vehicle = Vehicle::physical("udp:0.0.0.0:14550");
+    assert_eq!(real.suggested_name(), "Real drone · UDP 14550");
+    let mut jmav = starter(SIMULATION, "", "");
+    jmav.vehicle = Vehicle::Simulated {
+        autopilot: model::Autopilot::Px4,
+        world: model::World::new("jmavsim", &[]),
+    };
+    jmav.consumers.ros.agent = true;
+    assert_eq!(jmav.suggested_name(), "PX4 + jMAVSim + ROS 2");
+}
+
+#[test]
+fn an_old_starter_name_that_no_longer_fits_is_renamed_once() {
+    let mut jmav = starter(SIMULATION, "local-simulation", "Local simulation");
+    jmav.vehicle = Vehicle::Simulated {
+        autopilot: model::Autopilot::Px4,
+        world: model::World::new("jmavsim", &[]),
+    };
+    let untouched = starter(PHYSICAL, "physical-vehicle", "Physical vehicle");
+    let mut mine = starter(SIMULATION, "mine", "My bench");
+    mine.vehicle = Vehicle::ardupilot("plane");
+    let v3 = serde_json::json!({"schema": 3, "active": "local-simulation",
+        "systems": [jmav, untouched, mine]});
+    let (f, migrated) = file::parse(v3.to_string().as_bytes()).unwrap().unwrap();
+    assert!(migrated);
+    let names: Vec<&str> = f.systems.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(names, ["PX4 + jMAVSim", "Physical vehicle", "My bench"]);
+    assert_eq!(f.systems[0].id, "local-simulation", "the id stays");
+    let again = serde_json::to_vec(&f).unwrap();
+    let (f2, migrated) = file::parse(&again).unwrap().unwrap();
+    assert!(!migrated, "schema 4 is not renamed again");
+    assert_eq!(f2, f);
 }
 
 #[test]
 fn the_editor_validates_vehicle_details_and_consumers() {
-    let base = template(SIMULATION, "lab", "Lab");
+    let base = starter(SIMULATION, "lab", "Lab");
     let mut d = Draft::of(&base);
     assert_eq!(d.apply(&base).unwrap(), base);
     d.world = "gazebo".into();
@@ -400,8 +460,11 @@ fn switching_while_work_runs_keeps_it_with_the_system_that_started_it() {
     poll(&mut s);
     assert!(owns_work(&s, &sim));
 
-    assert!(s.select_system(ROS), "switching is allowed while work runs");
-    assert_eq!(s.systems.active, ROS);
+    assert!(
+        s.select_starter(ROS),
+        "switching is allowed while work runs"
+    );
+    assert_eq!(s.systems.active_id(), "ros-sensor-capture");
     assert!(s.notice.contains("stays with the system"), "{}", s.notice);
     assert_eq!(s.status.get("sih").map(String::as_str), Some("Running"));
     assert!(owns_work(&s, &sim));
@@ -423,18 +486,18 @@ fn switching_while_work_runs_keeps_it_with_the_system_that_started_it() {
 #[test]
 fn a_physical_system_fills_the_monitor_endpoint_when_selected() {
     let mut s = State::new();
-    let id = s.systems.create(PHYSICAL, "Rig");
+    let id = s.systems.add_starter(PHYSICAL, "Rig");
     s.systems.get_mut(&id).unwrap().vehicle = Vehicle::physical("serial:COM7:57600");
     assert!(s.select_system(&id));
     assert_eq!(s.hardware.mode, 1);
     assert_eq!(s.hardware.endpoint.text, "serial:COM7:57600");
-    assert!(s.select_system(SIMULATION));
+    assert!(s.select_starter(SIMULATION));
     assert_eq!(s.hardware.mode, 0);
 }
 
 #[test]
 fn the_editor_drops_consumers_it_hides_for_the_vehicle() {
-    let base = template(SIMULATION, "lab", "Lab");
+    let base = starter(SIMULATION, "lab", "Lab");
     let mut d = Draft::of(&base);
     d.ros_agent = true;
     d.domain = rune::TextEdit::new("not a number");
@@ -469,7 +532,7 @@ fn the_editor_drops_consumers_it_hides_for_the_vehicle() {
 
 #[test]
 fn vehicle_details_reject_paths_options_and_bad_ports() {
-    let base = template(SIMULATION, "lab", "Lab");
+    let base = starter(SIMULATION, "lab", "Lab");
     let mut d = Draft::of(&base);
     d.world = "gazebo".into();
     for bad in ["..", "-world", "../etc", ".hidden", ""] {
@@ -505,7 +568,7 @@ fn a_second_launch_never_replaces_one_in_progress() {
     let mut s = State::new();
     let sim = s.systems.active_id().to_string();
     assert!(s.bundle(session_stages(s.systems.current())));
-    assert!(s.select_system(ROS));
+    assert!(s.select_starter(ROS));
     let ros = s.systems.active_id().to_string();
     assert!(
         !s.bundle(session_stages(s.systems.current())),
@@ -541,7 +604,7 @@ fn claims_of_a_launch_that_stopped_early_are_forgotten() {
     for key in ["sih", "router", "link", "qgc", "session"] {
         assert_eq!(s.systems.owner(key), None, "{key}");
     }
-    assert!(s.select_system(ROS));
+    assert!(s.select_starter(ROS));
     s.status.insert("dds".into(), "Running".into());
     poll(&mut s);
     assert_eq!(s.systems.owner("dds"), Some(s.systems.active_id()));
@@ -559,7 +622,7 @@ fn a_running_pipeline_job_is_owned_work_that_stop_session_cancels() {
     assert_eq!(crate::ui::session_label(&s), "pipeline job");
 
     // Switching keeps the job; the notice says the work stays.
-    assert!(s.select_system(PHYSICAL));
+    assert!(s.select_starter(PHYSICAL));
     assert!(s.notice.contains("Running work stays"), "{}", s.notice);
     assert!(s.studio.pipes.job.is_some());
 
@@ -596,7 +659,7 @@ fn a_physical_scripts_address_off_this_computer_is_cautioned_not_refused() {
         assert!(off_this_computer(remote), "{remote}");
     }
 
-    let base = template(PHYSICAL, "rig", "Rig");
+    let base = starter(PHYSICAL, "rig", "Rig");
     let mut d = Draft::of(&base);
     d.vehicle = 1;
     d.scripts = true;
@@ -630,7 +693,7 @@ fn a_physical_scripts_address_off_this_computer_is_cautioned_not_refused() {
 /// address is refused with its own reason instead of being saved and silently not forwarded.
 #[test]
 fn a_scripts_address_the_link_cannot_forward_to_is_refused_with_its_reason() {
-    let base = template(PHYSICAL, "rig", "Rig");
+    let base = starter(PHYSICAL, "rig", "Rig");
     let mut d = Draft::of(&base);
     d.vehicle = 1;
     d.scripts = true;
@@ -667,55 +730,6 @@ fn a_scripts_address_the_link_cannot_forward_to_is_refused_with_its_reason() {
     assert!(d.apply(&base).is_ok());
 }
 
-/// UI-08 in the editor: a host name shows its reason under the field, not the caution, and
-/// Save keeps the editor open with the old address.
-#[test]
-fn the_system_editor_refuses_a_host_name_scripts_address_under_the_field() {
-    use crate::ui::Page;
-    use rune::{Env, Runtime};
-    let mut s = State::new();
-    s.navigate(Page::Settings);
-    let id = s.systems.create(PHYSICAL, "Host rig");
-    let before = s.systems.get(&id).unwrap().consumers.scripts_udp.clone();
-    let mut d = s.systems.get(&id).map(Draft::of).unwrap();
-    d.scripts = true;
-    d.scripts_udp = rune::TextEdit::new("ground-pc:14540");
-    s.systems.editor = Some(d);
-    let mut rt = Runtime::new(
-        s,
-        crate::view,
-        (1440., 900.),
-        Env {
-            scale: 1.,
-            system_dark: true,
-        },
-    );
-    rt.update(|_, tx| tx.scroll_into_view("system-scripts"));
-    for _ in 0..10 {
-        rt.frame(0.1);
-    }
-    assert!(rt.find("system-scripts-invalid").is_some());
-    assert!(rt.find("system-scripts-network").is_none());
-    rt.update(|_, tx| tx.scroll_into_view("system-save"));
-    for _ in 0..10 {
-        rt.frame(0.1);
-    }
-    let (x, y) = rt.find("system-save").expect("save");
-    rt.pointer_down(x, y);
-    rt.pointer_up(x, y);
-    rt.frame(0.1);
-    let editor = rt.state.systems.editor.as_ref().expect("still editing");
-    assert!(
-        editor.error.contains("Host names are not resolved"),
-        "{}",
-        editor.error
-    );
-    assert_eq!(
-        rt.state.systems.get(&id).unwrap().consumers.scripts_udp,
-        before
-    );
-}
-
 /// UI-02 in the editor: the caution shows under the scripts address and is repeated on save.
 #[test]
 fn the_system_editor_cautions_a_network_scripts_address_on_a_physical_system() {
@@ -723,7 +737,7 @@ fn the_system_editor_cautions_a_network_scripts_address_on_a_physical_system() {
     use rune::{Env, Runtime};
     let mut s = State::new();
     s.navigate(Page::Settings);
-    let id = s.systems.create(PHYSICAL, "Bench rig");
+    let id = s.systems.add_starter(PHYSICAL, "Bench rig");
     let mut d = s.systems.get(&id).map(Draft::of).unwrap();
     d.scripts = true;
     d.scripts_udp = rune::TextEdit::new("192.168.1.20:14540");
@@ -766,5 +780,54 @@ fn the_system_editor_cautions_a_network_scripts_address_on_a_physical_system() {
             .scripts_udp
             .as_deref(),
         Some("192.168.1.20:14540")
+    );
+}
+
+#[test]
+fn foxglove_and_automatic_recording_start_with_the_session() {
+    let mut sys = starter(ROS, "lab", "Lab");
+    sys.consumers.qgc = false;
+    assert_eq!(
+        session_stages(&sys),
+        ["gazebo", "router", "link", "dds", "rosgz", "foxglove"],
+        "Foxglove starts with the session when chosen"
+    );
+    sys.consumers.ros.record_on_start = true;
+    assert_eq!(
+        session_stages(&sys).last(),
+        Some(&"mcap"),
+        "recording waits for the others"
+    );
+    sys.consumers.ros.recorder = false;
+    assert!(
+        !session_stages(&sys).contains(&"mcap"),
+        "no recorder, no automatic recording"
+    );
+    sys.consumers.foxglove = false;
+    assert!(!session_stages(&sys).contains(&"foxglove"));
+}
+
+#[test]
+fn record_on_start_is_kept_only_for_a_simulated_system_with_the_recorder() {
+    let base = starter(ROS, "lab", "Lab");
+    let mut d = Draft::of(&base);
+    d.record_on_start = true;
+    assert!(d.apply(&base).unwrap().consumers.ros.record_on_start);
+    d.recorder = false;
+    assert!(!d.apply(&base).unwrap().consumers.ros.record_on_start);
+    d.recorder = true;
+    d.vehicle = 1;
+    d.endpoint = rune::TextEdit::new("udp:0.0.0.0:14550");
+    assert!(
+        !d.apply(&base).unwrap().consumers.ros.record_on_start,
+        "a real drone has no launch to record from"
+    );
+    let mut saved = base.clone();
+    saved.consumers.ros.topics = vec!["/imu".into()];
+    let d = Draft::of(&saved);
+    assert_eq!(
+        d.apply(&saved).unwrap().consumers.ros.topics,
+        ["/imu"],
+        "editing keeps the topics"
     );
 }

@@ -4,6 +4,7 @@ fn failed_workflow_step_pauses_without_starting_later_installations() {
     let mut s = State::new();
     let before = serde_json::to_string(&s.config).unwrap();
     s.setup.batch = Some(Batch {
+        system: None,
         remaining: vec![2],
         waiting: Some("fixture".into()),
         distro: s.setup.distro.text.clone(),
@@ -32,6 +33,7 @@ fn workflow_review_is_noninstalling_in_preview() {
 fn interrupted_handoff_does_not_duplicate_an_installation() {
     let mut s = State::new();
     s.setup.batch = Some(Batch {
+        system: None,
         remaining: vec![2],
         waiting: Some("starting:px4".into()),
         distro: s.setup.distro.text.clone(),
@@ -45,6 +47,7 @@ fn interrupted_handoff_does_not_duplicate_an_installation() {
 fn ready_job_waits_for_configuration_before_next_component() {
     let mut s = State::new();
     s.setup.batch = Some(Batch {
+        system: None,
         remaining: vec![2],
         waiting: Some("fixture".into()),
         distro: s.setup.distro.text.clone(),
@@ -65,6 +68,7 @@ fn checkpoints_name_recipes_and_presets_and_refuse_unknown_ones() {
     let position = |s: &State, id: &str| s.setup.recipes.iter().position(|r| r.id == id).unwrap();
     s.setup.workflow = crate::guided::template_preset(crate::systems::ROS);
     s.setup.batch = Some(Batch {
+        system: Some("ros-sensor-capture".into()),
         remaining: vec![position(&s, "ros-gz"), position(&s, "ros-workspace")],
         waiting: Some("20260101T120000-0123abcd".into()),
         distro: "Ubuntu-24.04".into(),
@@ -86,6 +90,7 @@ fn checkpoints_name_recipes_and_presets_and_refuse_unknown_ones() {
     );
     assert_eq!(batch.waiting(), Some("20260101T120000-0123abcd"));
     assert_eq!(back.setup.workflow, s.setup.workflow);
+    assert_eq!(batch.system.as_deref(), Some("ros-sensor-capture"));
 
     // A recipe the catalog no longer has (queued or in the preset), an unknown preset name
     // without a recipe list and the older format that kept catalog positions all ask for a

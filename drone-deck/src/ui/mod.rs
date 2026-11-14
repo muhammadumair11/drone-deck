@@ -4,6 +4,7 @@ use super::*;
 pub(crate) mod kit;
 mod pages;
 pub(crate) use pages::series_plot;
+pub(crate) use pages::workspace_scene;
 mod settings;
 #[cfg(test)]
 mod tests;
@@ -89,7 +90,7 @@ pub(crate) fn session_label(s: &State) -> String {
 /// The environment line of the rail and (with `top`, longer) the top bar, so both always say
 /// the same thing: Windows native for a physical vehicle, else the WSL state.
 pub(crate) fn env_label(s: &State, top: bool) -> String {
-    if s.systems.active == systems::PHYSICAL {
+    if s.systems.current().is_physical() {
         if top {
             "Windows native / no WSL required".into()
         } else {
@@ -389,7 +390,11 @@ fn system_menu(s: &State, vp: &Viewport) -> El {
                 crate::guided::new_system(s)
             })
             .child(caps("New system…", 11., 500., 0.045, fg()))
-            .child(meta_sized("Guided setup from a template", 9., muted())),
+            .child(meta_sized(
+                "Choose its vehicle, world and listeners",
+                9.,
+                muted(),
+            )),
         )
         .child(
             menu_option("system-manage".into(), "Manage systems", false, |s| {

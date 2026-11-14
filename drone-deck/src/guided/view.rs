@@ -1,9 +1,8 @@
 //! Guided setup surface: its own top bar, the chapter journey, a shared chapter frame, the
-//! starting-point rows of the Vehicle chapter and the page that holds a chapter.
+//! Vehicle chapter and the page that holds a chapter.
 use super::*;
 use crate::ui::kit::*;
 use crate::ui::theme::*;
-use rune::Color;
 
 /// Gutter and breakpoints of `Design/system-setup.html` (920px and 600px).
 pub(super) struct Frame {
@@ -58,7 +57,7 @@ pub(crate) fn header(s: &State, vp: &ui::theme::Viewport) -> El {
             .group_color(fg_hover())
             .wrap(),
         );
-    let label = s.guided.name.text.trim();
+    let label = s.guided.draft.name.text.trim();
     let mut bar = row()
         .key("topbar")
         .w_full()
@@ -103,8 +102,14 @@ fn journey(s: &State, f: &Frame) -> El {
         .px(if f.narrow() { 22. } else { 24. })
         .mt(if f.narrow() { 12. } else { 24. });
     for (i, name) in CHAPTERS.iter().enumerate() {
+        let name = if f.narrow() && i == REVIEW {
+            "Review"
+        } else {
+            *name
+        };
         let current = i == s.guided.chapter;
-        let enabled = i <= s.guided.chapter;
+        let skipped = i == 1 && s.guided.draft.vehicle != 0;
+        let enabled = i <= s.guided.chapter && !skipped;
         let number = format!("0{} /", i + 1);
         let color = if current { fg() } else { muted() };
         let size = if f.narrow() { 9. } else { 10. };
@@ -113,7 +118,8 @@ fn journey(s: &State, f: &Frame) -> El {
                 .gap(6.)
                 .child(caps(number, size, 500., 0.08, color).group_color(fg()))
                 .child(
-                    caps(*name, size, 500., 0.08, color)
+                    caps(name, size, 500., 0.08, color)
+                        .key(format!("chapter-label-{i}"))
                         .group_color(fg())
                         .wrap(),
                 )
@@ -220,120 +226,6 @@ pub(super) fn frame(
 /// The main chapter action (key `next`): a large pill.
 pub(super) fn next(name: &str, enabled: bool, on: impl Fn(&mut State) + 'static) -> El {
     pill_sized("next", name, enabled, true, on)
-}
-
-pub(super) fn intent_row(s: &State, i: usize, f: &Frame) -> El {
-    let story = &STORIES[i];
-    let selected = s.guided.choice == i;
-    let locked = s.setup.active();
-    let circle = el()
-        .size(18., 18.)
-        .center()
-        .radius(9.)
-        .border(1., if selected { fg() } else { rule() })
-        .a11y_hidden()
-        .child(
-            el().size(8., 8.)
-                .radius(4.)
-                .fill(if selected { fg() } else { Color::TRANSPARENT }),
-        );
-    let name = caps(
-        story.name,
-        if f.medium() { 19. } else { 22. },
-        700.,
-        0.02,
-        fg(),
-    )
-    .wrap();
-    let desc = col()
-        .w_full()
-        .min_w(0.)
-        .gap(4.)
-        .child(p(story.desc, 11.))
-        .child(meta(story.tag).wrap());
-    let number = meta(format!("0{}", i + 1));
-    let mut r = row()
-        .key(format!("intent-{i}"))
-        .role("radio")
-        .label(story.name)
-        .checked(selected)
-        .w_full()
-        .min_w(0.)
-        .min_h(if f.w >= 1600. { 120. } else { 88. })
-        .py(if f.narrow() { 20. } else { 18. })
-        .px(if f.narrow() { 8. } else { 16. })
-        .center_y()
-        .border_sides([1., 0., if i == 3 { 1. } else { 0. }, 0.], rule())
-        .fill(if selected { soft() } else { Color::TRANSPARENT });
-    r = if f.narrow() {
-        r.gap(14.)
-            .child(number.w(24.))
-            .child(col().grow(1.).min_w(0.).gap(8.).child(name).child(desc))
-            .child(circle)
-    } else {
-        let gap = if f.medium() { 16. } else { 24. };
-        r.gap(gap)
-            .child(number.w(if f.medium() { 36. } else { 52. }))
-            .child(col().grow(1.).w(0.).min_w(0.).child(name))
-            .child(
-                col()
-                    .grow(if f.medium() { 1. } else { 1.1 })
-                    .w(0.)
-                    .min_w(0.)
-                    .child(desc),
-            )
-            .child(circle)
-    };
-    if locked && !selected {
-        return r.disabled(true).dim(0.45);
-    }
-    r.focusable(true)
-        .cursor(rune::Cursor::Pointer)
-        .hover(fg().alpha(0.06))
-        .focus_ring(2., 2., fg())
-        .on_press(move |s: &mut State| choose(s, i))
-}
-
-fn choose(s: &mut State, i: usize) {
-    if !s.setup.active() {
-        set_choice(s, i);
-    }
-}
-
-/// Why the system choice is locked, naming what the running installation belongs to.
-pub(super) fn locked_note(s: &State) -> String {
-    let after = "Other systems can be chosen after it finishes or is cancelled.";
-    if s.setup.batch.is_none() {
-        return format!("An installation job is running. {after}");
-    }
-    match batch_system(s) {
-        Some(kind) => format!(
-            "An installation queue is running for {}. {after}",
-            STORIES[kind].name
-        ),
-        None => format!(
-            "An installation queue is running for {}. {after}",
-            s.setup.workflow.name
-        ),
-    }
-}
-
-/// Which saved system this preparation creates or updates.
-pub(super) fn scope_note(s: &State) -> String {
-    let base = s.guided.base.as_deref().and_then(|id| s.systems.get(id));
-    match (base, target(s)) {
-        (Some(b), Some(t)) if b.id == t.id => format!(
-            "Preparing {}. Choosing another outcome prepares a new system; {} stays as it is.",
-            t.label(),
-            t.label()
-        ),
-        (_, Some(t)) => format!("Preparing {}.", t.label()),
-        (Some(b), None) => format!(
-            "Creates a new system from this template when you name it. {} stays as it is.",
-            b.label()
-        ),
-        (None, None) => "Creates a new system from this template when you name it.".into(),
-    }
 }
 
 fn footer(s: &State, f: &Frame) -> El {

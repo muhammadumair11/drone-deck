@@ -194,6 +194,22 @@ fn retry_retains_original_target_location_and_distribution() {
     assert_eq!(s.setup.recipes[s.setup.selected].id, "mavsdk");
     assert!(s.setup.review);
 }
+
+#[test]
+fn an_obsolete_probe_is_discarded_even_before_the_wizard_poll_runs() {
+    let mut s = State::new();
+    crate::guided::new_system(&mut s);
+    s.setup.probe_context = Some(crate::guided::lifecycle::check_context(&s));
+    s.guided.draft.world = "jmavsim".into();
+    apply_event(
+        &mut s,
+        json!({"ok":true,"action":"detect","data":{
+            "tool":"px4","found":true,"compatible":true,"path":"/px4"
+        }}),
+    );
+    assert!(!s.setup.checks.contains_key("px4"));
+    assert!(s.setup.candidate.is_none());
+}
 #[test]
 fn wizard_shows_real_results_without_promoting_process_state_to_connection() {
     let mut s = State::new();
@@ -263,9 +279,9 @@ fn check_progress_never_underflows_when_the_queue_outgrows_the_preset() {
 fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
     let s = State::new();
     let mut systems: Vec<crate::systems::System> = (0..4)
-        .map(|k| crate::systems::model::template(k, "t", "T"))
+        .map(|k| crate::systems::model::starter(k, "t", "T"))
         .collect();
-    let mut ap = crate::systems::model::template(0, "a", "A");
+    let mut ap = crate::systems::model::starter(0, "a", "A");
     ap.vehicle = crate::systems::Vehicle::ardupilot("copter");
     systems.push(ap);
     for sys in &systems {
@@ -302,6 +318,7 @@ fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
             "ros-gz",
             "dds",
             "ros-workspace",
+            "foxglove-bridge",
             "qgc"
         ]
     );

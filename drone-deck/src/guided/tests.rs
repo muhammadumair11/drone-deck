@@ -1,153 +1,282 @@
+use super::tasks::{Task, tasks};
 use super::*;
 use crate::recordings::{Session, Topic};
 
-/// Guided setup at First run for `kind`, with `kind` as the active system.
-fn first_run(kind: usize, task: usize) -> State {
-    let mut s = State::new();
-    assert!(s.select_system(kind));
-    s.guided.choice = kind;
-    s.guided.base = Some(s.systems.active_id().to_string());
-    s.guided.existing = s.guided.base.clone();
-    s.guided.chapter = RUN;
-    s.guided.task = task;
-    s
-}
-
-fn topic(name: &str) -> Topic {
-    Topic {
-        name: name.into(),
-        ..Default::default()
+fn ready_checks(s: &mut State) {
+    use_preset(s);
+    for id in s.setup.workflow.recipes.clone() {
+        s.setup.checks.insert(
+            id.clone(),
+            setup::Candidate {
+                tool: id,
+                found: true,
+                compatible: true,
+                ..Default::default()
+            },
+        );
     }
 }
-
-#[test]
-fn changing_the_system_drops_a_tool_check_queued_for_another_preset() {
+fn first_run(kind: usize, task: Task) -> State {
     let mut s = State::new();
-    s.setup.workflow = template_preset(systems::ROS);
-    s.setup.queue = setup::workflow::ids(&s)
+    s.select_starter(kind);
+    open(&mut s);
+    s.guided.chapter = RUN;
+    s.guided.task = tasks(&s)
         .iter()
-        .filter_map(|id| s.setup.recipe_index(id))
-        .collect();
-    s.guided.choice = systems::ROS;
-    s.guided.check = Check::Tools;
-    set_choice(&mut s, systems::AI);
-    assert!(s.setup.queue.is_empty());
-    assert_eq!(s.guided.check, Check::Idle);
-    use_preset(&mut s);
-    assert_eq!(s.setup.workflow, template_preset(systems::AI));
+        .position(|t| *t == task)
+        .expect("task exists");
+    s
+}
+#[test]
+fn new_system_is_unsaved_until_review_and_saved_only_once() {
+    let mut s = State::new();
+    new_system(&mut s);
+    s.guided.draft.name = TextEdit::new("Lab");
+    s.guided.draft.world = "jmavsim".into();
+    go(&mut s, REVIEW);
+    assert_eq!(s.systems.list.len(), 4);
+    assert_eq!(prep::phase(&s), prep::Phase::Unsaved);
+    save_draft(&mut s);
+    assert!(saved(&s));
+    assert_eq!(s.systems.list.len(), 5);
+    assert_eq!(target(&s).unwrap().adapter().unwrap().id, "px4-jmavsim");
+    save_draft(&mut s);
+    assert_eq!(s.systems.list.len(), 5);
+    assert!(s.setup.jobs.is_empty());
 }
 
 #[test]
-fn preparing_while_work_runs_switches_without_stopping_it() {
+fn save_failures_rollback_new_and_existing_systems_and_keep_the_draft() {
     let mut s = State::new();
+    new_system(&mut s);
+    s.guided.draft.name = TextEdit::new("Unsaved lab");
+    lifecycle::save_with(&mut s, |_, _| Err("disk full".into()));
+    assert_eq!(s.systems.list.len(), 4);
+    assert!(s.guided.existing.is_none());
+    assert_eq!(s.guided.draft.name.text, "Unsaved lab");
+    assert!(s.guided.prep_error.contains("disk full"));
+    s.guided.opened_for.clear();
+    open(&mut s);
+    let old = target(&s).unwrap().clone();
+    s.guided.draft.vehicle = 1;
+    lifecycle::save_with(&mut s, |_, _| Err("read only".into()));
+    assert_eq!(target(&s), Some(&old));
+    assert_eq!(s.guided.draft.vehicle, 1);
+    assert!(!saved(&s));
+}
+
+#[test]
+fn configuration_change_invalidates_prepared_but_rename_does_not() {
+    let mut s = State::new();
+    s.systems.list[0].prepared = true;
+    open(&mut s);
+    s.guided.draft.name = TextEdit::new("Renamed");
+    save_draft(&mut s);
+    assert!(target(&s).unwrap().prepared);
+    s.guided.draft.qgc = false;
+    save_draft(&mut s);
+    assert!(!target(&s).unwrap().prepared);
+}
+
+#[test]
+fn switching_active_system_loads_its_saved_configuration() {
+    let mut s = State::new();
+    open(&mut s);
+    s.guided.draft.name = TextEdit::new("Unfinished");
+    s.select_starter(systems::PHYSICAL);
+    open(&mut s);
+    assert_eq!(s.guided.existing.as_deref(), Some("physical-vehicle"));
+    assert_eq!(s.guided.draft.vehicle, 1);
+}
+
+#[test]
+fn all_simulator_variants_compute_requirements_from_the_draft() {
+    for (pilot, world, required) in [
+        (systems::adapter::AutopilotKind::Px4, "internal", "px4"),
+        (systems::adapter::AutopilotKind::Px4, "gazebo", "gazebo"),
+        (systems::adapter::AutopilotKind::Px4, "jmavsim", "jmavsim"),
+        (
+            systems::adapter::AutopilotKind::ArduPilot,
+            "internal",
+            "ardupilot",
+        ),
+    ] {
+        let mut s = State::new();
+        new_system(&mut s);
+        s.guided.draft.autopilot = pilot;
+        s.guided.draft.world = world.into();
+        assert!(preset(&s).recipes.contains(&required.to_string()));
+        assert!(s.guided.existing.is_none());
+    }
+}
+#[test]
+fn editing_vehicle_keeps_identity_and_preserves_user_name() {
+    let mut s = State::new();
+    open(&mut s);
+    let id = s.systems.active_id().to_string();
+    s.guided.draft.vehicle = 1;
+    s.guided.draft.name = TextEdit::new("Bench quad");
+    save_draft(&mut s);
+    assert_eq!(s.guided.existing.as_deref(), Some(id.as_str()));
+    assert_eq!(s.systems.list.len(), 4);
+    assert!(target(&s).unwrap().is_physical());
+    assert_eq!(target(&s).unwrap().name, "Bench quad");
+}
+#[test]
+fn configuration_changes_clear_evidence_consent_and_pending_checks() {
+    let mut s = State::new();
+    open(&mut s);
+    s.guided.consent = true;
+    s.guided.done = true;
+    s.guided.evidence.push("old".into());
+    s.guided.check = Check::Tools;
+    s.setup.pending = true;
+    s.setup.queue.push(0);
+    s.guided.draft.world = "jmavsim".into();
+    reconcile(&mut s);
+    assert!(!s.guided.consent && !s.guided.done);
+    assert!(s.guided.evidence.is_empty() && s.setup.queue.is_empty());
+    assert!(s.setup.discard_detect);
+    assert!(!saved(&s));
+}
+#[test]
+fn rename_preserves_verification_but_requires_an_explicit_save() {
+    let mut s = State::new();
+    open(&mut s);
+    s.guided.evidence.push("fresh heartbeat".into());
+    s.guided.consent = true;
+    s.guided.draft.name = TextEdit::new("Renamed");
+    assert!(!reconcile(&mut s));
+    assert!(s.guided.consent && !s.guided.evidence.is_empty());
+    assert!(!saved(&s));
+    save_draft(&mut s);
+    assert!(saved(&s));
+}
+#[test]
+fn back_reopen_and_restart_have_predictable_identity() {
+    let mut s = State::new();
+    open(&mut s);
+    s.guided.draft.world = "jmavsim".into();
+    s.guided.draft.name = TextEdit::new("Unfinished");
+    go(&mut s, 0);
+    s.navigate(ui::Page::Data);
+    open(&mut s);
+    assert_eq!(s.guided.draft.name.text, "Unfinished");
+    assert_eq!(s.guided.draft.world, "jmavsim");
+    restart(&mut s);
+    assert_eq!(s.guided.draft.world, "internal");
+    new_system(&mut s);
+    s.guided.draft.vehicle = 2;
+    go(&mut s, 1);
+    assert_eq!(s.guided.chapter, 2);
+    restart(&mut s);
+    assert!(s.guided.existing.is_none());
+    assert_eq!(s.guided.draft.vehicle, 0);
+}
+#[test]
+fn temporarily_switching_vehicle_preserves_world_and_endpoint_fields() {
+    let mut s = State::new();
+    new_system(&mut s);
+    s.guided.draft.world = "gazebo".into();
+    s.guided.draft.endpoint = TextEdit::new("serial:COM4:115200");
+    s.guided.draft.vehicle = 1;
+    reconcile(&mut s);
+    s.guided.draft.vehicle = 0;
+    reconcile(&mut s);
+    assert_eq!(s.guided.draft.world, "gazebo");
+    assert_eq!(s.guided.draft.endpoint.text, "serial:COM4:115200");
+}
+#[test]
+fn running_vehicle_blocks_reconfiguration_without_stopping_processes() {
+    let mut s = State::new();
+    open(&mut s);
     s.systems.claim("sih");
     s.status.insert("sih".into(), "Running".into());
-    s.page = ui::Page::System;
-    open(&mut s);
-    assert_eq!(s.guided.existing.as_deref(), Some("local-simulation"));
-    set_choice(&mut s, systems::ROS);
-    assert!(
-        s.guided.existing.is_none(),
-        "another template prepares a new system"
-    );
-    s.guided.name = TextEdit::new("Lab");
-    open_workspace(&mut s);
-    assert_eq!(s.page, ui::Page::System);
-    let lab = s.systems.get("lab").expect("created from the ROS template");
-    assert!(lab.prepared);
-    assert_eq!(lab.template, "ros-sensor-capture");
-    assert_eq!(s.systems.active_id(), "lab");
-    assert_eq!(s.status.get("sih").map(String::as_str), Some("Running"));
-    assert_eq!(s.systems.owner("sih"), Some("local-simulation"));
-    assert!(
-        !s.systems.get("ros-sensor-capture").unwrap().prepared,
-        "the template system was not touched"
-    );
+    s.guided.draft.vehicle = 1;
+    save_draft(&mut s);
+    assert!(target(&s).unwrap().simulated());
+    assert!(s.guided.prep_error.contains("Stop"));
+    assert_eq!(s.status["sih"], "Running");
 }
-
 #[test]
-fn first_run_needs_its_system_active() {
-    let mut s = first_run(systems::ROS, 0);
-    assert!(s.select_system(systems::SIMULATION));
+fn missing_target_does_not_recreate_a_deleted_system() {
+    let mut s = State::new();
+    s.select_starter(systems::PHYSICAL);
+    open(&mut s);
+    s.systems.remove("physical-vehicle").unwrap();
+    save_draft(&mut s);
+    assert!(s.guided.prep_error.contains("no longer exists"));
+    assert_eq!(s.systems.list.len(), 3);
+}
+#[test]
+fn preparation_requires_saved_verified_configuration() {
+    let mut s = State::new();
+    new_system(&mut s);
+    assert!(!mark_prepared(&mut s));
+    save_draft(&mut s);
+    assert!(!mark_prepared(&mut s));
+    ready_checks(&mut s);
+    assert!(mark_prepared(&mut s));
+    assert!(target(&s).unwrap().prepared);
+}
+#[test]
+fn first_run_tasks_follow_selected_listeners_and_not_historical_template() {
+    let mut s = State::new();
+    open(&mut s);
+    s.guided.draft.qgc = false;
+    s.guided.draft.ros_agent = true;
+    s.guided.draft.recorder = false;
+    save_draft(&mut s);
+    let list = tasks(&s);
+    assert!(list.contains(&Task::Ros));
+    assert!(!list.contains(&Task::GroundStation));
+    assert!(!list.contains(&Task::Record));
+    assert!(!list.contains(&Task::Infer));
+    assert_eq!(target(&s).unwrap().id, "local-simulation");
+}
+#[test]
+fn replay_without_inference_has_only_recording_and_playback_tasks() {
+    let mut s = State::new();
+    new_system(&mut s);
+    s.guided.draft.vehicle = 2;
+    s.guided.draft.inference = false;
+    s.guided.draft.qgc = false;
+    save_draft(&mut s);
+    assert_eq!(tasks(&s), [Task::Recording, Task::Playback]);
+    assert!(!preset(&s).recipes.contains(&"onnx".to_string()));
+    assert!(preset(&s).recipes.contains(&"ros2".to_string()));
+}
+#[test]
+fn first_run_needs_its_saved_system_active() {
+    let mut s = first_run(systems::ROS, Task::Ros);
+    s.select_starter(systems::SIMULATION);
     run::act(&mut s);
     assert!(!s.guided.awaiting);
-    assert!(s.guided.prep_error.contains("is not the active system"));
+    assert!(s.guided.prep_error.contains("active"));
 }
-
 #[test]
-fn reopening_for_the_same_template_updates_the_existing_system() {
-    let mut s = State::new();
-    assert!(s.select_system(systems::PHYSICAL));
-    open(&mut s);
-    assert_eq!(s.guided.choice, systems::PHYSICAL);
-    set_choice(&mut s, systems::AI);
-    set_choice(&mut s, systems::PHYSICAL);
-    assert_eq!(s.guided.existing.as_deref(), Some("physical-vehicle"));
-    assert_eq!(preset(&s).name, "Physical vehicle");
-    s.guided.name = TextEdit::new("Bench quad");
-    mark_prepared(&mut s);
-    assert_eq!(s.systems.list.len(), 4, "no new system");
-    let sys = s.systems.current();
-    assert_eq!((sys.name.as_str(), sys.prepared), ("Bench quad", true));
-}
-
-#[test]
-fn the_physical_endpoint_from_first_run_is_saved_with_the_system() {
-    let mut s = first_run(systems::PHYSICAL, 0);
-    s.hardware.endpoint = TextEdit::new("udp:0.0.0.0:14550");
-    run::act(&mut s);
-    assert!(s.guided.awaiting);
-    assert_eq!(
-        s.systems.current().vehicle,
-        systems::Vehicle::physical("udp:0.0.0.0:14550")
-    );
-}
-
-#[test]
-fn ros_publishers_need_application_topics_from_a_ready_px4_and_dds_agent() {
-    let mut s = first_run(systems::ROS, 0);
-    // The template runs Gazebo: a running Gazebo vehicle and DDS agent are enough.
+fn ros_publishers_need_adapter_readiness_and_application_topics() {
+    let mut s = first_run(systems::ROS, Task::Ros);
     s.status.insert("gazebo".into(), "Running".into());
     s.status.insert("dds".into(), "Running".into());
     s.guided.awaiting = true;
-    s.recorder.discovered = vec![topic("/fmu/out/vehicle_status")];
+    s.recorder.discovered = vec![Topic {
+        name: "/fmu/out/vehicle_status".into(),
+        ..Default::default()
+    }];
     assert!(run::evidence(&s).is_some());
     s.status.insert("gazebo".into(), "Exited 1".into());
-    assert!(run::evidence(&s).is_none(), "Gazebo stopped");
-    s.status.clear();
-
-    // A migrated 0.8 ROS system runs PX4 SIH, which must also report ready.
-    let id = s.systems.active_id().to_string();
-    s.systems.get_mut(&id).unwrap().vehicle = systems::Vehicle::sih();
-    s.recorder.discovered = vec![
-        topic("/rosout"),
-        topic("/parameter_events"),
-        topic("/clock"),
-        topic("/tf_static"),
-    ];
-    s.status.insert("sih".into(), "Running".into());
-    s.status.insert("dds".into(), "Running".into());
-    s.readiness.insert("sih".into(), "Ready".into());
-    assert!(run::evidence(&s).is_none(), "infrastructure topics only");
-    s.recorder.discovered.push(topic("/fmu/out/vehicle_status"));
-    assert!(run::evidence(&s).is_some());
-    s.status.insert("dds".into(), "Starting".into());
-    assert!(run::evidence(&s).is_none(), "DDS agent not running yet");
-    s.status.insert("dds".into(), "Running".into());
-    s.readiness.remove("sih");
-    assert!(run::evidence(&s).is_none(), "PX4 not ready yet");
-
-    s.guided.task = 1;
-    s.recorder.topics = TextEdit::new("");
-    run::act(&mut s);
-    assert_eq!(s.recorder.topics.text, "/fmu/out/vehicle_status");
+    assert!(run::evidence(&s).is_none());
+    s.status.insert("gazebo".into(), "Running".into());
+    s.recorder.discovered[0].name = "/rosout".into();
+    assert!(run::evidence(&s).is_none());
 }
-
 #[test]
-fn ros_finalize_needs_a_finalized_recording_with_messages() {
-    let mut s = first_run(systems::ROS, 2);
+fn recording_finalize_requires_finalized_nonempty_data() {
+    let mut s = first_run(systems::ROS, Task::Finalize);
     s.guided.awaiting = true;
     s.recorder.selected = Some("flight".into());
+    s.guided.run_recording = Some("flight".into());
     s.recorder.sessions = vec![Session {
         id: "flight".into(),
         status: "Recording".into(),
@@ -155,87 +284,32 @@ fn ros_finalize_needs_a_finalized_recording_with_messages() {
         ..Default::default()
     }];
     assert!(run::evidence(&s).is_none());
-    assert!(run::observed(&s).contains("Recording"));
     s.recorder.sessions[0].status = "Finalized".into();
     s.recorder.sessions[0].messages = 0;
     assert!(run::evidence(&s).is_none());
     s.recorder.sessions[0].messages = 40;
     assert!(run::evidence(&s).is_some());
 }
-
 #[test]
-fn a_running_queue_selects_the_system_it_installs_for() {
-    let mut s = State::new();
-    s.setup.workflow = template_preset(systems::ROS);
-    setup::batch::preview(&mut s);
-    assert!(s.setup.batch.is_some());
-    open(&mut s);
-    assert_eq!(s.guided.choice, systems::ROS);
-    assert!(s.guided.applied);
-}
-
-#[test]
-fn a_stale_exit_status_is_not_first_run_evidence() {
-    let mut s = first_run(systems::SIMULATION, 1);
+fn a_stale_process_exit_is_not_first_run_evidence() {
+    let mut s = first_run(systems::SIMULATION, Task::GroundStation);
     s.status.insert("qgc".into(), "Exited 0".into());
-    run::act(&mut s);
-    assert!(!s.guided.awaiting, "headless start requests no launch");
     s.guided.awaiting = true;
     assert!(run::evidence(&s).is_none());
     s.guided.launched = Some("qgc".into());
     assert!(run::evidence(&s).is_some());
-
-    let mut s = first_run(systems::AI, 1);
-    s.guided.awaiting = true;
-    s.status.insert("project-old".into(), "Exited 0".into());
-    assert!(run::evidence(&s).is_none());
-    s.guided.launched = Some("project-old".into());
-    assert!(run::evidence(&s).is_some());
 }
-
 #[test]
-fn the_ai_outputs_step_counts_completed_inference_runs_from_pipelines() {
-    use crate::studio::pipelines::{Job, JobKind};
-    let mut s = first_run(systems::AI, 2);
-    let pipelines = systems::component("pipelines").unwrap();
-    assert_eq!(systems::state(&s, pipelines).0, "Runs not listed yet");
-    run::act(&mut s);
-    assert!(s.guided.awaiting);
-    assert_eq!(
-        (s.page, s.ui.data_tab),
-        (ui::Page::Data, 2),
-        "opens Pipelines"
-    );
-    assert!(run::evidence(&s).is_none(), "nothing listed yet");
-
-    crate::studio::pipelines::preview(&mut s);
-    assert_eq!(
-        systems::state(&s, pipelines).0,
-        "1 inference run / 1 extraction"
-    );
-    let found = run::evidence(&s).expect("a completed inference run is listed");
-    assert!(
-        found.contains("1 completed inference run(s)") && found.contains("612 detection"),
-        "{found}"
-    );
-    s.studio.pipes.runs[0].detections = None;
-    assert!(
-        run::evidence(&s)
-            .unwrap()
-            .contains("no detection count recorded")
-    );
-
-    s.studio.pipes.runs[0].status = "Failed".into();
-    assert!(run::evidence(&s).is_none(), "a failed run is no output");
-    s.studio.pipes.runs[0].status = "Completed".into();
-    s.studio.pipes.job = Some(Job::fake(JobKind::Infer));
-    assert!(run::evidence(&s).is_none(), "waits for the running job");
-    assert_eq!(
-        systems::state(&s, pipelines).0,
-        "Inference on replay running"
-    );
-    assert!(run::observed(&s).starts_with("Pipelines: Inference on replay running"));
-    s.studio.pipes.job = None;
-    s.guided.awaiting = false;
-    assert!(run::evidence(&s).is_none(), "only while the step waits");
+fn legacy_installation_ownership_requires_a_unique_match() {
+    let mut s = State::new();
+    s.setup.workflow = template_preset(systems::ROS);
+    setup::batch::preview(&mut s);
+    assert_eq!(batch_system(&s).as_deref(), Some("ros-sensor-capture"));
+    s.systems.duplicate("ros-sensor-capture");
+    assert!(batch_system(&s).is_none());
+    s.setup.batch.as_mut().unwrap().system = Some("ros-sensor-capture".into());
+    assert_eq!(batch_system(&s).as_deref(), Some("ros-sensor-capture"));
+    open(&mut s);
+    assert_eq!(s.guided.existing.as_deref(), Some("ros-sensor-capture"));
+    assert_eq!(s.guided.chapter, REVIEW);
 }
