@@ -5,7 +5,7 @@ use crate::mavlink::{
     Autopilot, LinkState, LinkStatus, PeerStatus, SimulationEvidence, StatusText, SystemSeen,
     VehicleSnapshot, VehicleState,
 };
-use crate::systems::{self, Source};
+use crate::systems;
 use crate::{State, TextEdit};
 use std::path::PathBuf;
 use std::time::{Duration, Instant, SystemTime};
@@ -97,7 +97,7 @@ pub(crate) fn preview(s: &mut State, owner: &str, fresh: bool, granted: bool) {
         return;
     }
     let mut snapshot = fake_snapshot(fresh);
-    if let Some(Source::Physical { endpoint }) = s.systems.get_mut(owner).map(|x| &mut x.source) {
+    if let Some(endpoint) = s.systems.get_mut(owner).and_then(|x| x.endpoint_mut()) {
         // A physical link always opens on the system's saved endpoint: give the preview one, so
         // the topology, the connection panel and the link all show the same endpoint.
         if endpoint.trim().is_empty() {

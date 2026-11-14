@@ -1,5 +1,5 @@
 //! The supported (autopilot, world) pairs.
-use super::{Adapter, AutopilotKind, Link, Param, Readiness, Ros, Stage};
+use super::{Adapter, AutopilotKind, Link, Param, Readiness, Ros, Scope, Stage};
 
 fn same(value: &str) -> String {
     value.to_string()
@@ -26,6 +26,7 @@ const PX4_ROS: Ros = Ros {
 pub(crate) static ALL: [Adapter; 3] = [
     Adapter {
         id: "px4-sih",
+        name: "PX4 SIH",
         autopilot: AutopilotKind::Px4,
         world: "internal",
         stages: &[Stage {
@@ -37,10 +38,12 @@ pub(crate) static ALL: [Adapter; 3] = [
         link: Link::Router,
         ros: Some(PX4_ROS),
         params: &[],
+        recipes: &["px4"],
         shell: true,
     },
     Adapter {
         id: "px4-gazebo",
+        name: "PX4 + Gazebo",
         autopilot: AutopilotKind::Px4,
         world: "gazebo",
         stages: &[Stage {
@@ -55,21 +58,27 @@ pub(crate) static ALL: [Adapter; 3] = [
         params: &[
             Param {
                 key: "world",
+                label: "Gazebo world",
+                scope: Scope::World,
                 default: "default",
                 env: "DRONE_DECK_GZ_WORLD",
                 map: same,
             },
             Param {
                 key: "model",
+                label: "Vehicle model",
+                scope: Scope::World,
                 default: "x500_mono_cam",
                 env: "DRONE_DECK_GZ_MODEL",
                 map: same,
             },
         ],
+        recipes: &["px4", "gazebo"],
         shell: true,
     },
     Adapter {
         id: "ardupilot-sitl",
+        name: "ArduPilot SITL",
         autopilot: AutopilotKind::ArduPilot,
         world: "internal",
         stages: &[Stage {
@@ -86,10 +95,13 @@ pub(crate) static ALL: [Adapter; 3] = [
         }),
         params: &[Param {
             key: "vehicle",
+            label: "ArduPilot vehicle",
+            scope: Scope::Autopilot,
             default: "copter",
             env: "DRONE_DECK_AP_VEHICLE",
             map: ardupilot_vehicle,
         }],
+        recipes: &["ardupilot"],
         shell: false,
     },
 ];

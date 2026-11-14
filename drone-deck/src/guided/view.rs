@@ -313,7 +313,7 @@ fn locked_note(s: &State) -> String {
         ),
         None => format!(
             "An installation queue is running for {}. {after}",
-            setup::workflow::PRESETS[s.setup.workflow.min(setup::workflow::PRESETS.len() - 1)].0
+            s.setup.workflow.name
         ),
     }
 }

@@ -354,12 +354,12 @@ fn new_system_from_guided_setup_is_created_from_its_template() {
     assert_eq!(rt.state.systems.list.len(), 5);
     let sys = rt.state.systems.get("camera-rig").expect("created");
     assert_eq!(sys.template, "ros-sensor-capture");
-    assert!(matches!(sys.source, systems::Source::Gazebo { .. }));
+    assert_eq!(sys.adapter().map(|a| a.id), Some("px4-gazebo"));
     assert!(!sys.prepared);
     assert_eq!(
-        crate::guided::preset(&rt.state),
-        1,
-        "preset from source and consumers"
+        crate::guided::preset(&rt.state).name,
+        "PX4 + Gazebo with ROS 2 and recordings",
+        "preset from vehicle and consumers"
     );
     rt.update(|s, _| {
         crate::guided::open_workspace(s);
@@ -392,13 +392,13 @@ fn settings_systems_rename_duplicate_and_delete_with_confirmation() {
     );
     rt.update(|s, _| s.systems.editor.as_mut().unwrap().name = TextEdit::new("Desk sim"));
     rt.frame(0.1);
-    tap(&mut rt, "system-source-2");
+    tap(&mut rt, "system-autopilot-1");
     tap(&mut rt, "system-save");
     assert!(rt.state.systems.editor.is_none());
     let first = &rt.state.systems.list[0];
     assert_eq!(first.name, "Desk sim");
     assert_eq!(first.id, "local-simulation", "renaming keeps the id");
-    assert!(matches!(first.source, systems::Source::ArduPilot { .. }));
+    assert_eq!(first.vehicle, systems::Vehicle::ardupilot("copter"));
 
     tap(&mut rt, "system-duplicate-0");
     assert_eq!(rt.state.systems.list.len(), 5);
@@ -610,10 +610,8 @@ fn an_open_vehicle_link_is_session_work_the_rail_and_the_system_page_agree_on() 
     assert_eq!(ui::session_label(&s), "read-only vehicle link");
     // The preview link opens on the system's own endpoint, like a real one.
     assert_eq!(
-        s.systems.current().source,
-        systems::Source::Physical {
-            endpoint: "serial:COM4:57600".into()
-        }
+        s.systems.current().vehicle,
+        systems::Vehicle::physical("serial:COM4:57600")
     );
     assert_eq!(s.vehicle.endpoint, "serial:COM4:57600");
     assert_eq!(s.hardware.endpoint.text, "serial:COM4:57600");
@@ -716,4 +714,37 @@ fn runtime_rows_link_to_a_tools_output_once_it_wrote_some() {
     assert_eq!(rt.state.page, Page::Activity);
     assert_eq!(rt.state.activity.tab, 1);
     assert_eq!(rt.state.activity.filter.as_deref(), Some("sih"));
+}
+
+#[test]
+fn the_system_editor_greys_a_world_the_autopilot_has_no_adapter_for() {
+    let mut s = State::new();
+    s.navigate(Page::Settings);
+    let mut rt = runtime(s, (1440., 900.));
+    tap(&mut rt, "system-edit-0");
+    tap(&mut rt, "system-world-gazebo");
+    assert_eq!(rt.state.systems.editor.as_ref().unwrap().world, "gazebo");
+    assert!(
+        rt.find("system-param-model").is_some(),
+        "Gazebo details shown"
+    );
+    tap(&mut rt, "system-autopilot-1");
+    assert!(
+        rt.find("system-world-unsupported").is_some(),
+        "the reason is shown"
+    );
+    assert!(rt.find("system-param-model").is_none());
+    tap(&mut rt, "system-world-internal");
+    tap(&mut rt, "system-world-gazebo");
+    assert_eq!(
+        rt.state.systems.editor.as_ref().unwrap().world,
+        "internal",
+        "a disabled world cannot be picked"
+    );
+    assert!(rt.find("system-param-vehicle").is_some());
+    tap(&mut rt, "system-save");
+    assert_eq!(
+        rt.state.systems.list[0].vehicle,
+        systems::Vehicle::ardupilot("copter")
+    );
 }

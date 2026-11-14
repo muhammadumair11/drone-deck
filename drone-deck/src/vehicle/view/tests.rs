@@ -412,7 +412,7 @@ fn another_systems_connecting_link_blocks_this_page_and_a_new_link_starts_a_new_
         .systems
         .list
         .iter()
-        .find(|x| x.id != owner && x.source.simulated())
+        .find(|x| x.id != owner && x.simulated())
         .map(|x| x.id.clone())
         .expect("a second simulated system");
     assert!(s.systems.set_active(&other));

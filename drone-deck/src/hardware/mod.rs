@@ -145,10 +145,7 @@ pub(crate) fn toggle(s: &mut State) {
 
 /// The endpoint saved with the active physical system (`None` for other sources).
 pub(crate) fn saved_endpoint(s: &State) -> Option<&str> {
-    match &s.systems.current().source {
-        systems::Source::Physical { endpoint } => Some(endpoint.trim()),
-        _ => None,
-    }
+    s.systems.current().endpoint().map(str::trim)
 }
 
 /// Saves the endpoint being edited as the active physical system's endpoint.
@@ -168,7 +165,7 @@ pub(crate) fn save_endpoint(s: &mut State) {
     let Some(sys) = s.systems.get_mut(&id) else {
         return;
     };
-    let systems::Source::Physical { endpoint: saved } = &mut sys.source else {
+    let Some(saved) = sys.endpoint_mut() else {
         return;
     };
     *saved = endpoint.clone();

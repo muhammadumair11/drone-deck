@@ -1,7 +1,10 @@
-//! A system: a named launch setup made of one vehicle source and the consumers fed by it.
-//! Templates reproduce the four 0.8 systems; everything else derives from source + consumers.
-use super::adapter::{self, Adapter, AutopilotKind};
+//! A system: a named launch setup made of one vehicle (a simulated autopilot in a world, a
+//! physical vehicle or a recording) and the consumers fed by it. Templates reproduce the four
+//! 0.8 systems; everything else derives from vehicle + consumers.
+pub(crate) use super::adapter::AutopilotKind;
+use super::adapter::{self, Adapter};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// Template families. `System::kind` maps any system onto one of them, so pages that only
 /// need "is this a physical / AI / ROS system" keep a single index.
@@ -23,86 +26,111 @@ pub(crate) const TEMPLATE_IDS: [&str; 4] = [
     "offline-ai",
     "physical-vehicle",
 ];
-/// Labels for the source choices in the editor, in `Source::index` order.
-pub(crate) const SOURCES: [&str; 5] = [
-    "PX4 SIH",
-    "PX4 + Gazebo",
-    "ArduPilot SITL",
-    "Physical vehicle",
-    "Recording replay",
-];
-pub(crate) const DEFAULT_WORLD: &str = "default";
-pub(crate) const DEFAULT_MODEL: &str = "x500_mono_cam";
-pub(crate) const DEFAULT_VEHICLE: &str = "copter";
+/// Labels for the vehicle kinds in the editor, in `Vehicle::index` order.
+pub(crate) const VEHICLES: [&str; 3] = ["Simulated", "Physical vehicle", "Recording replay"];
 pub(crate) const DEFAULT_DOMAIN: u32 = 0;
 pub(crate) const DEFAULT_SCRIPTS_UDP: &str = "127.0.0.1:14540";
 pub(crate) const MAX_NAME: usize = 60;
 
+/// The flight stack of a simulated vehicle.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub(crate) enum Autopilot {
+    Px4,
+    /// ArduPilot SITL (`vehicle`: copter, plane, rover…).
+    #[serde(rename = "ardupilot")]
+    ArduPilot {
+        vehicle: String,
+    },
+}
+impl Autopilot {
+    pub fn kind(&self) -> AutopilotKind {
+        match self {
+            Autopilot::Px4 => AutopilotKind::Px4,
+            Autopilot::ArduPilot { .. } => AutopilotKind::ArduPilot,
+        }
+    }
+}
+
+/// The physics a simulated vehicle flies in: `internal` (the autopilot's own) or a simulator
+/// such as `gazebo`, with the details its adapter takes (Gazebo: `world`, `model`). Worlds are
+/// data, so a world this version has no adapter for is kept as it was written.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct World {
+    pub id: String,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub params: BTreeMap<String, String>,
+}
+impl World {
+    pub fn new(id: &str, params: &[(&str, &str)]) -> Self {
+        Self {
+            id: id.into(),
+            params: params
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+        }
+    }
+}
+
 /// Where vehicle state comes from.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub(crate) enum Source {
-    /// PX4 software-in-the-loop with its internal physics.
-    Sih,
-    /// PX4 with a Gazebo Harmonic world and model.
-    Gazebo { world: String, model: String },
-    /// ArduPilot SITL (`vehicle`: copter, plane, rover…).
-    #[serde(rename = "ardupilot")]
-    ArduPilot { vehicle: String },
+pub(crate) enum Vehicle {
+    /// An autopilot that Drone Deck starts, flying in a world.
+    Simulated { autopilot: Autopilot, world: World },
     /// A flight controller over `serial:COMx:baud`, `udp:host:port` or `tcp:host:port`.
-    Physical { endpoint: String },
+    Physical {
+        endpoint: String,
+        /// The flight stack the user said it runs; only the heartbeat identifies it.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        autopilot_hint: Option<AutopilotKind>,
+    },
     /// A recorded session played back instead of a live vehicle.
     Replay {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         recording: Option<String>,
     },
 }
-impl Source {
+impl Vehicle {
+    /// PX4 with its internal SIH physics.
+    pub fn sih() -> Self {
+        Vehicle::Simulated {
+            autopilot: Autopilot::Px4,
+            world: World::new("internal", &[]),
+        }
+    }
+    pub fn gazebo(world: &str, model: &str) -> Self {
+        Vehicle::Simulated {
+            autopilot: Autopilot::Px4,
+            world: World::new("gazebo", &[("world", world), ("model", model)]),
+        }
+    }
+    pub fn ardupilot(vehicle: &str) -> Self {
+        Vehicle::Simulated {
+            autopilot: Autopilot::ArduPilot {
+                vehicle: vehicle.into(),
+            },
+            world: World::new("internal", &[]),
+        }
+    }
+    pub fn physical(endpoint: &str) -> Self {
+        Vehicle::Physical {
+            endpoint: endpoint.into(),
+            autopilot_hint: None,
+        }
+    }
+    pub fn replay(recording: Option<&str>) -> Self {
+        Vehicle::Replay {
+            recording: recording.map(str::to_string),
+        }
+    }
+    /// Index into `VEHICLES`.
     pub fn index(&self) -> usize {
         match self {
-            Source::Sih => 0,
-            Source::Gazebo { .. } => 1,
-            Source::ArduPilot { .. } => 2,
-            Source::Physical { .. } => 3,
-            Source::Replay { .. } => 4,
-        }
-    }
-    /// A source of the given `index` with default details.
-    pub fn with_index(index: usize) -> Self {
-        match index {
-            1 => Source::Gazebo {
-                world: DEFAULT_WORLD.into(),
-                model: DEFAULT_MODEL.into(),
-            },
-            2 => Source::ArduPilot {
-                vehicle: DEFAULT_VEHICLE.into(),
-            },
-            3 => Source::Physical {
-                endpoint: String::new(),
-            },
-            4 => Source::Replay { recording: None },
-            _ => Source::Sih,
-        }
-    }
-    /// A simulator that Drone Deck starts and owns.
-    pub fn simulated(&self) -> bool {
-        matches!(
-            self,
-            Source::Sih | Source::Gazebo { .. } | Source::ArduPilot { .. }
-        )
-    }
-    /// One line for lists: the source and its details.
-    pub fn summary(&self) -> String {
-        match self {
-            Source::Sih => "PX4 SIH".into(),
-            Source::Gazebo { world, model } => format!("PX4 + Gazebo / {world} / {model}"),
-            Source::ArduPilot { vehicle } => format!("ArduPilot SITL / {vehicle}"),
-            Source::Physical { endpoint } if endpoint.trim().is_empty() => {
-                "Physical vehicle / no endpoint yet".into()
-            }
-            Source::Physical { endpoint } => format!("Physical vehicle / {endpoint}"),
-            Source::Replay { recording: None } => "Recording replay / chosen at replay".into(),
-            Source::Replay { recording: Some(r) } => format!("Recording replay / {r}"),
+            Vehicle::Simulated { .. } => 0,
+            Vehicle::Physical { .. } => 1,
+            Vehicle::Replay { .. } => 2,
         }
     }
 }
@@ -166,53 +194,96 @@ pub(crate) struct System {
     /// Guided preparation finished for it on this computer.
     #[serde(default)]
     pub prepared: bool,
-    pub source: Source,
+    pub vehicle: Vehicle,
     #[serde(default)]
     pub consumers: Consumers,
 }
 impl System {
-    /// The simulator adapter of a simulated source; `None` for a physical vehicle or a replay.
+    /// The simulator adapter of a simulated vehicle; `None` for a physical vehicle, a replay,
+    /// or a world this version has no adapter for.
     pub fn adapter(&self) -> Option<&'static Adapter> {
-        let (autopilot, world) = match self.source {
-            Source::Sih => (AutopilotKind::Px4, "internal"),
-            Source::Gazebo { .. } => (AutopilotKind::Px4, "gazebo"),
-            Source::ArduPilot { .. } => (AutopilotKind::ArduPilot, "internal"),
-            Source::Physical { .. } | Source::Replay { .. } => return None,
-        };
-        adapter::find(autopilot, world)
+        match &self.vehicle {
+            Vehicle::Simulated { autopilot, world } => adapter::find(autopilot.kind(), &world.id),
+            _ => None,
+        }
     }
-    /// A simulator that Drone Deck starts and owns.
+    /// A simulator that Drone Deck starts and owns (a world this version has an adapter for).
     pub fn simulated(&self) -> bool {
         self.adapter().is_some()
     }
     pub fn is_physical(&self) -> bool {
-        matches!(self.source, Source::Physical { .. })
+        matches!(self.vehicle, Vehicle::Physical { .. })
     }
     pub fn is_replay(&self) -> bool {
-        matches!(self.source, Source::Replay { .. })
+        matches!(self.vehicle, Vehicle::Replay { .. })
     }
-    /// The autopilot of a simulated source.
+    /// The flight stack: a simulated one, or the hint saved for a physical vehicle.
     pub fn autopilot(&self) -> Option<AutopilotKind> {
-        self.adapter().map(|a| a.autopilot)
+        match &self.vehicle {
+            Vehicle::Simulated { autopilot, .. } => Some(autopilot.kind()),
+            Vehicle::Physical { autopilot_hint, .. } => *autopilot_hint,
+            Vehicle::Replay { .. } => None,
+        }
     }
-    /// A world or vehicle detail named by an adapter `Param` key.
+    /// A detail named by an adapter `Param` key: the ArduPilot vehicle, or a world detail.
     pub fn param(&self, key: &str) -> Option<&str> {
-        match (&self.source, key) {
-            (Source::Gazebo { world, .. }, "world") => Some(world),
-            (Source::Gazebo { model, .. }, "model") => Some(model),
-            (Source::ArduPilot { vehicle }, "vehicle") => Some(vehicle),
+        match (&self.vehicle, key) {
+            (
+                Vehicle::Simulated {
+                    autopilot: Autopilot::ArduPilot { vehicle },
+                    ..
+                },
+                "vehicle",
+            ) => Some(vehicle),
+            (Vehicle::Simulated { world, .. }, _) => world.params.get(key).map(String::as_str),
             _ => None,
         }
     }
-    /// The source in one line for lists.
-    pub fn summary(&self) -> String {
-        self.source.summary()
+    /// The endpoint of a physical vehicle.
+    pub fn endpoint(&self) -> Option<&str> {
+        match &self.vehicle {
+            Vehicle::Physical { endpoint, .. } => Some(endpoint),
+            _ => None,
+        }
     }
-    /// The template family it behaves like, from its source and consumers.
+    /// The saved endpoint of a physical vehicle, to change it.
+    pub fn endpoint_mut(&mut self) -> Option<&mut String> {
+        match &mut self.vehicle {
+            Vehicle::Physical { endpoint, .. } => Some(endpoint),
+            _ => None,
+        }
+    }
+    /// The vehicle in one line for lists: the adapter's name and its details.
+    pub fn summary(&self) -> String {
+        match &self.vehicle {
+            Vehicle::Simulated { autopilot, world } => match self.adapter() {
+                Some(a) => std::iter::once(a.name.to_string())
+                    .chain(
+                        a.params
+                            .iter()
+                            .map(|p| self.param(p.key).unwrap_or(p.default).to_string()),
+                    )
+                    .collect::<Vec<_>>()
+                    .join(" / "),
+                None => format!(
+                    "{} + {} / no adapter in this version",
+                    adapter::autopilot_name(autopilot.kind()),
+                    world.id
+                ),
+            },
+            Vehicle::Physical { endpoint, .. } if endpoint.trim().is_empty() => {
+                "Physical vehicle / no endpoint yet".into()
+            }
+            Vehicle::Physical { endpoint, .. } => format!("Physical vehicle / {endpoint}"),
+            Vehicle::Replay { recording: None } => "Recording replay / chosen at replay".into(),
+            Vehicle::Replay { recording: Some(r) } => format!("Recording replay / {r}"),
+        }
+    }
+    /// The template family it behaves like, from its vehicle and consumers.
     pub fn kind(&self) -> usize {
-        match self.source {
-            Source::Physical { .. } => PHYSICAL,
-            Source::Replay { .. } => AI,
+        match self.vehicle {
+            Vehicle::Physical { .. } => PHYSICAL,
+            Vehicle::Replay { .. } => AI,
             _ if self.consumers.ros.agent || self.consumers.ros.recorder => ROS,
             _ => SIMULATION,
         }
@@ -242,9 +313,10 @@ impl System {
         }
         if c.live_view {
             parts.push(
-                match self.source {
-                    Source::Physical { .. } => "read-only live view",
-                    _ => "live view",
+                if self.is_physical() {
+                    "read-only live view"
+                } else {
+                    "live view"
                 }
                 .into(),
             );
@@ -278,9 +350,9 @@ impl System {
 /// A new system from template `kind` (clamped to the four templates).
 pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
     let kind = kind.min(PHYSICAL);
-    let (source, consumers) = match kind {
+    let (vehicle, consumers) = match kind {
         SIMULATION => (
-            Source::Sih,
+            Vehicle::sih(),
             Consumers {
                 qgc: true,
                 live_view: true,
@@ -289,7 +361,7 @@ pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
             },
         ),
         ROS => (
-            Source::with_index(1),
+            Vehicle::gazebo("default", "x500_mono_cam"),
             Consumers {
                 qgc: true,
                 ros: Ros {
@@ -302,7 +374,7 @@ pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
             },
         ),
         AI => (
-            Source::Replay { recording: None },
+            Vehicle::replay(None),
             Consumers {
                 inference: Some(Inference::default()),
                 foxglove: true,
@@ -310,7 +382,7 @@ pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
             },
         ),
         _ => (
-            Source::with_index(3),
+            Vehicle::physical(""),
             Consumers {
                 live_view: true,
                 ..Default::default()
@@ -322,7 +394,7 @@ pub(crate) fn template(kind: usize, id: &str, name: &str) -> System {
         name: name.into(),
         template: TEMPLATE_IDS[kind].into(),
         prepared: false,
-        source,
+        vehicle,
         consumers,
     }
 }
@@ -361,16 +433,4 @@ pub(crate) fn valid_id(id: &str) -> bool {
         && id
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
-}
-
-/// The workflow preset (`setup::workflow::PRESETS`) that prepares this system.
-pub(crate) fn preset(sys: &System) -> usize {
-    match sys.source {
-        Source::Physical { .. } => 4,
-        Source::Replay { .. } => 3,
-        Source::ArduPilot { .. } => 2,
-        Source::Gazebo { .. } => 1,
-        _ if sys.consumers.ros.agent => 5,
-        _ => 0,
-    }
 }

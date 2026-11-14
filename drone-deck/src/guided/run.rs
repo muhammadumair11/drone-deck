@@ -108,7 +108,7 @@ fn remember_endpoint(s: &mut State) {
     let Some(sys) = s.systems.get_mut(&id) else {
         return;
     };
-    if let systems::Source::Physical { endpoint: saved } = &mut sys.source {
+    if let Some(saved) = sys.endpoint_mut() {
         if *saved != endpoint {
             *saved = endpoint;
             if let Err(e) = s.systems.save(s.headless) {

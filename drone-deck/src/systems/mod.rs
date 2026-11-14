@@ -1,12 +1,13 @@
 //! Systems: user-created launch setups over the shared tool registry.
 //!
-//! A system names one vehicle source and the consumers it feeds (`model`). A simulated source
+//! A system names one vehicle and the consumers it feeds (`model`). A simulated vehicle
 //! has an adapter (`adapter`): its launch stages, readiness, MAVLink route and ROS bridge. Its
 //! components, connection chain and session stages derive from those (`components`); labels come from
-//! observed state (`state`). `systems.json` is schema 2 (`file`). Processes belong to the
+//! observed state (`state`). `systems.json` is schema 3 (`file`). Processes belong to the
 //! system that started them, so switching systems never stops anything.
 use crate::*;
 pub(crate) mod adapter;
+pub(crate) mod compat;
 mod components;
 mod edit;
 mod file;
@@ -14,15 +15,15 @@ pub(crate) mod model;
 mod state;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod vehicle_tests;
 
 pub(crate) use components::{
     Backing, Component, SESSIONS, all_components, chain, component, components, filter_for,
     profile_ids, routed, session_stages, vehicle_profile,
 };
 pub(crate) use edit::Draft;
-pub(crate) use model::{
-    AI, KINDS, MAX_NAME, PHYSICAL, ROS, SIMULATION, SOURCES, Source, System, preset,
-};
+pub(crate) use model::{AI, KINDS, MAX_NAME, PHYSICAL, ROS, SIMULATION, System, VEHICLES, Vehicle};
 pub(crate) use state::{Tone, profile_state, running, state, tone_color};
 use std::collections::HashMap;
 
@@ -103,7 +104,7 @@ impl Systems {
     fn path() -> std::path::PathBuf {
         backend::root().join("systems.json")
     }
-    /// Reads `systems.json`; a schema 1 file is migrated and written back as schema 2.
+    /// Reads `systems.json`; an older schema is migrated and written back as the current one.
     pub fn load(headless: bool) -> Self {
         if headless {
             return Self::default();
@@ -320,7 +321,7 @@ pub(crate) fn staged(s: &State, id: &str) -> bool {
 /// edited, or deleted): a physical source enables the monitor and fills its endpoint unless
 /// the monitor is running; any other source turns the monitor's mode off. Never stops it.
 pub(crate) fn follow_active(s: &mut State) {
-    if let Source::Physical { endpoint } = &s.systems.current().source {
+    if let Some(endpoint) = s.systems.current().endpoint() {
         s.hardware.mode = 1;
         if !endpoint.is_empty() && !s.vehicle.connected() {
             s.hardware.endpoint = rune::TextEdit::new(endpoint);
@@ -441,10 +442,10 @@ pub(crate) fn active_work(s: &State) -> bool {
 pub(crate) fn start_workspace(s: &mut State) {
     let sys = s.systems.current();
     let name = sys.label().to_string();
-    match &sys.source {
+    match &sys.vehicle {
         // The monitor records its own start and refusal.
-        Source::Physical { .. } => hardware::toggle(s),
-        Source::Replay { .. } => {
+        Vehicle::Physical { .. } => hardware::toggle(s),
+        Vehicle::Replay { .. } => {
             let inference = sys.consumers.inference.is_some();
             s.ui.data_tab = if inference { 3 } else { 0 };
             s.navigate(ui::Page::Data);
@@ -454,7 +455,13 @@ pub(crate) fn start_workspace(s: &mut State) {
                 "Choose a recording to replay in Data & models → Recordings.".into()
             };
         }
-        _ => {
+        Vehicle::Simulated { world, .. } if sys.adapter().is_none() => {
+            s.notice = format!(
+                "{name} flies in the {} world, which this version of Drone Deck has no adapter for. Choose another world in Settings → Systems.",
+                world.id
+            );
+        }
+        Vehicle::Simulated { .. } => {
             let stages = session_stages(sys);
             if s.bundle(stages) {
                 activity::record(s, format!("Requested {name} workspace startup"));

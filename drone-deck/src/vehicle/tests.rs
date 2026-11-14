@@ -513,14 +513,12 @@ fn the_console_refuses_an_ardupilot_link() {
     let mut s = live_state("fake-b1-ardupilot");
     s.vehicle.sim_port = fake.addr.port();
     let ap = s.systems.create(systems::SIMULATION, "ArduPilot lab");
-    s.systems.get_mut(&ap).unwrap().source = systems::Source::ArduPilot {
-        vehicle: "copter".into(),
-    };
+    s.systems.get_mut(&ap).unwrap().vehicle = systems::Vehicle::ardupilot("copter");
     let px4 = s
         .systems
         .list
         .iter()
-        .find(|x| matches!(x.source, systems::Source::Sih))
+        .find(|x| x.vehicle == systems::Vehicle::sih())
         .map(|x| x.id.clone())
         .unwrap();
     assert!(
@@ -745,10 +743,7 @@ fn headless_previews_never_connect_and_show_a_fake_snapshot() {
 #[test]
 fn launch_env_carries_world_model_vehicle_and_domain() {
     let mut ros = systems::model::template(systems::ROS, "r", "R");
-    ros.source = systems::Source::Gazebo {
-        world: "baylands".into(),
-        model: "x500_depth".into(),
-    };
+    ros.vehicle = systems::Vehicle::gazebo("baylands", "x500_depth");
     ros.consumers.ros.domain = 7;
     let env = backend::launch_env("gazebo", &ros);
     assert!(env.contains(&("DRONE_DECK_GZ_WORLD".into(), "baylands".into())));
@@ -756,9 +751,7 @@ fn launch_env_carries_world_model_vehicle_and_domain() {
     assert!(backend::launch_env("rosgz", &ros).contains(&("ROS_DOMAIN_ID".into(), "7".into())));
     assert!(backend::launch_env("qgc", &ros).is_empty());
     let mut ap = systems::model::template(systems::SIMULATION, "a", "A");
-    ap.source = systems::Source::ArduPilot {
-        vehicle: "plane".into(),
-    };
+    ap.vehicle = systems::Vehicle::ardupilot("plane");
     assert_eq!(
         backend::launch_env("ardupilot", &ap),
         [("DRONE_DECK_AP_VEHICLE".to_string(), "ArduPlane".to_string())]

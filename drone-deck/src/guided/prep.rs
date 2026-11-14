@@ -118,7 +118,7 @@ fn close_app(s: &State) -> El {
 
 fn location_note(s: &State) -> El {
     let tool = primary_tool(s);
-    match s.setup.overrides.get(tool) {
+    match s.setup.overrides.get(&tool) {
         Some(path) => notice(format!(
             "Requested existing location: {path}. Discovery validates it before reuse."
         )),
@@ -297,7 +297,7 @@ pub(super) fn view(s: &State, f: &Frame) -> El {
         }
         Phase::Applying => {
             if s.setup.workflow != super::preset(s) {
-                let preset = workflow::PRESETS[s.setup.workflow.min(workflow::PRESETS.len() - 1)].0;
+                let preset = &s.setup.workflow.name;
                 content = content.child(notice(format!(
                     "This queue was started for {preset}. It must finish or be cancelled before this system can be prepared."
                 )));

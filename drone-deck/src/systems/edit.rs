@@ -1,20 +1,26 @@
 //! The Settings → Systems editor's working copy and its validation.
+use super::adapter::{self, AutopilotKind, Scope};
+use super::compat;
 use super::model::{
-    DEFAULT_DOMAIN, DEFAULT_MODEL, DEFAULT_SCRIPTS_UDP, DEFAULT_VEHICLE, DEFAULT_WORLD, Inference,
-    Source, System,
+    Autopilot, DEFAULT_DOMAIN, DEFAULT_SCRIPTS_UDP, Inference, System, Vehicle, World,
 };
 use rune::TextEdit;
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 
 pub(crate) struct Draft {
     /// The system being edited.
     pub id: String,
     pub name: TextEdit,
-    /// `Source::index` of the chosen source.
-    pub source: usize,
-    pub world: TextEdit,
-    pub model: TextEdit,
-    pub vehicle: TextEdit,
+    /// `Vehicle::index` of the chosen vehicle kind.
+    pub vehicle: usize,
+    /// The autopilot of a simulated vehicle.
+    pub autopilot: AutopilotKind,
+    /// The world id of a simulated vehicle.
+    pub world: String,
+    /// Every adapter detail by key (the Gazebo world and model, the ArduPilot vehicle), so a
+    /// change of autopilot or world starts from sensible values.
+    pub params: BTreeMap<&'static str, TextEdit>,
     pub endpoint: TextEdit,
     pub recording: TextEdit,
     pub qgc: bool,
@@ -113,36 +119,34 @@ pub(crate) fn endpoint_ok(text: &str) -> bool {
 }
 
 impl Draft {
-    /// A working copy of `sys`. Detail fields of other sources hold their defaults so a source
-    /// change starts from sensible values.
+    /// A working copy of `sys`. Details of other autopilots and worlds hold their defaults so
+    /// a change starts from sensible values.
     pub fn of(sys: &System) -> Self {
         let text = |v: &str| TextEdit::new(v);
-        let (mut world, mut model, mut vehicle) = (
-            text(DEFAULT_WORLD),
-            text(DEFAULT_MODEL),
-            text(DEFAULT_VEHICLE),
-        );
-        let (mut endpoint, mut recording) = (text(""), text(""));
-        match &sys.source {
-            Source::Gazebo { world: w, model: m } => {
-                world = text(w);
-                model = text(m);
-            }
-            Source::ArduPilot { vehicle: v } => vehicle = text(v),
-            Source::Physical { endpoint: e } => endpoint = text(e),
-            Source::Replay { recording: r } => recording = text(r.as_deref().unwrap_or("")),
-            Source::Sih => {}
+        let mut params = BTreeMap::new();
+        for p in adapter::ALL.iter().flat_map(|a| a.params) {
+            params
+                .entry(p.key)
+                .or_insert_with(|| text(sys.param(p.key).unwrap_or(p.default)));
         }
+        let world = match &sys.vehicle {
+            Vehicle::Simulated { world, .. } => world.id.clone(),
+            _ => "internal".into(),
+        };
+        let recording = match &sys.vehicle {
+            Vehicle::Replay { recording } => recording.as_deref().unwrap_or(""),
+            _ => "",
+        };
         let c = &sys.consumers;
         Self {
             id: sys.id.clone(),
             name: text(&sys.name),
-            source: sys.source.index(),
+            vehicle: sys.vehicle.index(),
+            autopilot: sys.autopilot().unwrap_or(AutopilotKind::Px4),
             world,
-            model,
-            vehicle,
-            endpoint,
-            recording,
+            params,
+            endpoint: text(sys.endpoint().unwrap_or("")),
+            recording: text(recording),
             qgc: c.qgc,
             live_view: c.live_view,
             ros_agent: c.ros.agent,
@@ -162,6 +166,19 @@ impl Draft {
         }
     }
 
+    /// The adapter the draft's autopilot and world choose, when it is simulated.
+    pub fn adapter(&self) -> Option<&'static adapter::Adapter> {
+        (self.vehicle == 0)
+            .then(|| adapter::find(self.autopilot, &self.world))
+            .flatten()
+    }
+
+    /// Whether the draft's vehicle can feed consumer `c` (the editor shows only those).
+    pub fn feeds(&self, c: compat::Consumer) -> bool {
+        let ros_bridge = self.adapter().is_some_and(|a| a.ros.is_some());
+        compat::consumer_ok(self.vehicle, ros_bridge, c)
+    }
+
     /// Why the scripts address can't be saved, shown under the field as it is typed.
     pub fn scripts_problem(&self) -> Option<String> {
         scripts_address_error(&self.scripts_udp.text)
@@ -172,7 +189,7 @@ impl Draft {
     /// telemetry and what it sends reaches the vehicle.
     pub fn caution(&self) -> Option<String> {
         let addr = self.scripts_udp.text.trim();
-        (self.source == 3 && self.scripts && off_this_computer(addr))
+        (self.vehicle == 1 && self.scripts && off_this_computer(addr))
             .then(|| {
                 format!(
                     "{addr} is not this computer. With scripts on, the computer at that address receives this vehicle's telemetry and can command the vehicle through the bridge. Use 127.0.0.1 unless that computer should control it."
@@ -180,56 +197,78 @@ impl Draft {
             })
     }
 
-    /// `base` with this draft's name, source and consumers, or what to fix first.
+    /// The simulated vehicle the draft names, or what to fix first. A world this version has
+    /// no adapter for is kept unchanged when the draft still names it.
+    fn simulated(&self, base: &System) -> Result<Vehicle, String> {
+        let a = match adapter::world_for(self.autopilot, &self.world) {
+            Ok(a) => a,
+            Err(why) => {
+                return match &base.vehicle {
+                    Vehicle::Simulated { autopilot, world }
+                        if autopilot.kind() == self.autopilot && world.id == self.world =>
+                    {
+                        Ok(base.vehicle.clone())
+                    }
+                    _ => Err(why),
+                };
+            }
+        };
+        let value = |key: &str| self.params.get(key).map_or("", |t| t.text.trim());
+        if let Some(p) = a.params.iter().find(|p| !token_ok(value(p.key))) {
+            return Err(format!(
+                "{} is a name such as {} (letters, digits, _ - .).",
+                p.label, p.default
+            ));
+        }
+        let autopilot = match self.autopilot {
+            AutopilotKind::Px4 => Autopilot::Px4,
+            AutopilotKind::ArduPilot => Autopilot::ArduPilot {
+                vehicle: value("vehicle").into(),
+            },
+        };
+        let params: Vec<(&str, &str)> = a
+            .params
+            .iter()
+            .filter(|p| p.scope == Scope::World)
+            .map(|p| (p.key, value(p.key)))
+            .collect();
+        Ok(Vehicle::Simulated {
+            autopilot,
+            world: World::new(a.world, &params),
+        })
+    }
+
+    /// `base` with this draft's name, vehicle and consumers, or what to fix first.
     pub fn apply(&self, base: &System) -> Result<System, String> {
         let name = super::clean_name(&self.name.text)?;
-        let source = match self.source {
+        let vehicle = match self.vehicle {
             1 => {
-                let (world, model) = (self.world.text.trim(), self.model.text.trim());
-                if !token_ok(world) || !token_ok(model) {
-                    return Err("Gazebo world and model are names such as default and x500_mono_cam (letters, digits, _ - .).".into());
-                }
-                Source::Gazebo {
-                    world: world.into(),
-                    model: model.into(),
-                }
-            }
-            2 => {
-                let vehicle = self.vehicle.text.trim();
-                if !token_ok(vehicle) {
-                    return Err(
-                        "The ArduPilot vehicle is a name such as copter, plane or rover.".into(),
-                    );
-                }
-                Source::ArduPilot {
-                    vehicle: vehicle.into(),
-                }
-            }
-            3 => {
                 let endpoint = self.endpoint.text.trim();
                 if !endpoint_ok(endpoint) {
                     return Err("Use serial:COM4:115200, udp:0.0.0.0:14550 or tcp:192.168.4.1:5760 for the endpoint.".into());
                 }
-                Source::Physical {
+                let autopilot_hint = match &base.vehicle {
+                    Vehicle::Physical { autopilot_hint, .. } => *autopilot_hint,
+                    _ => None,
+                };
+                Vehicle::Physical {
                     endpoint: endpoint.into(),
+                    autopilot_hint,
                 }
             }
-            4 => {
+            2 => {
                 let r = self.recording.text.trim();
                 if r.len() > 200 || r.contains(['\n', '\r']) {
                     return Err("The recording is one session name or folder.".into());
                 }
-                Source::Replay {
-                    recording: (!r.is_empty()).then(|| r.to_string()),
-                }
+                Vehicle::replay((!r.is_empty()).then_some(r))
             }
-            _ => Source::Sih,
+            _ => self.simulated(base)?,
         };
-        // Consumers the editor hides for this source are saved off, so a hidden toggle left
-        // over from another source never shapes components or lists.
-        let live_view = self.live_view && matches!(source, Source::Sih | Source::Physical { .. });
-        let ros_agent = self.ros_agent && source.simulated();
-        let scripts = self.scripts && !matches!(source, Source::Replay { .. });
+        let mut sys = base.clone();
+        sys.name = name;
+        sys.vehicle = vehicle;
+        let ros_agent = self.ros_agent && self.feeds(compat::Consumer::RosAgent);
         let domain = if !(ros_agent || self.recorder) {
             base.consumers.ros.domain
         } else {
@@ -246,6 +285,7 @@ impl Draft {
         if self.inference && !project.is_empty() && !token_ok(project) {
             return Err("The project is a project name from Data & models → Projects.".into());
         }
+        let scripts = self.scripts && self.feeds(compat::Consumer::Scripts);
         let scripts_udp = self.scripts_udp.text.trim();
         if let Some(e) = scripts
             .then(|| scripts_address_error(scripts_udp))
@@ -253,20 +293,18 @@ impl Draft {
         {
             return Err(e);
         }
-        let mut sys = base.clone();
-        sys.name = name;
-        sys.source = source;
         let c = &mut sys.consumers;
         c.qgc = self.qgc;
-        c.live_view = live_view;
-        c.ros.agent = ros_agent;
+        c.live_view = self.live_view;
+        c.ros.agent = self.ros_agent;
         c.ros.recorder = self.recorder;
         c.ros.domain = domain;
         c.inference = self.inference.then(|| Inference {
             project: (!project.is_empty()).then(|| project.to_string()),
         });
         c.foxglove = self.foxglove;
-        c.scripts_udp = scripts.then(|| scripts_udp.to_string());
+        c.scripts_udp = self.scripts.then(|| scripts_udp.to_string());
+        compat::prune(&mut sys);
         Ok(sys)
     }
 }

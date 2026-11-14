@@ -2,6 +2,7 @@ pub(crate) mod batch;
 mod bridge;
 pub(crate) mod catalog;
 pub(crate) mod close;
+pub(crate) mod presets;
 pub(crate) mod profiles;
 #[cfg(test)]
 mod tests;
@@ -101,7 +102,7 @@ pub(crate) struct Setup {
     pub tx: Sender<Result<Value, String>>,
     pub rx: Receiver<Result<Value, String>>,
     pub last_refresh: Instant,
-    pub workflow: usize,
+    pub workflow: presets::Preset,
     pub checks: HashMap<String, Candidate>,
     pub queue: Vec<usize>,
     pub configure_after: bool,
@@ -159,7 +160,7 @@ impl Default for Setup {
             tx,
             rx,
             last_refresh: Instant::now() - Duration::from_secs(5),
-            workflow: 0,
+            workflow: presets::Preset::default(),
             checks: HashMap::new(),
             queue: Vec::new(),
             configure_after: true,

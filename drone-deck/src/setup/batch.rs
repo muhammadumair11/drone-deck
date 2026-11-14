@@ -31,7 +31,8 @@ struct Saved {
     waiting: Option<String>,
     distro: String,
 }
-/// The checkpoint of the running queue: the batch by recipe id and the preset by name.
+/// The checkpoint of the running queue: the batch by recipe id, and the preset by name and
+/// recipe list.
 fn checkpoint(s: &State) -> Value {
     let batch = s.setup.batch.as_ref().map(|b| Saved {
         remaining: b
@@ -42,12 +43,14 @@ fn checkpoint(s: &State) -> Value {
         waiting: b.waiting.clone(),
         distro: b.distro.clone(),
     });
-    let preset = workflow::PRESETS[s.setup.workflow.min(workflow::PRESETS.len() - 1)].0;
-    json!({"app_version":env!("CARGO_PKG_VERSION"),"batch":batch,"workflow":preset,"message":s.setup.batch_message})
+    let preset = &s.setup.workflow;
+    json!({"app_version":env!("CARGO_PKG_VERSION"),"batch":batch,"workflow":preset.name,
+        "recipes":preset.recipes,"message":s.setup.batch_message})
 }
-/// Resumes the queue of `value` when every recipe id and the preset name are still known and
-/// automatic; anything else (another version, a changed catalog, the older format that kept
-/// positions) asks for a review instead.
+/// Resumes the queue of `value` when its preset (its recipe list, or the earlier preset name
+/// alone) names only known recipes and every remaining one is still automatic; anything else
+/// (another version, a changed catalog, the older format that kept positions) asks for a
+/// review instead.
 pub(super) fn resume(s: &mut State, value: &Value) {
     if value["batch"].is_null() {
         return;
@@ -61,7 +64,15 @@ pub(super) fn resume(s: &mut State, value: &Value) {
         s.setup.batch_message = review.into();
         return;
     };
-    let preset = value["workflow"].as_str().and_then(workflow::preset_index);
+    let recipes = serde_json::from_value::<Vec<String>>(value["recipes"].clone()).ok();
+    let preset = value["workflow"]
+        .as_str()
+        .and_then(|name| presets::resolve(name, recipes))
+        .filter(|p| {
+            p.recipes
+                .iter()
+                .all(|id| s.setup.recipe_index(id).is_some())
+        });
     let remaining: Option<Vec<usize>> = saved
         .remaining
         .iter()
@@ -147,7 +158,7 @@ pub(crate) fn begin(s: &mut State) {
         s.setup.message = "Select a working WSL 2 environment before applying the plan.".into();
         return;
     }
-    let ids = workflow::PRESETS[s.setup.workflow].1;
+    let ids = s.setup.workflow.recipes.clone();
     if !workflow::checked_all(s) {
         s.setup.message =
             "Check the entire workflow in the selected environment before installation.".into();
@@ -155,7 +166,7 @@ pub(crate) fn begin(s: &mut State) {
     }
     let candidates: Vec<_> = ids
         .iter()
-        .filter_map(|id| s.setup.checks.get(*id).filter(|c| c.compatible).cloned())
+        .filter_map(|id| s.setup.checks.get(id).filter(|c| c.compatible).cloned())
         .collect();
     for candidate in candidates {
         let index = s
@@ -172,9 +183,9 @@ pub(crate) fn begin(s: &mut State) {
         }
     }
     let mut remaining = Vec::new();
-    for id in ids {
-        if !s.setup.checks.get(*id).is_some_and(|c| c.compatible) {
-            remaining.push(s.setup.recipes.iter().position(|r| r.id == *id).unwrap());
+    for id in &ids {
+        if !s.setup.checks.get(id).is_some_and(|c| c.compatible) {
+            remaining.push(s.setup.recipes.iter().position(|r| &r.id == id).unwrap());
         }
     }
     s.setup.batch = Some(Batch {

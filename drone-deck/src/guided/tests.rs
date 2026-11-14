@@ -23,7 +23,7 @@ fn topic(name: &str) -> Topic {
 #[test]
 fn changing_the_system_drops_a_tool_check_queued_for_another_preset() {
     let mut s = State::new();
-    s.setup.workflow = PRESET[systems::ROS];
+    s.setup.workflow = template_preset(systems::ROS);
     s.setup.queue = setup::workflow::ids(&s)
         .iter()
         .filter_map(|id| s.setup.recipe_index(id))
@@ -34,7 +34,7 @@ fn changing_the_system_drops_a_tool_check_queued_for_another_preset() {
     assert!(s.setup.queue.is_empty());
     assert_eq!(s.guided.check, Check::Idle);
     use_preset(&mut s);
-    assert_eq!(s.setup.workflow, PRESET[systems::AI]);
+    assert_eq!(s.setup.workflow, template_preset(systems::AI));
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn reopening_for_the_same_template_updates_the_existing_system() {
     set_choice(&mut s, systems::AI);
     set_choice(&mut s, systems::PHYSICAL);
     assert_eq!(s.guided.existing.as_deref(), Some("physical-vehicle"));
-    assert_eq!(preset(&s), 4);
+    assert_eq!(preset(&s).name, "Physical vehicle");
     s.guided.name = TextEdit::new("Bench quad");
     mark_prepared(&mut s);
     assert_eq!(s.systems.list.len(), 4, "no new system");
@@ -98,10 +98,8 @@ fn the_physical_endpoint_from_first_run_is_saved_with_the_system() {
     run::act(&mut s);
     assert!(s.guided.awaiting);
     assert_eq!(
-        s.systems.current().source,
-        systems::Source::Physical {
-            endpoint: "udp:0.0.0.0:14550".into()
-        }
+        s.systems.current().vehicle,
+        systems::Vehicle::physical("udp:0.0.0.0:14550")
     );
 }
 
@@ -120,7 +118,7 @@ fn ros_publishers_need_application_topics_from_a_ready_px4_and_dds_agent() {
 
     // A migrated 0.8 ROS system runs PX4 SIH, which must also report ready.
     let id = s.systems.active_id().to_string();
-    s.systems.get_mut(&id).unwrap().source = systems::Source::Sih;
+    s.systems.get_mut(&id).unwrap().vehicle = systems::Vehicle::sih();
     s.recorder.discovered = vec![
         topic("/rosout"),
         topic("/parameter_events"),
@@ -168,7 +166,7 @@ fn ros_finalize_needs_a_finalized_recording_with_messages() {
 #[test]
 fn a_running_queue_selects_the_system_it_installs_for() {
     let mut s = State::new();
-    s.setup.workflow = PRESET[systems::ROS];
+    s.setup.workflow = template_preset(systems::ROS);
     setup::batch::preview(&mut s);
     assert!(s.setup.batch.is_some());
     open(&mut s);

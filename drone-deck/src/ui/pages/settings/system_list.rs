@@ -34,9 +34,9 @@ pub(super) fn save_editor(s: &mut State) {
     };
     // Shown in the editor and repeated on save; it never blocks saving.
     let caution = d.caution();
-    if next.source != base.source && systems::owns_work(s, &base.id) {
+    if next.vehicle != base.vehicle && systems::owns_work(s, &base.id) {
         draft(s).error = format!(
-            "{} has running work. Stop its session before changing the source; name and consumers can change now.",
+            "{} has running work. Stop its session before changing the vehicle; name and consumers can change now.",
             base.label()
         );
         return;
@@ -303,7 +303,7 @@ pub(super) fn section(s: &State, compact: bool) -> El {
         .pt(if compact { 8. } else { 16. })
         .child(section_head("Systems", right, compact))
         .child(notice(
-            "A system is one vehicle source and what it feeds. Switching systems never stops anything: running work stays with the system that started it, and Stop session stops all of it.",
+            "A system is one vehicle (a simulated autopilot in a world, a physical vehicle or a recording) and what it feeds. Switching systems never stops anything: running work stays with the system that started it, and Stop session stops all of it.",
         ).max_w(760.).pb(8.))
         .child(list)
 }

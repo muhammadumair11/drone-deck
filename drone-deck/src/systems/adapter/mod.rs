@@ -17,10 +17,55 @@ use crate::State;
 pub(crate) use table::ALL;
 
 /// The flight stacks Drone Deck knows how to start and talk to.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub(crate) enum AutopilotKind {
+    #[serde(rename = "px4")]
     Px4,
+    #[serde(rename = "ardupilot")]
     ArduPilot,
+}
+/// The autopilots in the order the editor offers them.
+pub(crate) const AUTOPILOTS: [AutopilotKind; 2] = [AutopilotKind::Px4, AutopilotKind::ArduPilot];
+
+pub(crate) fn autopilot_name(kind: AutopilotKind) -> &'static str {
+    match kind {
+        AutopilotKind::Px4 => "PX4",
+        AutopilotKind::ArduPilot => "ArduPilot",
+    }
+}
+
+/// The worlds systems can name: id, name, one line about it. A world is offered for every
+/// autopilot; the ones without an adapter for it say so instead of being hidden.
+pub(crate) const WORLDS: [(&str, &str, &str); 2] = [
+    (
+        "internal",
+        "Built-in physics",
+        "The autopilot's own simulation (PX4 SIH, ArduPilot SITL). No world to install.",
+    ),
+    (
+        "gazebo",
+        "Gazebo Harmonic",
+        "A 3D world with sensors such as cameras. Needs Gazebo in WSL.",
+    ),
+];
+
+/// Why `autopilot` cannot fly in `world` in this version, or the adapter that runs it.
+pub(crate) fn world_for(autopilot: AutopilotKind, world: &str) -> Result<&'static Adapter, String> {
+    find(autopilot, world).ok_or_else(|| {
+        let others: Vec<&str> = ALL
+            .iter()
+            .filter(|a| a.world == world)
+            .map(|a| autopilot_name(a.autopilot))
+            .collect();
+        if others.is_empty() {
+            format!(
+                "No {} adapter for this world yet.",
+                autopilot_name(autopilot)
+            )
+        } else {
+            format!("{} only in this version.", others.join(", "))
+        }
+    })
 }
 
 /// How the staged launch knows a stage is ready.
@@ -74,10 +119,21 @@ pub(crate) struct Ros {
     pub extra: &'static [&'static str],
 }
 
+/// Where a system keeps a `Param`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Scope {
+    /// In the world (`World::params`), such as the Gazebo world and model.
+    World,
+    /// On the autopilot, such as the ArduPilot vehicle.
+    Autopilot,
+}
+
 /// A world or vehicle detail the system chooses, passed to the launch as `env`.
 #[derive(Debug)]
 pub(crate) struct Param {
     pub key: &'static str,
+    pub label: &'static str,
+    pub scope: Scope,
     pub default: &'static str,
     pub env: &'static str,
     /// The value as the launch command expects it.
@@ -87,6 +143,8 @@ pub(crate) struct Param {
 #[derive(Debug)]
 pub(crate) struct Adapter {
     pub id: &'static str,
+    /// How lists name a system on this adapter.
+    pub name: &'static str,
     pub autopilot: AutopilotKind,
     /// The world id systems store (`internal` is the autopilot's own physics).
     pub world: &'static str,
@@ -94,6 +152,8 @@ pub(crate) struct Adapter {
     pub link: Link,
     pub ros: Option<Ros>,
     pub params: &'static [Param],
+    /// Setup recipes (`scripts/setup/catalog.json`) the simulator needs, in install order.
+    pub recipes: &'static [&'static str],
     /// Whether the autopilot answers the MAVLink shell (PX4 does, ArduPilot does not).
     pub shell: bool,
 }

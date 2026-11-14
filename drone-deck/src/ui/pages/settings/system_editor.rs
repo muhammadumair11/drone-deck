@@ -1,6 +1,9 @@
-//! The inline editor of one system: name, source with its details, and consumers.
+//! The inline editor of one system: name, vehicle (an autopilot in a world, a physical
+//! vehicle or a recording) with its details, and consumers.
 use super::*;
-use crate::systems::{Draft, SOURCES, System};
+use crate::systems::adapter::{self, AUTOPILOTS, WORLDS};
+use crate::systems::compat::Consumer;
+use crate::systems::{Draft, System, VEHICLES};
 
 fn draft(s: &mut State) -> &mut Draft {
     s.systems.editor.get_or_insert_with(Draft::default)
@@ -29,37 +32,105 @@ fn pair(a: El, b: El, compact: bool) -> El {
         .child(col().grow(1.).w(0.).min_w(0.).child(b))
 }
 
-fn source_details(d: &Draft, compact: bool) -> El {
-    let note = |t: &str| p(t, 11.).max_w(620.);
-    match d.source {
-        1 => col()
-            .w_full()
-            .min_w(0.)
-            .gap(12.)
-            .child(pair(
-                text_field(&d.world, "system-world", "Gazebo world", "default", |s| {
-                    &mut draft(s).world
-                }),
-                text_field(&d.model, "system-model", "Vehicle model", "x500_mono_cam", |s| {
-                    &mut draft(s).model
-                }),
-                compact,
-            ))
-            .child(note(
-                "Saved with the system. x500_mono_cam carries a camera; the launch profile still decides the command that runs.",
-            )),
-        2 => col()
-            .w_full()
-            .min_w(0.)
-            .gap(12.)
-            .child(
-                text_field(&d.vehicle, "system-vehicle", "ArduPilot vehicle", "copter", |s| {
-                    &mut draft(s).vehicle
-                })
-                .max_w(440.),
+/// The details the chosen adapter takes, two to a row (keys `system-param-<key>`).
+fn params(d: &Draft, compact: bool) -> El {
+    let Some(a) = d.adapter() else {
+        return el();
+    };
+    let field = |p: &'static adapter::Param| {
+        let key = p.key;
+        text_field(
+            &d.params[key],
+            &format!("system-param-{key}"),
+            p.label,
+            p.default,
+            move |s| {
+                draft(s)
+                    .params
+                    .get_mut(key)
+                    .expect("every adapter param has a field")
+            },
+        )
+    };
+    let mut out = col().w_full().min_w(0.).gap(16.);
+    for pair_of in a.params.chunks(2) {
+        out = out.child(match pair_of {
+            [one, two] => pair(field(one), field(two), compact),
+            [one] => field(one).max_w(440.),
+            _ => el(),
+        });
+    }
+    out
+}
+
+/// Autopilot tabs (`system-autopilot-<i>`) and world rows (`system-world-<id>`). A world
+/// without an adapter for the chosen autopilot stays listed, disabled, with the reason.
+fn simulated(d: &Draft, base: &System, compact: bool) -> El {
+    let names: Vec<&str> = AUTOPILOTS
+        .iter()
+        .map(|k| adapter::autopilot_name(*k))
+        .collect();
+    let current = AUTOPILOTS
+        .iter()
+        .position(|k| *k == d.autopilot)
+        .unwrap_or(0);
+    let mut worlds = col().w_full().min_w(0.).max_w(620.);
+    for (id, name, about) in WORLDS {
+        let ok = adapter::world_for(d.autopilot, id);
+        let detail = match &ok {
+            Ok(_) => about.to_string(),
+            Err(why) => why.clone(),
+        };
+        worlds = worlds.child(crate::setup::option_row(
+            format!("system-world-{id}"),
+            name,
+            &detail,
+            d.world == id,
+            ok.is_ok(),
+            move |s| draft(s).world = id.to_string(),
+        ));
+    }
+    let mut out = col()
+        .w_full()
+        .min_w(0.)
+        .gap(12.)
+        .child(caps("Autopilot", 10., 400., 0.08, muted()))
+        .child(tabs(
+            "system-autopilot",
+            &names,
+            current,
+            |s: &mut State, i| {
+                draft(s).autopilot = AUTOPILOTS[i];
+            },
+        ))
+        .child(caps("World", 10., 400., 0.08, muted()))
+        .child(worlds);
+    match adapter::world_for(d.autopilot, &d.world) {
+        Ok(_) => out = out.child(params(d, compact)),
+        Err(why) => {
+            let kept = matches!(&base.vehicle, crate::systems::Vehicle::Simulated { autopilot, world }
+                if autopilot.kind() == d.autopilot && world.id == d.world);
+            let next = if kept {
+                "Saving keeps it as it is, but it cannot start in this version."
+            } else {
+                "Choose another world."
+            };
+            out = out.child(
+                body(format!("{why} {next}"), 11., warn())
+                    .key("system-world-unsupported")
+                    .role("status")
+                    .wrap()
+                    .max_w(620.),
             )
-            .child(note("copter, plane or rover. ArduPilot SITL cannot run beside another simulator.")),
-        3 => col()
+        }
+    }
+    out
+}
+
+fn vehicle_details(d: &Draft, base: &System, compact: bool) -> El {
+    let note = |t: &str| p(t, 11.).max_w(620.);
+    match d.vehicle {
+        1 => col()
             .w_full()
             .min_w(0.)
             .gap(12.)
@@ -76,7 +147,7 @@ fn source_details(d: &Draft, compact: bool) -> El {
             .child(note(
                 "serial:COM4:115200, udp:0.0.0.0:14550 or tcp:192.168.4.1:5760. Making the system active fills the connection's endpoint. Drone Deck itself only sends read requests; QGroundControl or scripts enabled below can command the vehicle through the link.",
             )),
-        4 => col()
+        2 => col()
             .w_full()
             .min_w(0.)
             .gap(12.)
@@ -91,14 +162,13 @@ fn source_details(d: &Draft, compact: bool) -> El {
                 .max_w(440.),
             )
             .child(note("Replay runs on a separate ROS domain so it never mixes with live topics.")),
-        _ => note("PX4 software-in-the-loop with internal physics. No world or model to choose."),
+        _ => simulated(d, base, compact),
     }
 }
 
 fn consumers(d: &Draft, compact: bool) -> El {
-    let live = match d.source {
-        3 => "Live view / vehicle link and tlog",
-        4 => "Live view",
+    let live = match d.vehicle {
+        1 => "Live view / vehicle link and tlog",
         _ => "Live view / native vehicle link on the System page",
     };
     let toggle = |key: &str, name: &str, on: bool, f: fn(&mut Draft)| {
@@ -110,12 +180,12 @@ fn consumers(d: &Draft, compact: bool) -> El {
         d.qgc,
         |d| d.qgc = !d.qgc,
     ));
-    if matches!(d.source, 0 | 3) {
+    if d.feeds(Consumer::LiveView) {
         boxes = boxes.child(toggle("consumer-live-view", live, d.live_view, |d| {
             d.live_view = !d.live_view
         }));
     }
-    if matches!(d.source, 0..=2) {
+    if d.feeds(Consumer::RosAgent) {
         boxes = boxes.child(toggle(
             "consumer-ros-agent",
             "ROS 2 bridge / DDS Agent",
@@ -139,7 +209,7 @@ fn consumers(d: &Draft, compact: bool) -> El {
         .child(toggle("consumer-foxglove", "Foxglove", d.foxglove, |d| {
             d.foxglove = !d.foxglove
         }));
-    if d.source != 4 {
+    if d.feeds(Consumer::Scripts) {
         boxes = boxes.child(toggle(
             "consumer-scripts",
             "User scripts / MAVLink over UDP (two-way)",
@@ -148,7 +218,7 @@ fn consumers(d: &Draft, compact: bool) -> El {
         ));
     }
     let mut fields = col().w_full().min_w(0.).gap(16.);
-    if (d.ros_agent && matches!(d.source, 0..=2)) || d.recorder {
+    if (d.ros_agent && d.feeds(Consumer::RosAgent)) || d.recorder {
         fields = fields.child(text_field(
             &d.domain,
             "system-domain",
@@ -166,7 +236,7 @@ fn consumers(d: &Draft, compact: bool) -> El {
             |s| &mut draft(s).project,
         ));
     }
-    if d.scripts && d.source != 4 {
+    if d.scripts && d.feeds(Consumer::Scripts) {
         fields = fields.child(text_field(
             &d.scripts_udp,
             "system-scripts",
@@ -193,7 +263,7 @@ fn consumers(d: &Draft, compact: bool) -> El {
         }
     }
     let consumers = pair(boxes, fields, compact);
-    if d.source == 3 && (d.qgc || d.scripts) {
+    if d.vehicle == 1 && (d.qgc || d.scripts) {
         return col().w_full().min_w(0.).gap(12.).child(consumers).child(
             body(BRIDGE_WARNING, 11., warn())
                 .key("system-bridge-warning")
@@ -211,9 +281,14 @@ pub(super) fn view(s: &State, sys: &System, compact: bool) -> El {
     let Some(d) = s.systems.editor.as_ref() else {
         return el();
     };
-    let source_tabs = tabs("system-source", &SOURCES, d.source, |s: &mut State, i| {
-        draft(s).source = i;
-    });
+    let vehicle_tabs = tabs(
+        "system-vehicle",
+        &VEHICLES,
+        d.vehicle,
+        |s: &mut State, i| {
+            draft(s).vehicle = i;
+        },
+    );
     col()
         .key("system-editor")
         .w_full()
@@ -228,9 +303,9 @@ pub(super) fn view(s: &State, sys: &System, compact: bool) -> El {
             col()
                 .w_full()
                 .min_w(0.)
-                .child(caps("Source", 10., 400., 0.08, muted()))
-                .child(source_tabs)
-                .child(source_details(d, compact)),
+                .child(caps("Vehicle", 10., 400., 0.08, muted()))
+                .child(vehicle_tabs)
+                .child(vehicle_details(d, sys, compact)),
         )
         .child(
             col()
@@ -247,7 +322,7 @@ pub(super) fn view(s: &State, sys: &System, compact: bool) -> El {
                 .w_full(),
         )
         .child(notice(format!(
-            "Template {}. Components, connections and the workspace launch follow the source and consumers; nothing is installed or started by saving.",
+            "Template {}. Components, connections and the workspace launch follow the vehicle and consumers; nothing is installed or started by saving.",
             crate::systems::KINDS[sys.template_index()]
         )))
         .child(

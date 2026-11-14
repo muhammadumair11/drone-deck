@@ -1,6 +1,10 @@
 use super::model::{self, Consumers, Inference, Ros, TEMPLATE_IDS, template};
 use super::*;
 
+fn set(d: &mut Draft, key: &str, value: &str) {
+    *d.params.get_mut(key).unwrap() = rune::TextEdit::new(value);
+}
+
 fn ids(sys: &System) -> Vec<&'static str> {
     components(sys).iter().map(|c| c.id).collect()
 }
@@ -13,7 +17,7 @@ fn schema_1_migrates_to_four_systems_keeping_names_prepared_flags_and_active() {
     let v1 = br#"{"active":3,"records":[{"name":"Lab","prepared":true},{"name":"","prepared":true},{"name":"Models","prepared":false},{"name":"Bench quad","prepared":true}]}"#;
     let (f, migrated) = file::parse(v1).unwrap().unwrap();
     assert!(migrated);
-    assert_eq!(f.schema, 2);
+    assert_eq!(f.schema, 3);
     assert_eq!(f.systems.len(), 4);
     let names: Vec<_> = f.systems.iter().map(|s| s.name.as_str()).collect();
     assert_eq!(
@@ -26,7 +30,7 @@ fn schema_1_migrates_to_four_systems_keeping_names_prepared_flags_and_active() {
     let kinds: Vec<_> = f.systems.iter().map(System::kind).collect();
     assert_eq!(kinds, [SIMULATION, ROS, AI, PHYSICAL]);
     // The 0.8 ROS system ran SIH with the DDS Agent; a migrated one keeps working that way.
-    assert_eq!(f.systems[ROS].source, Source::Sih);
+    assert_eq!(f.systems[ROS].vehicle, Vehicle::sih());
     assert_eq!(
         session_stages(&f.systems[ROS]),
         ["sih", "router", "link", "dds", "qgc"]
@@ -47,14 +51,15 @@ fn schema_1_without_records_and_an_out_of_range_index_still_migrates() {
 }
 
 #[test]
-fn schema_2_round_trips_and_newer_schemas_are_refused() {
+fn schema_3_round_trips_and_newer_schemas_are_refused() {
     let mut systems = Systems::default();
     let id = systems.create(ROS, "Camera lab");
     systems.set_active(&id);
     let json = serde_json::to_vec(&systems.to_file()).unwrap();
     let text = String::from_utf8(json.clone()).unwrap();
-    assert!(text.contains(r#""schema":2"#), "{text}");
-    assert!(text.contains(r#""kind":"gazebo""#), "{text}");
+    assert!(text.contains(r#""schema":3"#), "{text}");
+    assert!(text.contains(r#""kind":"simulated""#), "{text}");
+    assert!(text.contains(r#""id":"gazebo""#), "{text}");
     assert!(text.contains(r#""model":"x500_mono_cam""#), "{text}");
     let (back, migrated) = file::parse(&json).unwrap().unwrap();
     assert!(!migrated);
@@ -63,7 +68,7 @@ fn schema_2_round_trips_and_newer_schemas_are_refused() {
     assert_eq!(restored.active_id(), "camera-lab");
     assert_eq!(restored.active, ROS);
 
-    let err = file::parse(br#"{"schema":3,"active":"x","systems":[]}"#)
+    let err = file::parse(br#"{"schema":4,"active":"x","systems":[]}"#)
         .expect("readable, not damaged")
         .unwrap_err();
     assert!(err.contains("newer Drone Deck"), "{err}");
@@ -76,7 +81,7 @@ fn a_newer_systems_file_is_kept_in_place_and_never_overwritten() {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("systems.json");
-    let body = br#"{"schema":3,"active":"x","systems":[{"id":"x"}]}"#;
+    let body = br#"{"schema":4,"active":"x","systems":[{"id":"x"}]}"#;
     std::fs::write(&path, body).unwrap();
     let systems = Systems::load_at(&path);
     assert_eq!(systems.list, model::defaults(), "the defaults run");
@@ -108,7 +113,7 @@ fn a_hand_edited_file_is_repaired() {
     assert_eq!(ids, ["rig", "rig-2", "rig-3"]);
     assert_eq!(f.active, "rig");
     assert_eq!(f.systems[0].consumers, Consumers::default());
-    assert_eq!(f.systems[2].source, Source::Replay { recording: None });
+    assert_eq!(f.systems[2].vehicle, Vehicle::replay(None));
     let (empty, _) = file::parse(br#"{"schema":2,"active":"","systems":[]}"#)
         .unwrap()
         .unwrap();
@@ -122,22 +127,19 @@ fn a_hand_edited_file_is_repaired() {
 #[test]
 fn templates_reproduce_the_four_systems() {
     let sim = template(SIMULATION, "a", "A");
-    assert_eq!(sim.source, Source::Sih);
+    assert_eq!(sim.vehicle, Vehicle::sih());
     assert!(sim.consumers.qgc && sim.consumers.live_view);
     assert_eq!(ids(&sim), ["sih", "router", "link", "qgc", "scripts"]);
     assert_eq!(chain_ids(&sim), ["sih", "router", "link", "qgc"]);
     assert_eq!(session_stages(&sim), ["sih", "router", "link", "qgc"]);
     assert_eq!(session_stages(&sim), SESSIONS[SIMULATION]);
-    assert_eq!(preset(&sim), 0);
+    assert_eq!(
+        crate::setup::presets::for_system(&sim).name,
+        "PX4 SIH simulation"
+    );
 
     let ros = template(ROS, "b", "B");
-    assert_eq!(
-        ros.source,
-        Source::Gazebo {
-            world: "default".into(),
-            model: "x500_mono_cam".into()
-        }
-    );
+    assert_eq!(ros.vehicle, Vehicle::gazebo("default", "x500_mono_cam"));
     assert!(ros.consumers.ros.agent && ros.consumers.ros.recorder && ros.consumers.foxglove);
     assert_eq!(
         ids(&ros),
@@ -151,14 +153,20 @@ fn templates_reproduce_the_four_systems() {
         ["gazebo", "router", "link", "dds", "rosgz", "qgc"]
     );
     assert_eq!(session_stages(&ros), SESSIONS[ROS]);
-    assert_eq!(preset(&ros), 1);
+    assert_eq!(
+        crate::setup::presets::for_system(&ros).name,
+        "PX4 + Gazebo with ROS 2 and recordings"
+    );
 
     let ai = template(AI, "c", "C");
-    assert_eq!(ai.source, Source::Replay { recording: None });
+    assert_eq!(ai.vehicle, Vehicle::replay(None));
     assert_eq!(ai.consumers.inference, Some(Inference::default()));
     assert_eq!(chain_ids(&ai), ["onnx", "project", "pipelines"]);
     assert!(session_stages(&ai).is_empty());
-    assert_eq!(preset(&ai), 3);
+    assert_eq!(
+        crate::setup::presets::for_system(&ai).name,
+        "Offline CPU inference"
+    );
 
     let physical = template(PHYSICAL, "d", "D");
     assert!(!physical.consumers.qgc, "QGroundControl is optional");
@@ -167,7 +175,10 @@ fn templates_reproduce_the_four_systems() {
         session_stages(&physical).is_empty(),
         "a physical link is no launch"
     );
-    assert_eq!(preset(&physical), 4);
+    assert_eq!(
+        crate::setup::presets::for_system(&physical).name,
+        "Physical vehicle"
+    );
     assert_eq!(
         [sim.kind(), ros.kind(), ai.kind(), physical.kind()],
         [SIMULATION, ROS, AI, PHYSICAL]
@@ -175,7 +186,7 @@ fn templates_reproduce_the_four_systems() {
 }
 
 #[test]
-fn components_chain_and_stages_follow_source_and_consumers() {
+fn components_chain_and_stages_follow_vehicle_and_consumers() {
     let mut sys = template(SIMULATION, "x", "X");
     sys.consumers.live_view = false;
     sys.consumers.scripts_udp = None;
@@ -190,7 +201,11 @@ fn components_chain_and_stages_follow_source_and_consumers() {
     assert_eq!(sys.kind(), ROS);
     assert_eq!(chain_ids(&sys), ["sih", "dds", "ros2"]);
     assert_eq!(session_stages(&sys), ["sih", "router", "link", "dds"]);
-    assert_eq!(preset(&sys), 5, "SIH with ROS needs no Gazebo");
+    assert_eq!(
+        crate::setup::presets::for_system(&sys).recipes,
+        ["px4", "ros2", "dds", "ros-workspace"],
+        "SIH with ROS needs no Gazebo, and QGroundControl is off here"
+    );
     sys.consumers.live_view = true;
     assert_eq!(
         session_stages(&sys),
@@ -198,9 +213,7 @@ fn components_chain_and_stages_follow_source_and_consumers() {
         "the live view needs no process"
     );
 
-    sys.source = Source::ArduPilot {
-        vehicle: "plane".into(),
-    };
+    sys.vehicle = Vehicle::ardupilot("plane");
     assert_eq!(vehicle_profile(&sys), Some("ardupilot"));
     assert_eq!(
         session_stages(&sys),
@@ -208,16 +221,18 @@ fn components_chain_and_stages_follow_source_and_consumers() {
         "ArduPilot SITL serves TCP 5760 itself; no router"
     );
     assert_eq!(chain_ids(&sys), ["ardupilot", "dds", "ros2"]);
-    assert_eq!(preset(&sys), 2);
+    assert_eq!(
+        crate::setup::presets::for_system(&sys).recipes,
+        ["ardupilot"],
+        "no QGroundControl consumer here"
+    );
     assert!(!ids(&sys).contains(&"router"));
     sys.consumers.ros.agent = false;
     sys.consumers.qgc = true;
     assert_eq!(chain_ids(&sys), ["ardupilot", "link", "qgc"]);
     assert_eq!(session_stages(&sys), ["ardupilot", "link", "qgc"]);
 
-    sys.source = Source::Physical {
-        endpoint: "udp:0.0.0.0:14550".into(),
-    };
+    sys.vehicle = Vehicle::physical("udp:0.0.0.0:14550");
     sys.consumers = Consumers {
         qgc: true,
         ..Default::default()
@@ -226,7 +241,7 @@ fn components_chain_and_stages_follow_source_and_consumers() {
     assert_eq!(ids(&sys), ["endpoint", "link", "tlog", "qgc"]);
     assert!(session_stages(&sys).is_empty());
 
-    sys.source = Source::Replay { recording: None };
+    sys.vehicle = Vehicle::replay(None);
     sys.consumers.ros.recorder = true;
     assert_eq!(ids(&sys).iter().filter(|i| **i == "mcap").count(), 1);
     assert_eq!(chain_ids(&sys), ["mcap"]);
@@ -300,37 +315,31 @@ fn kind_lookups_answer_for_the_active_system() {
         Some("offline-ai")
     );
     assert_eq!(systems.resolve(Pick::Id("nope")), None);
-    systems.get_mut(&id).unwrap().source = Source::Sih;
+    systems.get_mut(&id).unwrap().vehicle = Vehicle::sih();
     systems.changed();
     assert_eq!(
         systems.active, SIMULATION,
-        "the kind follows an edited source"
+        "the kind follows an edited vehicle"
     );
 }
 
 #[test]
-fn the_editor_validates_source_details_and_consumers() {
+fn the_editor_validates_vehicle_details_and_consumers() {
     let base = template(SIMULATION, "lab", "Lab");
     let mut d = Draft::of(&base);
     assert_eq!(d.apply(&base).unwrap(), base);
-    d.source = 1;
-    d.world = rune::TextEdit::new("baylands");
+    d.world = "gazebo".into();
+    set(&mut d, "world", "baylands");
     let gz = d.apply(&base).unwrap();
-    assert_eq!(
-        gz.source,
-        Source::Gazebo {
-            world: "baylands".into(),
-            model: "x500_mono_cam".into()
-        }
-    );
-    d.model = rune::TextEdit::new("x500 cam");
+    assert_eq!(gz.vehicle, Vehicle::gazebo("baylands", "x500_mono_cam"));
+    set(&mut d, "model", "x500 cam");
     assert!(
         d.apply(&base)
             .unwrap_err()
-            .contains("Gazebo world and model")
+            .contains("Vehicle model is a name such as x500_mono_cam")
     );
 
-    d.source = 3;
+    d.vehicle = 1;
     d.endpoint = rune::TextEdit::new("COM4");
     assert!(d.apply(&base).is_err());
     for ok in [
@@ -342,7 +351,8 @@ fn the_editor_validates_source_details_and_consumers() {
         d.endpoint = rune::TextEdit::new(ok);
         assert!(d.apply(&base).is_ok(), "{ok}");
     }
-    d.source = 0;
+    d.vehicle = 0;
+    d.world = "internal".into();
     d.ros_agent = true;
     d.domain = rune::TextEdit::new("300");
     assert!(d.apply(&base).unwrap_err().contains("ROS domain"));
@@ -414,9 +424,7 @@ fn switching_while_work_runs_keeps_it_with_the_system_that_started_it() {
 fn a_physical_system_fills_the_monitor_endpoint_when_selected() {
     let mut s = State::new();
     let id = s.systems.create(PHYSICAL, "Rig");
-    s.systems.get_mut(&id).unwrap().source = Source::Physical {
-        endpoint: "serial:COM7:57600".into(),
-    };
+    s.systems.get_mut(&id).unwrap().vehicle = Vehicle::physical("serial:COM7:57600");
     assert!(s.select_system(&id));
     assert_eq!(s.hardware.mode, 1);
     assert_eq!(s.hardware.endpoint.text, "serial:COM7:57600");
@@ -425,13 +433,13 @@ fn a_physical_system_fills_the_monitor_endpoint_when_selected() {
 }
 
 #[test]
-fn the_editor_drops_consumers_it_hides_for_the_source() {
+fn the_editor_drops_consumers_it_hides_for_the_vehicle() {
     let base = template(SIMULATION, "lab", "Lab");
     let mut d = Draft::of(&base);
     d.ros_agent = true;
     d.domain = rune::TextEdit::new("not a number");
     // Physical hides the ROS bridge; Replay hides live view and scripts.
-    d.source = 3;
+    d.vehicle = 1;
     let sys = d.apply(&base).expect("a hidden domain is not validated");
     assert!(
         !sys.consumers.ros.agent,
@@ -439,33 +447,37 @@ fn the_editor_drops_consumers_it_hides_for_the_source() {
     );
     assert!(sys.consumers.live_view, "physical keeps its live view");
     assert_eq!(sys.consumers.ros.domain, base.consumers.ros.domain);
-    d.source = 4;
+    d.vehicle = 2;
     let sys = d.apply(&base).unwrap();
     assert!(!sys.consumers.live_view && sys.consumers.scripts_udp.is_none());
     assert_eq!(sys.consumers_summary(), "QGroundControl");
-    d.source = 1;
+    d.vehicle = 0;
+    d.world = "gazebo".into();
     assert!(
         d.apply(&base).unwrap_err().contains("ROS domain"),
         "a shown domain is validated"
     );
     d.domain = rune::TextEdit::new("5");
     let sys = d.apply(&base).unwrap();
-    assert!(!sys.consumers.live_view, "Gazebo has no live-view toggle");
+    assert!(
+        sys.consumers.live_view,
+        "every live vehicle can feed the live view"
+    );
     assert!(sys.consumers.ros.agent);
     assert_eq!(sys.consumers.ros.domain, 5);
 }
 
 #[test]
-fn source_details_reject_paths_options_and_bad_ports() {
+fn vehicle_details_reject_paths_options_and_bad_ports() {
     let base = template(SIMULATION, "lab", "Lab");
     let mut d = Draft::of(&base);
-    d.source = 1;
+    d.world = "gazebo".into();
     for bad in ["..", "-world", "../etc", ".hidden", ""] {
-        d.world = rune::TextEdit::new(bad);
+        set(&mut d, "world", bad);
         assert!(d.apply(&base).is_err(), "world {bad:?}");
     }
-    d.world = rune::TextEdit::new("default");
-    d.source = 3;
+    set(&mut d, "world", "default");
+    d.vehicle = 1;
     for bad in [
         "serial:COM4;calc:57600",
         "serial:COM4:0",
@@ -586,7 +598,7 @@ fn a_physical_scripts_address_off_this_computer_is_cautioned_not_refused() {
 
     let base = template(PHYSICAL, "rig", "Rig");
     let mut d = Draft::of(&base);
-    d.source = 3;
+    d.vehicle = 1;
     d.scripts = true;
     d.scripts_udp = rune::TextEdit::new("127.0.0.1:14540");
     assert_eq!(d.caution(), None);
@@ -603,13 +615,13 @@ fn a_physical_scripts_address_off_this_computer_is_cautioned_not_refused() {
     d.scripts = false;
     assert_eq!(d.caution(), None, "scripts off");
     d.scripts = true;
-    d.source = 0;
+    d.vehicle = 0;
     assert_eq!(
         d.caution(),
         None,
         "a simulation is not a vehicle in the air"
     );
-    d.source = 3;
+    d.vehicle = 1;
     d.scripts_udp = rune::TextEdit::new("not an address");
     assert_eq!(d.caution(), None, "the address error comes first");
 }
@@ -620,7 +632,7 @@ fn a_physical_scripts_address_off_this_computer_is_cautioned_not_refused() {
 fn a_scripts_address_the_link_cannot_forward_to_is_refused_with_its_reason() {
     let base = template(PHYSICAL, "rig", "Rig");
     let mut d = Draft::of(&base);
-    d.source = 3;
+    d.vehicle = 1;
     d.scripts = true;
     for host in ["ground-pc:14540", "localhost:14540"] {
         d.scripts_udp = rune::TextEdit::new(host);

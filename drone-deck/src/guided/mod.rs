@@ -11,7 +11,8 @@ mod run;
 #[cfg(test)]
 mod tests;
 mod view;
-pub(crate) use content::{PRESET, STORIES};
+pub(crate) use content::STORIES;
+use setup::presets::{self, Preset};
 pub(crate) use view::{header, page};
 
 pub(crate) const CHAPTERS: [&str; 4] = ["Intention", "The system", "Preparation", "First run"];
@@ -95,7 +96,7 @@ impl Default for Guided {
 /// matches.
 pub(crate) fn batch_system(s: &State) -> Option<usize> {
     s.setup.batch.as_ref()?;
-    (0..PRESET.len()).find(|&k| PRESET[k] == s.setup.workflow)
+    (0..systems::KINDS.len()).find(|&k| template_preset(k) == s.setup.workflow)
 }
 
 /// The saved system this preparation updates, if any.
@@ -106,10 +107,15 @@ pub(crate) fn target(s: &State) -> Option<&systems::System> {
         .and_then(|id| s.systems.get(id))
 }
 
-/// The workflow preset for this preparation: the target system's source and consumers, or
+/// The workflow preset of template `kind`.
+pub(crate) fn template_preset(kind: usize) -> Preset {
+    presets::for_system(&systems::model::template(kind, "", ""))
+}
+
+/// The workflow preset for this preparation: the target system's vehicle and consumers, or
 /// the chosen template for a new system.
-pub(crate) fn preset(s: &State) -> usize {
-    target(s).map_or(PRESET[s.guided.choice.min(3)], systems::preset)
+pub(crate) fn preset(s: &State) -> Preset {
+    target(s).map_or_else(|| template_preset(s.guided.choice), presets::for_system)
 }
 
 /// Preparation for the active system, unless a running queue installs another template.
@@ -250,10 +256,10 @@ pub(crate) fn go(s: &mut State, chapter: usize) {
     s.ui.reset_scroll = true;
 }
 
-/// The primary tool's recipe id, which the optional existing location applies to.
-pub(crate) fn primary_tool(s: &State) -> &'static str {
-    let presets = setup::workflow::PRESETS;
-    presets[preset(s).min(presets.len() - 1)].1[0]
+/// The primary tool's recipe id, which the optional existing location applies to (empty
+/// when the preset installs nothing).
+pub(crate) fn primary_tool(s: &State) -> String {
+    preset(s).recipes.into_iter().next().unwrap_or_default()
 }
 
 /// The target system's id, creating it from the chosen template under the entered name
@@ -382,7 +388,7 @@ pub(crate) fn preview(s: &mut State, phase: &str) {
             host.wsl_ready = false;
         }
         "review" | "attention" => {
-            for (i, id) in setup::workflow::ids(s).iter().enumerate() {
+            for (i, id) in setup::workflow::ids(s).to_vec().iter().enumerate() {
                 s.setup.checks.insert(id.to_string(), found(id, i == 0));
             }
             if phase == "attention" {

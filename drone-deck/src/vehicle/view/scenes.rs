@@ -1,7 +1,7 @@
 //! Headless scenes of the vehicle panels, built on `vehicle::preview` (no network, no
 //! process). Each fixture is a fake snapshot; the status bar says the app is in preview.
 use crate::mavlink::{CommandKind, CommandResult, SimulationEvidence, StatusText};
-use crate::systems::{self, Source};
+use crate::systems::{self, Vehicle};
 use crate::{State, TextEdit, vehicle};
 use std::time::{Duration, Instant, SystemTime};
 
@@ -222,9 +222,7 @@ pub(crate) fn scene_launching(s: &mut State) {
 pub(crate) fn scene_ardupilot_console(s: &mut State) {
     let id = s.systems.create(systems::SIMULATION, "ArduPilot lab");
     if let Some(sys) = s.systems.get_mut(&id) {
-        sys.source = Source::ArduPilot {
-            vehicle: "copter".into(),
-        };
+        sys.vehicle = Vehicle::ardupilot("copter");
     }
     s.select_system(&id);
     s.systems.claim("ardupilot");

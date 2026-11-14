@@ -249,12 +249,12 @@ fn manual_windows_arguments_preserve_spaces_without_json_escaping() {
 #[test]
 fn check_progress_never_underflows_when_the_queue_outgrows_the_preset() {
     let mut s = State::new();
-    s.setup.workflow = 1;
+    s.setup.workflow = crate::guided::template_preset(crate::systems::ROS);
     s.setup.queue = workflow::ids(&s)
         .iter()
         .filter_map(|id| s.setup.recipe_index(id))
         .collect();
-    s.setup.workflow = 3;
+    s.setup.workflow = crate::guided::template_preset(crate::systems::AI);
     assert!(s.setup.queue.len() > workflow::ids(&s).len());
     assert_eq!(workflow::progress(&s), Some((0, workflow::ids(&s).len())));
 }
@@ -262,17 +262,25 @@ fn check_progress_never_underflows_when_the_queue_outgrows_the_preset() {
 #[test]
 fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
     let s = State::new();
-    for (name, ids) in workflow::PRESETS {
-        for id in *ids {
+    let mut systems: Vec<crate::systems::System> = (0..4)
+        .map(|k| crate::systems::model::template(k, "t", "T"))
+        .collect();
+    let mut ap = crate::systems::model::template(0, "a", "A");
+    ap.vehicle = crate::systems::Vehicle::ardupilot("copter");
+    systems.push(ap);
+    for sys in &systems {
+        let preset = super::presets::for_system(sys);
+        for id in &preset.recipes {
             assert!(
                 s.setup.recipe_index(id).is_some(),
-                "{name} needs unknown recipe {id}"
+                "{} needs unknown recipe {id}",
+                preset.name
             );
         }
     }
-    let names: Vec<_> = crate::guided::PRESET
+    let names: Vec<_> = systems
         .iter()
-        .map(|&i| workflow::PRESETS[i].0)
+        .map(|x| super::presets::for_system(x).name)
         .collect();
     assert_eq!(
         names,
@@ -281,6 +289,20 @@ fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
             "PX4 + Gazebo with ROS 2 and recordings",
             "Offline CPU inference",
             "Physical vehicle",
+            "ArduPilot development",
+        ]
+    );
+    // The template recipe lists are the fixed presets of earlier versions, in order.
+    assert_eq!(
+        super::presets::for_system(&systems[1]).recipes,
+        [
+            "px4",
+            "gazebo",
+            "ros2",
+            "ros-gz",
+            "dds",
+            "ros-workspace",
+            "qgc"
         ]
     );
 }
@@ -289,20 +311,17 @@ fn every_preset_names_catalog_recipes_and_each_system_keeps_its_workflow() {
 /// bridged both ways when enabled). A checkpoint saved under the old name still resumes.
 #[test]
 fn a_checkpoint_saved_under_the_old_physical_preset_name_still_resumes() {
-    let physical = workflow::preset_index("Physical vehicle").expect("current name");
-    assert_eq!(workflow::PRESETS[physical].0, "Physical vehicle");
+    use super::presets::resolve;
+    let physical = resolve("Physical vehicle", None).expect("current name");
+    assert_eq!(physical.recipes, ["qgc"]);
+    let old = resolve("Physical vehicle (read-only link)", None).expect("old name");
+    assert_eq!(old, physical);
+    assert_eq!(old.name, "Physical vehicle", "shown under its current name");
     assert_eq!(
-        workflow::preset_index("Physical vehicle (read-only link)"),
-        Some(physical)
+        resolve("PX4 SIH simulation", None).unwrap().recipes,
+        ["px4", "qgc"]
     );
-    assert_eq!(workflow::preset_index("PX4 SIH simulation"), Some(0));
-    assert_eq!(workflow::preset_index("Lightweight visual"), None);
-    assert!(
-        workflow::PRESETS
-            .iter()
-            .all(|(n, _)| !n.contains("read-only")),
-        "no preset claims a read-only link"
-    );
+    assert!(resolve("Lightweight visual", None).is_none());
 
     let saved = serde_json::json!({
         "app_version": env!("CARGO_PKG_VERSION"),
@@ -314,6 +333,7 @@ fn a_checkpoint_saved_under_the_old_physical_preset_name_still_resumes() {
     batch::resume(&mut s, &saved);
     assert!(s.setup.batch.is_some(), "{}", s.setup.batch_message);
     assert_eq!(s.setup.workflow, physical);
+    assert_eq!(s.setup.workflow.name, "Physical vehicle");
     assert!(s.setup.batch_message.starts_with("Resuming"));
 }
 

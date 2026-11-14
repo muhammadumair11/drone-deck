@@ -1,48 +1,12 @@
-//! Workflow presets: the tools a system needs, checked one at a time and listed for review.
+//! The current preset's tools (`presets`), checked one at a time and listed for review.
 use super::*;
 use crate::systems::Tone;
 use crate::ui::kit::*;
 use crate::ui::theme::*;
 
-pub(crate) const PRESETS: &[(&str, &[&str])] = &[
-    ("PX4 SIH simulation", &["px4", "qgc"]),
-    (
-        "PX4 + Gazebo with ROS 2 and recordings",
-        &[
-            "px4",
-            "gazebo",
-            "ros2",
-            "ros-gz",
-            "dds",
-            "ros-workspace",
-            "qgc",
-        ],
-    ),
-    ("ArduPilot development", &["ardupilot", "qgc"]),
-    ("Offline CPU inference", &["onnx"]),
-    ("Physical vehicle", &["qgc"]),
-    (
-        "PX4 SIH with ROS 2 and recordings",
-        &["px4", "ros2", "dds", "ros-workspace", "qgc"],
-    ),
-];
-
-/// Earlier names of presets (old name, current name). Checkpoints name their preset, so a
-/// checkpoint saved under an old name still resumes. "(read-only link)" was dropped because
-/// the preset installs QGroundControl, which is bridged both ways when enabled.
-const RENAMED: &[(&str, &str)] = &[("Physical vehicle (read-only link)", "Physical vehicle")];
-
-/// The position in [`PRESETS`] of the preset saved as `name`, current or earlier.
-pub(crate) fn preset_index(name: &str) -> Option<usize> {
-    let name = RENAMED
-        .iter()
-        .find(|(old, _)| *old == name)
-        .map_or(name, |(_, new)| new);
-    PRESETS.iter().position(|(n, _)| *n == name)
-}
-
-pub(crate) fn ids(s: &State) -> &'static [&'static str] {
-    PRESETS[s.setup.workflow.min(PRESETS.len() - 1)].1
+/// The recipe ids of the current preset (`presets`), in installation order.
+pub(crate) fn ids(s: &State) -> &[String] {
+    &s.setup.workflow.recipes
 }
 /// Any tool of the current preset runs inside WSL.
 pub(crate) fn needs_wsl(s: &State) -> bool {
