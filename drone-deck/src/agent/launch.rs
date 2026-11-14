@@ -137,7 +137,9 @@ impl Launcher {
             "key": p.id,
             "bash": p.args.join(" "),
             "env": env,
-            "readiness": if p.id == "sih" { json!("sih") } else { Value::Null },
+            "readiness": crate::systems::adapter::readiness_of(&p.id)
+                .agent_kind()
+                .map_or(Value::Null, Value::from),
         });
         let (tx, id) = (self.started_tx.clone(), p.id.clone());
         thread::spawn(move || {

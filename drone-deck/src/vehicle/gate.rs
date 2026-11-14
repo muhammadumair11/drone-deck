@@ -2,10 +2,7 @@
 //! own simulation. Everything else is read-only.
 use crate::State;
 use crate::mavlink::{Authority, LinkOrigin, SimulationEvidence, is_vehicle_heartbeat};
-use crate::systems::{self, Source};
-
-/// Simulator profiles. They share UDP 14550 and TCP 5760, so one runs at a time.
-pub(crate) const SIMULATORS: [&str; 3] = ["sih", "gazebo", "ardupilot"];
+use crate::systems::{self, adapter};
 
 /// What the app observes about the open link (see `SimulationEvidence`).
 pub(crate) fn evidence(s: &State) -> SimulationEvidence {
@@ -17,20 +14,22 @@ pub(crate) fn evidence(s: &State) -> SimulationEvidence {
         return SimulationEvidence::default();
     };
     let sys = s.systems.get(owner);
-    let ardupilot = sys.is_some_and(|x| matches!(x.source, Source::ArduPilot { .. }));
+    let direct = sys
+        .and_then(|x| x.adapter())
+        .is_some_and(|a| a.link == adapter::Link::Direct);
     // PX4 is reached through the router this app started, only while it reports itself up
     // (after an agent restart something else could be listening on TCP 5760) and has a
     // client: with none, the link reached another program on the Windows port.
     let own_port = if sys.is_some_and(systems::routed) {
         super::stage::router_up(s) && super::stage::router_has_client(s)
     } else {
-        ardupilot
+        direct
     };
     let app_router_link = v.sim
         && link.origin() == LinkOrigin::SimulatorRouter
         && own_port
         && foreign_vehicle(s).is_none();
-    let simulator_source = sys.is_some_and(|x| x.source.simulated());
+    let simulator_source = sys.is_some_and(|x| x.simulated());
     let stack_owned_running = sys.and_then(systems::vehicle_profile).is_some_and(|id| {
         s.status.get(id).is_some_and(|st| st == "Running") && s.systems.owner(id) == Some(owner)
     });
@@ -210,7 +209,7 @@ fn no_link(s: &State) -> String {
 /// checked off the UI thread (`port::check`): by the staged launch before each simulator and
 /// router stage, and by `port::start_conflict` for a direct start.
 pub(crate) fn simulator_conflict(s: &State, id: &str, for_system: &str) -> Option<String> {
-    if !SIMULATORS.contains(&id) {
+    if !adapter::is_simulator(id) {
         return None;
     }
     let name = |sim: &str| systems::component(sim).map_or(sim.to_string(), |c| c.name.into());
@@ -220,7 +219,7 @@ pub(crate) fn simulator_conflict(s: &State, id: &str, for_system: &str) -> Optio
             .and_then(|o| s.systems.get(o))
             .map_or_else(|| "another system".to_string(), |x| x.label().to_string())
     };
-    for other in SIMULATORS {
+    for other in adapter::simulator_profiles() {
         if !systems::running(s, other) {
             continue;
         }

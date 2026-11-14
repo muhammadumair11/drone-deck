@@ -386,7 +386,7 @@ pub(crate) fn live(s: &State, vp: &Viewport) -> El {
             "Workspace starting; the live view appears once the vehicle link is up."
         } else if s.vehicle.owned_by(active) {
             "Connecting to the vehicle link…"
-        } else if current.source.simulated() {
+        } else if current.simulated() {
             "No live link. Start the workspace to see the simulated vehicle here."
         } else {
             "No live link. Connect to see the vehicle here."

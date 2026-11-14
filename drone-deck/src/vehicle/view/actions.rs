@@ -202,7 +202,7 @@ fn modes(s: &State, enabled: bool) -> El {
 
 /// The flight actions bar (key `vehicle-actions`). Empty for a system that is not simulated.
 pub(crate) fn actions(s: &State, vp: &Viewport) -> El {
-    if !s.systems.current().source.simulated() {
+    if !s.systems.current().simulated() {
         return col();
     }
     let reason = blocked(s);

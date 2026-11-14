@@ -282,7 +282,7 @@ pub(crate) fn connect_sim(s: &mut State, owner: &str) -> Result<(), String> {
     if s.vehicle.owned_by(owner) && s.vehicle.sim {
         return Ok(());
     }
-    if !s.systems.get(owner).is_some_and(|x| x.source.simulated()) {
+    if !s.systems.get(owner).is_some_and(|x| x.simulated()) {
         return fail(
             s,
             "Only a simulated system opens the simulator link.".into(),
@@ -365,7 +365,8 @@ pub(crate) fn shell_unsupported(s: &State, id: &str) -> Option<&'static str> {
     let source = s
         .systems
         .get(id)
-        .is_some_and(|x| matches!(x.source, crate::systems::Source::ArduPilot { .. }));
+        .and_then(|x| x.adapter())
+        .is_some_and(|a| !a.shell);
     let heartbeat = s
         .vehicle
         .shown_for(id)

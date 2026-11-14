@@ -93,7 +93,7 @@ pub(crate) fn connected(s: &State) -> bool {
     let preview = s.headless
         && s.vehicle.preview.is_some()
         && s.vehicle.owner.as_deref() == Some(active)
-        && matches!(s.systems.current().source, systems::Source::Physical { .. });
+        && s.systems.current().is_physical();
     (s.vehicle.owned_by(active) || preview) && !s.vehicle.sim
 }
 

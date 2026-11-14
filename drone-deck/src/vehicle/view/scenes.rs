@@ -19,12 +19,12 @@ const PATH: [[f32; 2]; 7] = [
 ];
 
 fn simulation(s: &mut State) -> String {
-    if !s.systems.current().source.simulated() {
+    if !s.systems.current().simulated() {
         let id = s
             .systems
             .list
             .iter()
-            .find(|x| matches!(x.source, Source::Sih))
+            .find(|x| x.adapter().is_some_and(|a| a.id == "px4-sih"))
             .map(|x| x.id.clone());
         if let Some(id) = id {
             s.select_system(&id);
@@ -266,7 +266,7 @@ pub(crate) fn scene_readonly(s: &mut State) {
         .systems
         .list
         .iter()
-        .find(|x| matches!(x.source, Source::Physical { .. }))
+        .find(|x| x.is_physical())
         .map(|x| x.id.clone())
     {
         s.select_system(&id);

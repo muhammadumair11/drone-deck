@@ -1,6 +1,7 @@
 //! System connections: the planned chain, with a solid wire only where traffic was observed.
 use super::*;
-use systems::{Source, Tone};
+use systems::Tone;
+use systems::adapter::{self, Link, Readiness};
 #[cfg(test)]
 #[path = "topology_tests.rs"]
 mod tests;
@@ -37,24 +38,32 @@ fn link_up(s: &State) -> bool {
         && (s.vehicle.link.is_some() || s.headless)
 }
 
-/// The simulated vehicle is up: PX4 SIH reports ready, Gazebo or ArduPilot runs.
+/// The simulated vehicle is up by its adapter's readiness rule.
 fn vehicle_up(s: &State) -> bool {
-    match systems::vehicle_profile(s.systems.current()) {
-        Some("sih") => s.readiness.get("sih").is_some_and(|r| r == "Ready"),
-        Some(id) => s.status.get(id).is_some_and(|v| v == "Running"),
-        None => false,
-    }
+    systems::vehicle_profile(s.systems.current()).is_some_and(|id| adapter::ready(s, id))
+}
+
+/// Whether ROS topics under `prefix` were discovered.
+fn topics(s: &State, prefix: &str) -> bool {
+    s.recorder
+        .discovered
+        .iter()
+        .any(|t| t.name.starts_with(prefix))
 }
 
 /// Whether there is live evidence for the link `from → to`.
 fn observed(s: &State, from: &str, to: &str) -> bool {
-    let ready = |id: &str, value: &str| s.readiness.get(id).is_some_and(|r| r == value);
     let up = |id: &str| s.status.get(id).is_some_and(|v| v == "Running");
+    let sim = adapter::by_profile(from);
+    let ros = sim.and_then(|a| a.ros.as_ref());
     match (from, to) {
-        ("sih", "dds") => ready("sih", "Ready") && up(to),
-        ("sih" | "gazebo", "router") => vehicle_up(s) && router_forwarding(s),
+        (_, "router") if sim.is_some_and(|a| a.link == Link::Router) => {
+            vehicle_up(s) && router_forwarding(s)
+        }
         ("router", "link") => router_forwarding(s) && link_up(s) && fresh_heartbeats(s) > 0,
-        ("ardupilot", "link") => up(from) && link_up(s) && fresh_heartbeats(s) > 0,
+        (_, "link") if sim.is_some_and(|a| a.link == Link::Direct) => {
+            up(from) && link_up(s) && fresh_heartbeats(s) > 0
+        }
         ("link", "qgc") => {
             link_up(s)
                 && up("qgc")
@@ -65,33 +74,18 @@ fn observed(s: &State, from: &str, to: &str) -> bool {
                     })
                 })
         }
-        // Like SIH: a running simulator and Agent prove nothing until its topics are seen.
-        ("gazebo" | "ardupilot", "dds") => {
-            let prefix = if from == "ardupilot" { "/ap/" } else { "/fmu/" };
-            vehicle_up(s)
-                && up(to)
-                && s.recorder
-                    .discovered
-                    .iter()
-                    .any(|t| t.name.starts_with(prefix))
+        // A simulator whose readiness is its vehicle status proves the bridge with the Agent
+        // running; for the others a running simulator and Agent prove nothing until its
+        // topics are seen.
+        (_, _) if ros.is_some_and(|r| r.agent == to) => {
+            let status = matches!(adapter::readiness_of(from), Readiness::Px4Status { .. });
+            vehicle_up(s) && up(to) && (status || ros.is_some_and(|r| topics(s, r.topic_prefix)))
         }
         // The camera bridge counts once its camera topics are discovered.
-        ("gazebo", "rosgz") | ("rosgz", "ros2") => {
-            up("rosgz")
-                && s.recorder
-                    .discovered
-                    .iter()
-                    .any(|t| t.name.starts_with("/camera/"))
-        }
-        // Topic discovery counts only while PX4 is ready and the Agent runs.
-        ("dds", "ros2") => {
-            vehicle_up(s)
-                && up("dds")
-                && s.recorder
-                    .discovered
-                    .iter()
-                    .any(|t| t.name.starts_with("/fmu/"))
-        }
+        (_, "rosgz") if sim.is_some() => up("rosgz") && topics(s, "/camera/"),
+        ("rosgz", "ros2") => up("rosgz") && topics(s, "/camera/"),
+        // Topic discovery counts only while the vehicle is ready and the Agent runs.
+        ("dds", "ros2") => vehicle_up(s) && up("dds") && topics(s, "/fmu/"),
         ("ros2", "mcap") => s.recorder.recording,
         ("onnx", "project") => project_running(s),
         ("endpoint", "link") => link_up(s) && fresh_heartbeats(s) > 0,
@@ -191,10 +185,10 @@ fn branches(s: &State, vp: &Viewport) -> Option<El> {
     let compact = vp.compact();
     let sys = s.systems.current();
     let c = &sys.consumers;
-    let physical = matches!(sys.source, Source::Physical { .. });
-    let autopilot = match sys.source {
-        Source::ArduPilot { .. } => "ArduPilot",
-        Source::Physical { .. } => "Vehicle",
+    let physical = sys.is_physical();
+    let autopilot = match sys.autopilot() {
+        _ if physical => "Vehicle",
+        Some(adapter::AutopilotKind::ArduPilot) => "ArduPilot",
         _ => "PX4",
     };
     // With ROS the chain shows the DDS path; MAVLink still runs through the router and link.
@@ -242,7 +236,11 @@ fn branches(s: &State, vp: &Viewport) -> Option<El> {
             compact,
         ));
     }
-    if c.ros.agent && matches!(sys.source, Source::Gazebo { .. }) {
+    let camera = sys
+        .adapter()
+        .and_then(|a| a.ros.as_ref())
+        .is_some_and(|r| r.extra.contains(&"rosgz"));
+    if c.ros.agent && camera {
         let (label, tone) = systems::profile_state(s, "rosgz");
         let seen = observed(s, "rosgz", "ros2");
         let (_, action) = profile_branch(
@@ -305,25 +303,25 @@ fn branches(s: &State, vp: &Viewport) -> Option<El> {
 
 fn caveat(s: &State) -> String {
     let sys = s.systems.current();
-    match &sys.source {
-        Source::Physical { .. } => {
-            let link = if systems::physical_bridge(sys) {
-                "Drone Deck only sends read requests; QGroundControl/scripts enabled for this system can command the vehicle through the link."
-            } else {
-                "The link is read-only."
-            };
-            match fresh_heartbeats(s) {
-                0 => format!(
-                    "No physical vehicle identified. A fresh autopilot heartbeat is required. {link}"
-                ),
-                n => format!(
-                    "{n} vehicle{} identified by a fresh autopilot heartbeat. {link}",
-                    if n == 1 { "" } else { "s" }
-                ),
-            }
+    if sys.is_physical() {
+        let link = if systems::physical_bridge(sys) {
+            "Drone Deck only sends read requests; QGroundControl/scripts enabled for this system can command the vehicle through the link."
+        } else {
+            "The link is read-only."
+        };
+        match fresh_heartbeats(s) {
+            0 => format!(
+                "No physical vehicle identified. A fresh autopilot heartbeat is required. {link}"
+            ),
+            n => format!(
+                "{n} vehicle{} identified by a fresh autopilot heartbeat. {link}",
+                if n == 1 { "" } else { "s" }
+            ),
         }
-        Source::Replay { .. } => "A prepared runtime does not establish model compatibility. Choose a model and prepared inputs for a project in Data & models.".into(),
-        _ => "Dashed lines describe intended routing; a solid line marks observed traffic. A running process does not prove vehicle readiness or message arrival.".into(),
+    } else if sys.is_replay() {
+        "A prepared runtime does not establish model compatibility. Choose a model and prepared inputs for a project in Data & models.".into()
+    } else {
+        "Dashed lines describe intended routing; a solid line marks observed traffic. A running process does not prove vehicle readiness or message arrival.".into()
     }
 }
 
@@ -341,13 +339,13 @@ pub(super) fn section(s: &State, vp: &Viewport) -> El {
             vp.compact(),
         ))
         .child(
-            meta_sized(format!("Source / {}", sys.source.summary()), 9., muted())
+            meta_sized(format!("Source / {}", sys.summary()), 9., muted())
                 .key("system-source")
                 .wrap()
                 .pb(12.),
         )
         .child(chain(s, vp));
-    if !matches!(sys.source, Source::Replay { .. }) {
+    if !sys.is_replay() {
         if let Some(b) = branches(s, vp) {
             section = section.child(b);
         }

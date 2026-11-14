@@ -225,8 +225,7 @@ class Processes:
         key = valid_key(key)
         if not isinstance(bash, str) or not bash.strip():
             raise ValueError('The command is empty.')
-        if readiness not in (None, '', 'sih'):
-            raise ValueError('Unknown readiness check.')
+        simulator = sih.parse(readiness) if readiness else None
         environment = dict(os.environ)
         for name, value in (env or {}).items():
             if not isinstance(name, str) or not ENV_NAME.fullmatch(name):
@@ -259,11 +258,12 @@ class Processes:
             self.entries[key] = entry
         threading.Thread(target=self._wait, args=(entry,), daemon=True).start()
         self._ensure_tailer()
-        if readiness == 'sih':
+        if readiness:
             def report(state, detail):
                 self.out.event('readiness', key=key, state=state, detail=detail)
             threading.Thread(target=self.readiness_monitor,
-                             args=(lambda: entry.child.poll() is None, report), daemon=True).start()
+                             args=(lambda: entry.child.poll() is None, report),
+                             kwargs={'simulator': simulator}, daemon=True).start()
         return {'key': key, 'pid': entry.pid, 'since': entry.since}
 
     def _spawn(self, key, bash, environment, directory, lock_fd, paths):

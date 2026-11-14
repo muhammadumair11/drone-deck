@@ -43,7 +43,7 @@ pub(super) fn page(s: &State, vp: &Viewport) -> El {
     }
     // Flight actions and the console exist only for an app-owned simulation; a physical
     // vehicle is read-only and never shows them.
-    if current.source.simulated() {
+    if current.simulated() {
         page = page
             .child(vehicle::view::actions(s, vp))
             .child(vehicle::view::console(s, vp));
@@ -61,14 +61,16 @@ fn session_action(s: &State) -> El {
             s.confirm = Some("stop".into())
         });
     }
-    let name = match &current.source {
-        systems::Source::Replay { .. } if current.consumers.inference.is_some() => "Open projects",
-        systems::Source::Replay { .. } => "Open recordings",
-        systems::Source::Physical { .. } if systems::physical_bridge(current) => {
-            "Connect (bridged)"
-        }
-        systems::Source::Physical { .. } => "Connect read-only",
-        _ => "Start workspace",
+    let name = if current.is_replay() && current.consumers.inference.is_some() {
+        "Open projects"
+    } else if current.is_replay() {
+        "Open recordings"
+    } else if systems::physical_bridge(current) {
+        "Connect (bridged)"
+    } else if current.is_physical() {
+        "Connect read-only"
+    } else {
+        "Start workspace"
     };
     // Direct controls stay available without guided preparation; `bundle` and `start` still
     // refuse when WSL is not ready or an installation is running.
@@ -203,10 +205,10 @@ fn launch_failure(id: &str, why: &str) -> El {
 
 /// What the staged launch waits for before starting the next tool.
 fn awaited(id: &str) -> &'static str {
-    match id {
-        "sih" => "vehicle status",
-        _ => vehicle::awaited(id).unwrap_or("process start"),
-    }
+    systems::adapter::readiness_of(id)
+        .awaited()
+        .or_else(|| vehicle::awaited(id))
+        .unwrap_or("process start")
 }
 
 fn launch_progress(s: &State, launch: &session::Launch, compact: bool) -> El {

@@ -208,7 +208,7 @@ fn system_row(s: &State, i: usize, sys: &System, compact: bool) -> El {
         .min_w(0.)
         .gap(6.)
         .child(h3(sys.label(), 15.).wrap())
-        .child(meta_sized(sys.source.summary(), 9., muted()).wrap())
+        .child(meta_sized(sys.summary(), 9., muted()).wrap())
         .child(p(sys.consumers_summary(), 11.).max_w(620.))
         .child(
             row()

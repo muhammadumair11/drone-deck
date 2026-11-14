@@ -147,6 +147,22 @@ class ReadinessTests(unittest.TestCase):
         sih.monitor(lambda: False, lambda *r: reports.append(r), lambda: None, sleep=sleep, clock=lambda: now[0])
         self.assertEqual(reports, [])
 
+    def test_kinds_name_the_simulator_and_refuse_anything_else(self):
+        self.assertEqual(sih.parse('sih'), 'sihsim')
+        self.assertEqual(sih.parse('px4-status:sihsim'), 'sihsim')
+        self.assertEqual(sih.parse('px4-status:jmavsim'), 'jmavsim')
+        self.assertIsNone(sih.parse('px4-status'))
+        for bad in ('bogus', 'px4-status:', 'px4-status:a b', 'px4-status:../x', None, 3):
+            with self.assertRaises(ValueError):
+                sih.parse(bad)
+
+    def test_a_simulator_other_than_sih_is_reported_as_px4(self):
+        reports = []
+        sih.monitor(lambda: True, lambda *r: reports.append(r), lambda: 'pre_flight_checks_pass: False',
+                    sleep=lambda _: None, simulator='jmavsim')
+        self.assertEqual(reports, [('Ready', 'PX4 vehicle status received. Preflight checks: '
+                                             'not ready; inspect QGroundControl')])
+
 
 class AdapterTests(unittest.TestCase):
     def test_recorder_routes_worker_output_to_rec_events_and_finalizes_on_close(self):

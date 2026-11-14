@@ -1,5 +1,6 @@
 //! A system: a named launch setup made of one vehicle source and the consumers fed by it.
 //! Templates reproduce the four 0.8 systems; everything else derives from source + consumers.
+use super::adapter::{self, Adapter, AutopilotKind};
 use serde::{Deserialize, Serialize};
 
 /// Template families. `System::kind` maps any system onto one of them, so pages that only
@@ -170,6 +171,43 @@ pub(crate) struct System {
     pub consumers: Consumers,
 }
 impl System {
+    /// The simulator adapter of a simulated source; `None` for a physical vehicle or a replay.
+    pub fn adapter(&self) -> Option<&'static Adapter> {
+        let (autopilot, world) = match self.source {
+            Source::Sih => (AutopilotKind::Px4, "internal"),
+            Source::Gazebo { .. } => (AutopilotKind::Px4, "gazebo"),
+            Source::ArduPilot { .. } => (AutopilotKind::ArduPilot, "internal"),
+            Source::Physical { .. } | Source::Replay { .. } => return None,
+        };
+        adapter::find(autopilot, world)
+    }
+    /// A simulator that Drone Deck starts and owns.
+    pub fn simulated(&self) -> bool {
+        self.adapter().is_some()
+    }
+    pub fn is_physical(&self) -> bool {
+        matches!(self.source, Source::Physical { .. })
+    }
+    pub fn is_replay(&self) -> bool {
+        matches!(self.source, Source::Replay { .. })
+    }
+    /// The autopilot of a simulated source.
+    pub fn autopilot(&self) -> Option<AutopilotKind> {
+        self.adapter().map(|a| a.autopilot)
+    }
+    /// A world or vehicle detail named by an adapter `Param` key.
+    pub fn param(&self, key: &str) -> Option<&str> {
+        match (&self.source, key) {
+            (Source::Gazebo { world, .. }, "world") => Some(world),
+            (Source::Gazebo { model, .. }, "model") => Some(model),
+            (Source::ArduPilot { vehicle }, "vehicle") => Some(vehicle),
+            _ => None,
+        }
+    }
+    /// The source in one line for lists.
+    pub fn summary(&self) -> String {
+        self.source.summary()
+    }
     /// The template family it behaves like, from its source and consumers.
     pub fn kind(&self) -> usize {
         match self.source {

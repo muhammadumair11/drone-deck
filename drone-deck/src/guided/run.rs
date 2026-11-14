@@ -64,16 +64,9 @@ fn app_topics(s: &State) -> Vec<&str> {
         .collect()
 }
 
-/// The active system's simulated vehicle is up: PX4 SIH running and ready, or Gazebo /
-/// ArduPilot running.
+/// The active system's simulated vehicle is up by its adapter's readiness rule.
 fn vehicle_up(s: &State) -> bool {
-    match systems::vehicle_profile(s.systems.current()) {
-        Some(id) => {
-            status(s, id) == "Running"
-                && (id != "sih" || s.readiness.get(id).map(String::as_str) == Some("Ready"))
-        }
-        None => false,
-    }
+    systems::vehicle_profile(s.systems.current()).is_some_and(|id| systems::adapter::ready(s, id))
 }
 
 /// The vehicle is up and the DDS agent runs.

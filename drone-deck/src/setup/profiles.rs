@@ -42,12 +42,8 @@ pub(crate) fn adopt(s: &mut State) {
     if !can_reconfigure(s) {
         return;
     }
-    let id = match candidate.tool.as_str() {
-        "px4" => "sih",
-        "ros-gz" => "rosgz",
-        "foxglove-bridge" => "foxglove",
-        other => other,
-    };
+    let id = super::catalog::profile_for(&s.setup.recipes, &candidate.tool).to_string();
+    let id = id.as_str();
     let mut config = s.config.clone();
     if !config.profiles.iter().any(|p| p.id == id)
         && ["ros-workspace", "onnx", "mavsdk"].contains(&id)

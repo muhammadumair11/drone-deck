@@ -87,6 +87,7 @@
   },
   {
     "id": "px4",
+    "profile": "sih",
     "name": "PX4 SIH toolchain",
     "version": "v1.17.0",
     "target": "WSL",
@@ -235,6 +236,7 @@
   },
   {
     "id": "ros-gz",
+    "profile": "rosgz",
     "name": "ROS–Gazebo bridge",
     "version": "ros-jazzy-ros-gz / Harmonic",
     "target": "WSL",
@@ -255,6 +257,7 @@
   },
   {
     "id": "foxglove-bridge",
+    "profile": "foxglove",
     "name": "Foxglove bridge",
     "version": "ros-jazzy-foxglove-bridge",
     "target": "WSL",

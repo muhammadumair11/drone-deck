@@ -1,5 +1,6 @@
 //! Staged workspace launch: each stage starts only after the previous one reports readiness.
-//! Profiles are ready on SIH `Ready` or, for the others, `Running`; the virtual stages `router`
+//! Profiles are ready by their adapter's rule (`systems::adapter::ready`: vehicle status for
+//! PX4 SIH, `Running` for the others); the virtual stages `router`
 //! and `link` (no process of their own) are started and checked by `vehicle::stage`.
 use crate::vehicle::{Stage, Step};
 use crate::*;
@@ -99,10 +100,7 @@ fn ready(s: &mut State, id: &str) -> Result<bool, String> {
     {
         return Err(format!("{status}."));
     }
-    Ok(match id {
-        "sih" => s.readiness.get(id).is_some_and(|r| r == "Ready"),
-        _ => status == "Running",
-    })
+    Ok(systems::adapter::ready(s, id))
 }
 
 pub(crate) fn poll(s: &mut State) -> bool {

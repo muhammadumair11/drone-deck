@@ -1,5 +1,6 @@
 pub(crate) mod batch;
 mod bridge;
+pub(crate) mod catalog;
 pub(crate) mod close;
 pub(crate) mod profiles;
 #[cfg(test)]
@@ -8,6 +9,7 @@ mod view;
 pub(crate) mod workflow;
 use crate::*;
 pub(crate) use bridge::process_alive as job_alive;
+pub(crate) use catalog::Recipe;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -16,25 +18,6 @@ use std::{
 };
 pub(crate) use view::{environment, install_review, job_log, jobs_panel, option_row};
 
-#[derive(Clone, Deserialize)]
-pub(crate) struct Recipe {
-    pub id: String,
-    pub name: String,
-    pub version: String,
-    pub target: String,
-    pub docs: String,
-    pub summary: String,
-    pub steps: Vec<String>,
-    pub automatic: bool,
-    #[serde(default)]
-    pub destination: String,
-    #[serde(default)]
-    pub privileges: String,
-    #[serde(default)]
-    pub packages: Vec<String>,
-    #[serde(default)]
-    pub verification: String,
-}
 #[derive(Clone, Default, Deserialize)]
 pub(crate) struct Distro {
     pub name: String,
@@ -162,8 +145,7 @@ impl Default for Setup {
         Self {
             host: None,
             online: Vec::new(),
-            recipes: serde_json::from_str(include_str!("../../scripts/setup/catalog.json"))
-                .unwrap(),
+            recipes: catalog::load(),
             selected: 0,
             distro: TextEdit::new("Ubuntu-24.04"),
             location: TextEdit::new(""),

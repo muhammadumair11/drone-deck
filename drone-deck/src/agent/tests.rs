@@ -453,7 +453,7 @@ fn launcher_runs_wsl_profiles_through_the_agent_and_maps_events() {
         .find(|r| r["method"] == "run")
         .cloned()
         .unwrap();
-    assert_eq!(run["params"]["readiness"], "sih");
+    assert_eq!(run["params"]["readiness"], "px4-status:sihsim");
     assert!(launcher.stop("sih", &out));
     let events = statuses(&rx, &mut launcher, &out);
     assert!(

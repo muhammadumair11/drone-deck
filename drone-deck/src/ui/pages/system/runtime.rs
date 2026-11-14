@@ -42,7 +42,7 @@ fn action(s: &State, c: &Component) -> El {
         }
         // Started and stopped with the workspace session.
         Backing::Router | Backing::Scripts => el(),
-        Backing::Link if s.systems.current().source.simulated() => el(),
+        Backing::Link if s.systems.current().simulated() => el(),
         Backing::Link => ghost(
             key,
             if hardware::connected(s) {

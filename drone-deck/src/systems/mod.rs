@@ -1,10 +1,12 @@
 //! Systems: user-created launch setups over the shared tool registry.
 //!
-//! A system names one vehicle source and the consumers it feeds (`model`). Its components,
-//! connection chain and session stages derive from those (`components`); labels come from
+//! A system names one vehicle source and the consumers it feeds (`model`). A simulated source
+//! has an adapter (`adapter`): its launch stages, readiness, MAVLink route and ROS bridge. Its
+//! components, connection chain and session stages derive from those (`components`); labels come from
 //! observed state (`state`). `systems.json` is schema 2 (`file`). Processes belong to the
 //! system that started them, so switching systems never stops anything.
 use crate::*;
+pub(crate) mod adapter;
 mod components;
 mod edit;
 mod file;
@@ -384,8 +386,7 @@ pub(crate) fn poll(s: &mut State) -> bool {
 /// then bridges those programs to the vehicle both ways, so they can command it; Drone Deck
 /// itself still only sends read requests.
 pub(crate) fn physical_bridge(sys: &System) -> bool {
-    matches!(sys.source, Source::Physical { .. })
-        && (sys.consumers.qgc || sys.consumers.scripts_udp.is_some())
+    sys.is_physical() && (sys.consumers.qgc || sys.consumers.scripts_udp.is_some())
 }
 
 /// Owned work running now, for any system, as short labels: owned processes, the app's
@@ -412,7 +413,7 @@ pub(crate) fn work_labels(s: &State) -> Vec<String> {
         let owner = s.vehicle.owner.as_deref().and_then(|id| s.systems.get(id));
         let link = match owner {
             Some(x) if physical_bridge(x) => "vehicle link (bridged)",
-            Some(x) if matches!(x.source, Source::Physical { .. }) => "read-only vehicle link",
+            Some(x) if x.is_physical() => "read-only vehicle link",
             _ => "vehicle link",
         };
         parts.push(link.into());

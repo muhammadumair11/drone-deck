@@ -84,16 +84,6 @@ pub(super) fn target(program: &str) -> &'static str {
     }
 }
 
-/// Launch profile id that a setup recipe configures.
-fn profile_for_recipe(recipe: &str) -> &str {
-    match recipe {
-        "px4" => "sih",
-        "ros-gz" => "rosgz",
-        "foxglove-bridge" => "foxglove",
-        other => other,
-    }
-}
-
 /// Filter category of a tool that only has a setup recipe.
 fn recipe_filter(recipe: &str) -> &'static str {
     match recipe {
@@ -129,7 +119,7 @@ fn items(s: &State) -> Vec<Item> {
             .collect();
         // Recipe-backed tools without a profile stay reachable for review, detection and adoption.
         for (i, r) in s.setup.recipes.iter().enumerate() {
-            let id = profile_for_recipe(&r.id);
+            let id = r.profile();
             if matches!(r.id.as_str(), "wsl" | "distro") || position(id).is_some() {
                 continue;
             }

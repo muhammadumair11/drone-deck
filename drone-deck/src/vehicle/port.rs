@@ -4,7 +4,6 @@
 //! the link would reach that program instead of the simulator. On a free port the probe waits
 //! up to [`PROBE_TIMEOUT`] for a refused connect, so it runs on a worker thread; the staged
 //! launch waits for its answer and a direct start continues once it arrives.
-use super::gate::SIMULATORS;
 use super::{sim_port, stage};
 use crate::{State, systems};
 use std::io::ErrorKind;
@@ -74,7 +73,7 @@ fn needed(s: &State, id: &str) -> bool {
     if id == "router" {
         return !stage::router_listening(s);
     }
-    SIMULATORS.contains(&id) && !systems::running(s, id) && !stage::router_up(s)
+    systems::adapter::is_simulator(id) && !systems::running(s, id) && !stage::router_up(s)
 }
 
 /// The port as far as stage or profile `id` is concerned. Starts a probe on a worker thread

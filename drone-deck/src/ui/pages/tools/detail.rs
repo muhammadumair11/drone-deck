@@ -2,16 +2,6 @@
 //! installation actions, in place of the old inspector and editor page.
 use super::*;
 
-/// Setup recipe id for a profile id.
-fn recipe_id(id: &str) -> &str {
-    match id {
-        "sih" => "px4",
-        "rosgz" => "ros-gz",
-        "foxglove" => "foxglove-bridge",
-        other => other,
-    }
-}
-
 fn command(p: &crate::backend::Profile) -> String {
     if p.args.is_empty() {
         p.program.clone()
@@ -318,7 +308,7 @@ fn existing(s: &State, i: usize) -> El {
 }
 
 fn installation(s: &State, it: &Item) -> El {
-    let rid = recipe_id(&it.id).to_string();
+    let rid = crate::setup::catalog::recipe_for(&s.setup.recipes, &it.id).to_string();
     let recipe = s.setup.recipes.iter().position(|r| r.id == rid);
     let profile = it.profile(s);
     let docs = profile

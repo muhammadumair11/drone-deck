@@ -122,8 +122,7 @@ pub(crate) fn stop_body(s: &State) -> String {
     } else {
         ""
     };
-    let physical = !s.vehicle.sim
-        && owner.is_some_and(|x| matches!(x.source, systems::Source::Physical { .. }));
+    let physical = !s.vehicle.sim && owner.is_some_and(|x| x.is_physical());
     if physical {
         format!(
             "It closes the vehicle link of {name}{qgc}. On a physical vehicle, programs bridged through that link (QGroundControl, scripts) lose it, which can trigger the vehicle's own link-loss failsafe. {all} {tail}"
@@ -342,7 +341,7 @@ fn system_menu(s: &State, vp: &Viewport) -> El {
         let running = systems::owns_work(s, &sys.id);
         let mut detail = format!(
             "{} / {}",
-            sys.source.summary(),
+            sys.summary(),
             if sys.prepared {
                 "prepared"
             } else {
@@ -466,8 +465,7 @@ fn mode_banner(s: &State, vp: &Viewport) -> Option<El> {
     }
     let owner = s.vehicle.owner.as_deref().and_then(|id| s.systems.get(id));
     let name = owner.map_or_else(String::new, |x| format!(" · {}", x.name.trim()));
-    let physical = owner
-        .is_some_and(|x| matches!(x.source, crate::systems::Source::Physical { .. }))
+    let physical = owner.is_some_and(|x| x.is_physical())
         || link.is_some_and(|l| l.origin() == crate::mavlink::LinkOrigin::Physical);
     let (tone, title, detail) = if crate::vehicle::authority(s).may_fly() {
         (

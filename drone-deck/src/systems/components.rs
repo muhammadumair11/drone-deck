@@ -1,6 +1,7 @@
 //! The stations behind a system, derived from its source and consumers. Each one is backed by
 //! a launch profile or a subsystem, so every label shown for it comes from observed state.
-use super::model::{Source, System};
+use super::adapter::Link;
+use super::model::System;
 
 /// What a component is backed by in the running app.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -231,36 +232,35 @@ pub(crate) fn component(id: &str) -> Option<&'static Component> {
 
 /// The launch profile that runs the vehicle source, if Drone Deck starts one.
 pub(crate) fn vehicle_profile(sys: &System) -> Option<&'static str> {
-    match sys.source {
-        Source::Sih => Some("sih"),
-        Source::Gazebo { .. } => Some("gazebo"),
-        Source::ArduPilot { .. } => Some("ardupilot"),
-        _ => None,
-    }
+    sys.adapter().map(|a| a.vehicle_profile())
 }
 
 /// Whether the source reaches Windows through the app's router (PX4 in WSL). ArduPilot SITL
 /// serves TCP 5760 itself.
 pub(crate) fn routed(sys: &System) -> bool {
-    matches!(sys.source, Source::Sih | Source::Gazebo { .. })
+    sys.adapter().is_some_and(|a| a.link == Link::Router)
 }
 
 /// The components of `sys`: its source first, then its consumers.
 pub(crate) fn components(sys: &System) -> Vec<&'static Component> {
     let c = &sys.consumers;
     let mut out: Vec<&'static Component> = Vec::new();
-    match sys.source {
-        Source::Sih => out.extend([&PX4, &ROUTER, &LINK]),
-        Source::Gazebo { .. } => out.extend([&GAZEBO, &ROUTER, &LINK]),
-        Source::ArduPilot { .. } => out.extend([&ARDUPILOT, &LINK]),
-        Source::Physical { .. } => out.extend([&ENDPOINT, &LINK, &TLOG]),
-        Source::Replay { .. } => out.push(&MCAP),
-    }
-    if c.ros.agent && sys.source.simulated() {
-        out.extend([&DDS, &ROS2]);
-        if matches!(sys.source, Source::Gazebo { .. }) {
-            out.push(&ROSGZ);
+    let adapter = sys.adapter();
+    if let Some(a) = adapter {
+        out.extend(a.stages.iter().filter_map(|st| component(st.profile)));
+        if a.link == Link::Router {
+            out.push(&ROUTER);
         }
+        out.push(&LINK);
+    } else if sys.is_physical() {
+        out.extend([&ENDPOINT, &LINK, &TLOG]);
+    } else {
+        out.push(&MCAP);
+    }
+    if let (true, Some(ros)) = (c.ros.agent, adapter.and_then(|a| a.ros.as_ref())) {
+        out.extend(component(ros.agent));
+        out.push(&ROS2);
+        out.extend(ros.extra.iter().filter_map(|id| component(id)));
     }
     if c.ros.recorder && !out.iter().any(|x| x.id == "mcap") {
         out.push(&MCAP);
@@ -271,7 +271,7 @@ pub(crate) fn components(sys: &System) -> Vec<&'static Component> {
     if c.qgc {
         out.push(&QGC);
     }
-    if c.scripts_udp.is_some() && !matches!(sys.source, Source::Replay { .. }) {
+    if c.scripts_udp.is_some() && !sys.is_replay() {
         out.push(&SCRIPTS);
     }
     if c.foxglove {
@@ -301,10 +301,12 @@ fn chain_ids(sys: &System) -> Vec<&'static str> {
         }
         return ids;
     }
-    match sys.source {
-        Source::Physical { .. } => vec!["endpoint", "link", "tlog"],
-        _ if c.inference.is_some() => vec!["onnx", "project", "pipelines"],
-        _ => vec!["mcap"],
+    if sys.is_physical() {
+        vec!["endpoint", "link", "tlog"]
+    } else if c.inference.is_some() {
+        vec!["onnx", "project", "pipelines"]
+    } else {
+        vec!["mcap"]
     }
 }
 
@@ -320,17 +322,18 @@ pub(crate) fn chain(sys: &System) -> impl Iterator<Item = &'static Component> {
 /// readiness (`session.rs`). `router` and `link` are virtual stages (`vehicle::stage`).
 pub(crate) fn session_stages(sys: &System) -> Vec<&'static str> {
     let c = &sys.consumers;
-    let mut stages: Vec<&'static str> = match sys.source {
-        Source::Sih => vec!["sih", "router", "link"],
-        Source::Gazebo { .. } => vec!["gazebo", "router", "link"],
-        Source::ArduPilot { .. } => vec!["ardupilot", "link"],
-        _ => return Vec::new(),
+    let Some(a) = sys.adapter() else {
+        return Vec::new();
     };
-    if c.ros.agent && routed(sys) {
-        stages.push("dds");
-        if matches!(sys.source, Source::Gazebo { .. }) {
-            stages.push("rosgz");
-        }
+    let mut stages: Vec<&'static str> = a.stages.iter().map(|st| st.profile).collect();
+    if a.link == Link::Router {
+        stages.push("router");
+    }
+    stages.push("link");
+    // ArduPilot's agent is not started by the launch (see its adapter entry).
+    if let (true, Link::Router, Some(ros)) = (c.ros.agent, a.link, &a.ros) {
+        stages.push(ros.agent);
+        stages.extend(ros.extra.iter().copied());
     }
     if c.qgc {
         stages.push("qgc");
