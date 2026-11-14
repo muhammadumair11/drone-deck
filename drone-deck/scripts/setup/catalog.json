@@ -167,7 +167,7 @@
     "version": "Ubuntu 24.04 package",
     "target": "WSL",
     "docs": "https://docs.px4.io/v1.17/en/sim_flightgear/",
-    "summary": "Install the open-source FlightGear simulator from Ubuntu's package archive. PX4's FlightGear bridge is built from the PX4 checkout on the first launch. Its window needs WSLg (Windows 11). The package and its scenery are large.",
+    "summary": "Install the open-source FlightGear simulator from Ubuntu's package archive. PX4 flies in it through PX4's FlightGear bridge, built from the PX4 checkout on the first launch; ArduPilot SITL flies its own physics and FlightGear draws it. Its window needs WSLg (Windows 11). The package and its scenery are large.",
     "steps": [
       "Check Linux",
       "Install the flightgear package",
@@ -175,9 +175,6 @@
     ],
     "automatic": true,
     "pick": "wsl-file",
-    "depends": [
-      "px4"
-    ],
     "destination": "Shared Ubuntu package (/usr/games/fgfs)",
     "privileges": "Selected WSL root account for the shared apt package",
     "packages": [
@@ -414,6 +411,37 @@
       "private Python dependencies"
     ],
     "verification": "Recipe implementation and non-installing tests are included. A clean-machine installation has not yet been exercised on this laptop."
+  },
+  {
+    "id": "ardupilot-dds",
+    "name": "ArduPilot ROS 2 (DDS) support",
+    "version": "Micro-XRCE-DDS-Gen v4.5.1 / ardupilot_msgs from Copter-4.6.3",
+    "target": "WSL",
+    "docs": "https://ardupilot.org/dev/docs/ros2.html",
+    "summary": "Rebuild Drone Deck's ArduPilot SITL with its DDS client (--enable-DDS, which needs Micro-XRCE-DDS-Gen) and build the ardupilot_msgs package for ROS 2, so /ap/ topics and the arm, mode and takeoff services reach ROS through the agent on UDP 2019. An ArduPilot checkout you chose yourself is never rebuilt.",
+    "steps": [
+      "Require ROS 2 Jazzy and Drone Deck's ArduPilot",
+      "Install Java and colcon prerequisites",
+      "Build Micro-XRCE-DDS-Gen, SITL with DDS and ardupilot_msgs",
+      "Verify the DDS client and messages"
+    ],
+    "automatic": true,
+    "pick": "wsl-folder",
+    "depends": [
+      "ardupilot",
+      "ros2"
+    ],
+    "profile": "dds-ap",
+    "destination": "~/.local/share/drone-deck/tools/Micro-XRCE-DDS-Gen, ap_ros_ws and the managed ardupilot build",
+    "privileges": "WSL root for apt prerequisites; regular Linux user for source and builds",
+    "packages": [
+      "default-jdk-headless",
+      "python3-colcon-common-extensions",
+      "ros-jazzy-rosidl-default-generators",
+      "Micro-XRCE-DDS-Gen v4.5.1",
+      "ardupilot_msgs"
+    ],
+    "verification": "The Copter SITL binary carries ArduPilot's DDS services and ardupilot_msgs is installed. A live /ap/ topic list needs a running ArduPilot system with ROS 2."
   },
   {
     "id": "gazebo",

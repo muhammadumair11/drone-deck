@@ -53,21 +53,20 @@ const LEGACY: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// The recipes `sys` needs, in installation order: its simulator's, then the PX4 ↔ ROS 2
-/// stack when the bridge runs (the workspace launch starts it only behind the router), then
-/// local inference and QGroundControl. A physical vehicle always gets QGroundControl, where
-/// vehicle setup happens.
+/// The recipes `sys` needs, in installation order: its simulator's, then the autopilot ↔ ROS 2
+/// stack when the bridge runs (ROS 2, the Gazebo camera bridge, then the adapter's agent and
+/// messages), then local inference and QGroundControl. A physical vehicle always gets
+/// QGroundControl, where vehicle setup happens.
 pub(crate) fn for_system(sys: &System) -> Preset {
     let c = &sys.consumers;
     let adapter = sys.adapter();
     let mut recipes: Vec<&str> = adapter.map_or(&[][..], |a| a.recipes).to_vec();
-    let routed = adapter.is_some_and(|a| a.link == crate::systems::adapter::Link::Router);
-    if let (true, true, Some(ros)) = (c.ros.agent, routed, adapter.and_then(|a| a.ros.as_ref())) {
+    if let (true, Some(ros)) = (c.ros.agent, adapter.and_then(|a| a.ros.as_ref())) {
         recipes.push("ros2");
         if ros.extra.contains(&"rosgz") {
             recipes.push("ros-gz");
         }
-        recipes.extend(["dds", "ros-workspace"]);
+        recipes.extend(ros.recipes);
     }
     if c.inference.is_some() {
         recipes.push("onnx");

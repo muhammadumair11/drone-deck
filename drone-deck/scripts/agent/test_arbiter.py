@@ -76,7 +76,7 @@ class Playing(unittest.TestCase):
         self.assertTrue(player.done)
 
     def test_commands_follow_the_fresh_autopilot_not_the_wall_clock(self):
-        schedule = [(0, '/a', {}), (100_000, '/b', {}), (1_000_000, '/c', {})]
+        schedule = [(0, '/a', {'timestamp': 1}), (100_000, '/b', {'timestamp': 1}), (1_000_000, '/c', {'timestamp': 1})]
         player, clock = arbiter.Player(schedule), arbiter.FreshClock()
         clock.observe(5_000_000, 0.0)
         self.assertEqual([t for t, _, _ in player.due(clock, 0.05)], ['/a'])

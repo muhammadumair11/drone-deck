@@ -60,7 +60,7 @@ pub(crate) const WORLDS: [(&str, &str, &str); 7] = [
     (
         "flightgear",
         "FlightGear",
-        "An open-source flight simulator for PX4, installed in WSL. Its window needs WSLg.",
+        "An open-source flight simulator in WSL: PX4 flies in its physics, ArduPilot shows its own SITL flight in it. Its window needs WSLg.",
     ),
     (
         "webots",
@@ -150,6 +150,41 @@ pub(crate) struct Ros {
     /// names, so a release that versions a topic name still matches.
     pub commands: &'static [&'static str],
     pub extra: &'static [&'static str],
+    /// Setup recipes the bridge needs besides ROS 2 itself: the agent and the autopilot's
+    /// messages (and, for ArduPilot, a SITL build with its DDS client).
+    pub recipes: &'static [&'static str],
+    /// The variable that tells the vehicle profile the system's ROS domain, when the autopilot
+    /// chooses its domain itself (ArduPilot's `DDS_DOMAIN_ID`; PX4 follows the agent's).
+    pub domain_env: Option<&'static str>,
+}
+
+/// How a launch gives the autopilot a start position (degrees, metres AMSL).
+#[derive(Debug)]
+pub(crate) enum Home {
+    /// One variable each (PX4's `PX4_HOME_LAT/LON/ALT`).
+    Split {
+        lat: &'static str,
+        lon: &'static str,
+        alt: &'static str,
+    },
+    /// One `lat,lon,alt,heading` variable (ArduPilot SITL's `--home`, heading 0).
+    Joined(&'static str),
+}
+impl Home {
+    /// The environment for a start at `lat`, `lon`, `alt`.
+    pub(crate) fn env(&self, lat: &str, lon: &str, alt: &str) -> Vec<(String, String)> {
+        match self {
+            Home::Split {
+                lat: a,
+                lon: b,
+                alt: c,
+            } => [(a, lat), (b, lon), (c, alt)]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+            Home::Joined(name) => vec![(name.to_string(), format!("{lat},{lon},{alt},0"))],
+        }
+    }
 }
 
 /// Where a system keeps a `Param`.
@@ -171,14 +206,6 @@ pub(crate) struct Param {
     pub env: &'static str,
     /// The value as the launch command expects it.
     pub map: fn(&str) -> String,
-}
-
-/// Environment variables the autopilot reads its home position from (degrees, metres AMSL).
-#[derive(Debug)]
-pub(crate) struct HomeEnv {
-    pub lat: &'static str,
-    pub lon: &'static str,
-    pub alt: &'static str,
 }
 
 /// A condition a re-simulation can change in this world, as world parameters it sets.
@@ -213,7 +240,7 @@ pub(crate) struct Adapter {
     /// Whether the autopilot answers the MAVLink shell (PX4 does, ArduPilot does not).
     pub shell: bool,
     /// How a re-simulation gives the autopilot the recorded home position, if it can.
-    pub home: Option<HomeEnv>,
+    pub home: Option<Home>,
     /// What a re-simulation can vary in this world (`CONDITIONS`).
     pub conditions: &'static [Condition],
 }
@@ -296,11 +323,20 @@ pub(crate) fn launch_env(sys: &System, id: &str) -> Vec<(String, String)> {
     let Some(a) = sys.adapter().filter(|a| a.takes_params(id)) else {
         return Vec::new();
     };
-    a.params
+    let mut env: Vec<(String, String)> = a
+        .params
         .iter()
         .map(|p| {
             let value = sys.param(p.key).unwrap_or(p.default);
             (p.env.to_string(), (p.map)(value))
         })
-        .collect()
+        .collect();
+    // An autopilot that picks its own ROS domain joins the system's when the bridge runs.
+    if let (true, Some(name)) = (
+        sys.consumers.ros.agent && id == a.vehicle_profile(),
+        a.ros.as_ref().and_then(|r| r.domain_env),
+    ) {
+        env.push((name.to_string(), sys.consumers.ros.domain.to_string()));
+    }
+    env
 }

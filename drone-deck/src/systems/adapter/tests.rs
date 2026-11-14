@@ -33,7 +33,9 @@ fn simulators_are_the_stage_profiles_and_flight_stacks_are_exclusive() {
             "ardupilot-webots",
             "webots",
             "realflight",
-            "ardupilot-realflight"
+            "ardupilot-realflight",
+            "ardupilot-flightgear",
+            "fgview"
         ]
     );
     // The backend runs one flight stack at a time; X-Plane joins its PX4 instead.
@@ -141,11 +143,13 @@ fn launch_env_gives_defaults_for_missing_details() {
 #[test]
 fn each_world_offers_only_the_autopilots_that_fly_in_it() {
     use AutopilotKind::{ArduPilot, Px4};
-    assert!(world_for(Px4, "flightgear").is_ok());
-    assert!(
-        world_for(ArduPilot, "flightgear")
-            .unwrap_err()
-            .contains("PX4 only")
+    assert_eq!(
+        world_for(Px4, "flightgear").map(|a| a.id),
+        Ok("px4-flightgear")
+    );
+    assert_eq!(
+        world_for(ArduPilot, "flightgear").map(|a| a.id),
+        Ok("ardupilot-flightgear")
     );
     for world in ["webots", "realflight"] {
         assert!(world_for(ArduPilot, world).is_ok(), "{world}");
@@ -156,6 +160,74 @@ fn each_world_offers_only_the_autopilots_that_fly_in_it() {
             "{world}"
         );
     }
+}
+
+#[test]
+fn ardupilot_in_flightgear_is_sitl_drawn_by_flightgear_with_the_ros_bridge() {
+    let a = find(AutopilotKind::ArduPilot, "flightgear").unwrap();
+    let stages: Vec<_> = a.stages.iter().map(|s| s.profile).collect();
+    assert_eq!(stages, ["ardupilot-flightgear", "fgview"]);
+    assert_eq!(a.vehicle_profile(), "ardupilot-flightgear");
+    assert!(is_vehicle_profile("ardupilot-flightgear") && !is_vehicle_profile("fgview"));
+    assert_eq!(a.link, Link::Direct);
+    assert_eq!(a.recipes, ["ardupilot", "flightgear"]);
+    let ros = a.ros.as_ref().unwrap();
+    assert_eq!((ros.agent, ros.topic_prefix), ("dds-ap", "/ap/"));
+    assert_eq!(ros.recipes, ["dds", "ardupilot-dds"]);
+    assert!(
+        a.home.is_some(),
+        "re-simulation starts it at the recorded home"
+    );
+
+    let defaults = crate::backend::defaults();
+    let args = |id: &str| {
+        defaults
+            .profiles
+            .iter()
+            .find(|p| p.id == id)
+            .unwrap()
+            .args
+            .join(" ")
+    };
+    assert!(args("ardupilot-flightgear").contains(" --enable-fgview "));
+    assert!(
+        args("fgview").contains("fg_quad_view.sh") && args("fgview").contains("fg_plane_view.sh")
+    );
+    assert!(args("dds-ap").ends_with("udp4 -p 2019"));
+    // Every ArduPilot SITL command takes what systems and re-simulations pass it.
+    for id in ["ardupilot", "ardupilot-flightgear"] {
+        let command = args(id);
+        for name in [
+            "DRONE_DECK_AP_DOMAIN",
+            "DRONE_DECK_AP_HOME",
+            "DRONE_DECK_AP_DIR",
+            "DRONE_DECK_AP_WIPE",
+        ] {
+            assert!(command.contains(name), "{id}: {name}");
+        }
+    }
+}
+
+#[test]
+fn home_reaches_px4_as_three_variables_and_ardupilot_as_one() {
+    let px4 = find(AutopilotKind::Px4, "internal").unwrap();
+    let env = px4.home.as_ref().unwrap().env("47.1", "8.5", "490");
+    assert_eq!(
+        env,
+        [
+            ("PX4_HOME_LAT".to_string(), "47.1".to_string()),
+            ("PX4_HOME_LON".into(), "8.5".into()),
+            ("PX4_HOME_ALT".into(), "490".into())
+        ]
+    );
+    let ap = find(AutopilotKind::ArduPilot, "internal").unwrap();
+    assert_eq!(
+        ap.home.as_ref().unwrap().env("-35.3", "149.1", "584"),
+        [(
+            "DRONE_DECK_AP_HOME".to_string(),
+            "-35.3,149.1,584,0".to_string()
+        )]
+    );
 }
 
 #[test]

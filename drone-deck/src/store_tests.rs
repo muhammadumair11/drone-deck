@@ -150,7 +150,10 @@ fn schema_one_drops_retired_profiles_and_keeps_user_profiles() {
             "ardupilot-webots",
             "webots",
             "realflight",
-            "ardupilot-realflight"
+            "ardupilot-realflight",
+            "dds-ap",
+            "ardupilot-flightgear",
+            "fgview"
         ]
     );
     let args = |id: &str| {
@@ -229,6 +232,55 @@ fn schema_one_keeps_an_adopted_mavsdk_interpreter_as_the_mavsdk_profile() {
             .profiles
             .iter()
             .any(|p| p.id == "mavsdk" || p.id == "telemetry")
+    );
+}
+
+#[test]
+fn schema_four_gives_unedited_ardupilot_commands_the_launch_variables() {
+    let profile = |id: &str, args: &str| {
+        serde_json::json!({"id":id,"name":id,"category":"Simulation","description":"",
+            "program":"wsl","args":[args],"cwd":"","probe":"","docs":""})
+    };
+    let adopted = "{ [ \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" = ArduCopter ] || { echo \"This ArduPilot profile runs the adopted Copter build only, not $DRONE_DECK_AP_VEHICLE. Edit its command in Tools & config.\" >&2; exit 2; }; } && cd '/home/u/ardupilot' && test -z \"$(pgrep -x arducopter)\" && exec '/home/u/ardupilot/build/sitl/bin/arducopter' --model + --defaults Tools/autotest/default_params/copter.parm";
+    let parse = |command: &str| {
+        let v4 = serde_json::json!({"schema":4,"distro":"Ubuntu-24.04","profiles":[
+            profile("ardupilot", command), profile("dds", "MicroXRCEAgent udp4 -p 8888")]});
+        let (config, notice) = backend::parse_config(&serde_json::to_vec(&v4).unwrap())
+            .unwrap()
+            .unwrap();
+        (config, notice.unwrap_or_default())
+    };
+    let (config, notice) = parse(adopted);
+    let command = &config.profiles[0].args[0];
+    assert!(
+        command.contains("cd '/home/u/ardupilot'")
+            && command.contains("exec '/home/u/ardupilot/build/sitl/bin/arducopter' --model +")
+            && command.contains("DRONE_DECK_AP_DOMAIN")
+            && command.contains("--home \"$DRONE_DECK_AP_HOME\""),
+        "{command}"
+    );
+    let ids: Vec<&str> = config.profiles.iter().map(|p| p.id.as_str()).collect();
+    assert_eq!(
+        &ids[ids.len() - 3..],
+        ["dds-ap", "ardupilot-flightgear", "fgview"]
+    );
+    assert!(
+        notice.contains("Micro XRCE-DDS Agent (ArduPilot)"),
+        "{notice}"
+    );
+
+    let builtin = "cd ~/ardupilot && Tools/autotest/sim_vehicle.py -v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\" --no-mavproxy";
+    let (config, _) = parse(builtin);
+    let upgraded = &config.profiles[0].args[0];
+    assert!(upgraded.contains("--add-param-file") && upgraded.contains("--enable-DDS"));
+    assert!(
+        upgraded.contains("command -v microxrceddsgen"),
+        "no generator: SITL starts without DDS instead of failing to build"
+    );
+    let (config, _) = parse("cd ~/ardupilot && ./mine.sh");
+    assert_eq!(
+        config.profiles[0].args[0], "cd ~/ardupilot && ./mine.sh",
+        "edited command kept"
     );
 }
 

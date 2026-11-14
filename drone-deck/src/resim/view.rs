@@ -1,7 +1,7 @@
 //! Data & models → Re-simulation: re-simulable flights, the run's settings, a running run and
 //! earlier runs.
 use super::run::{self, Phase};
-use super::{DOMAIN, Flight};
+use super::{DOMAIN, Flight, VEHICLE_DOMAIN};
 use crate::State;
 use crate::ui::theme::Viewport;
 use crate::ui::{Page, kit::*, theme::*};
@@ -120,8 +120,12 @@ fn flights(s: &State, vp: &Viewport) -> El {
                 }))
                 .child(browse(
                     "resim-import",
-                    "Import a PX4 flight log or the drone's ROS 2 recording",
-                    &[("PX4 flight log", &["ulg"]), ("ROS 2 recording", &["mcap"])],
+                    "Import a PX4 or ArduPilot flight log or the drone's ROS 2 recording",
+                    &[
+                        ("PX4 flight log", &["ulg"]),
+                        ("ArduPilot flight log", &["bin"]),
+                        ("ROS 2 recording", &["mcap"]),
+                    ],
                     !r.importing && s.wsl_ready(),
                     super::import::start,
                 ))
@@ -180,18 +184,26 @@ fn setup(s: &State, vp: &Viewport) -> El {
         .min_w(0.)
         .gap(10.)
         .child(meta("Isolation"))
-        .child(p(
-            format!(
-                "The fresh PX4 publishes under /resim on ROS domain {DOMAIN}, kept on this computer. Only Drone Deck's command player writes to it; it passes the fresh vehicle's reports on to /fmu/out/*."
-            ),
-            11.,
-        ))
+        .child(p(isolation(f), 11.))
         .child(meta("Saved with the recording"))
         .child(p(
             "resim/<run>/: run.json (settings, parameters left out, exit states), commands.jsonl (each command replayed) and fresh/ (an MCAP of the fresh vehicle's reports).",
             11.,
         ));
     asset(left, right, vp.compact())
+}
+
+/// How the fresh vehicle is kept apart from your code, by autopilot.
+fn isolation(f: &Flight) -> String {
+    if f.recipe["autopilot"] == "ardupilot" {
+        format!(
+            "The fresh ArduPilot runs on its own ROS domain {VEHICLE_DOMAIN}, kept on this computer, and Drone Deck's command player passes its /ap/* reports on to domain {DOMAIN}, where your code runs. Arm, mode and takeoff are services a recording cannot keep: the player calls them where the recorded /ap/status changed."
+        )
+    } else {
+        format!(
+            "The fresh PX4 publishes under /resim on ROS domain {DOMAIN}, kept on this computer. Only Drone Deck's command player writes to it; it passes the fresh vehicle's reports on to /fmu/out/*."
+        )
+    }
 }
 
 /// The world to fly in (the recorded one, or another with the same autopilot) and the

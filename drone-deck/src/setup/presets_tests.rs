@@ -32,14 +32,18 @@ fn combinations_outside_the_earlier_list_get_a_preset_and_a_name() {
 }
 
 #[test]
-fn ardupilot_gets_no_px4_ros_stack_and_a_replay_with_qgc_is_not_physical() {
+fn ardupilot_gets_its_own_ros_stack_and_a_replay_with_qgc_is_not_physical() {
     let mut ap = template(systems::ROS, "a", "A");
     ap.vehicle = Vehicle::ardupilot("plane");
+    let p = for_system(&ap);
     assert_eq!(
-        for_system(&ap).recipes,
-        ["ardupilot", "qgc"],
-        "the launch does not start a DDS agent for ArduPilot"
+        p.recipes,
+        ["ardupilot", "ros2", "dds", "ardupilot-dds", "qgc"],
+        "ArduPilot's agent and DDS build, not px4_msgs"
     );
+    assert_eq!(p.name, "ArduPilot SITL with ROS 2 and QGroundControl");
+    ap.consumers.ros.agent = false;
+    assert_eq!(for_system(&ap).recipes, ["ardupilot", "qgc"]);
     let mut replay = template(systems::AI, "r", "R");
     replay.consumers.inference = None;
     replay.consumers.qgc = true;

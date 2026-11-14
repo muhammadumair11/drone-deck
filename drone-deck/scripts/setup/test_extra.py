@@ -90,4 +90,45 @@ class ExtraTests(unittest.TestCase):
    result=extra_tools.probe(base,'flightgear',str(fgfs))
    self.assertTrue(result['compatible']);self.assertEqual(result['version'],'2020.3.19')
    self.assertFalse(extra_tools.probe(base,'flightgear',str(Path(directory)/'missing'))['found'])
+ def test_ardupilot_dds_probe_needs_the_dds_build_and_the_messages(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   root=Path(directory);checkout=root/'ardupilot';base=Mock(ROOT=root);base.output.return_value='Copter-4.6.3'
+   (checkout/'Tools/autotest').mkdir(parents=True);(checkout/'Tools/autotest/sim_vehicle.py').touch()
+   binary=checkout/'build/sitl/bin/arducopter';binary.parent.mkdir(parents=True);binary.write_bytes(b'\0plain copter\0')
+   result=extra_tools.probe(base,'ardupilot-dds',str(checkout))
+   self.assertFalse(result['found']);self.assertIn('--enable-DDS',result['reason'])
+   binary.write_bytes(b'\0'+extra_tools.AP_DDS_MARK+b'\0')
+   result=extra_tools.probe(base,'ardupilot-dds',str(checkout))
+   self.assertTrue(result['found']);self.assertFalse(result['compatible']);self.assertIn('ardupilot_msgs',result['reason'])
+   (root/'ap_ros_ws/install/ardupilot_msgs').mkdir(parents=True);(root/'ap_ros_ws/install/setup.bash').touch()
+   result=extra_tools.probe(base,'ardupilot-dds',str(checkout))
+   self.assertTrue(result['compatible']);self.assertEqual(result['executable'],str(root/'ap_ros_ws/install/setup.bash'))
+ def test_ardupilot_dds_builds_only_in_the_managed_checkout_with_the_generator_on_path(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   root=Path(directory);base=Mock(ROOT=root)
+   base.owned_target.side_effect=lambda name:root/name
+   base.output.side_effect=lambda args:extra_tools.AP_DDS_GEN[1] if 'describe' in args and '--exact-match' in args else 'Copter-4.6.3'
+   with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):
+    with self.assertRaisesRegex(RuntimeError,"own ArduPilot checkout"):extra_tools.install(base,'ardupilot-dds')
+    base.run.assert_not_called()
+    checkout=root/'ardupilot';(checkout/'.git').mkdir(parents=True);(root/'.owned-ardupilot').write_text('x')
+    (checkout/extra_tools.AP_MSGS).mkdir(parents=True);(checkout/extra_tools.AP_MSGS/'package.xml').write_text('<package/>')
+    with patch.dict(extra_tools.os.environ,{'PATH':'/usr/bin'}),patch.object(extra_tools.Path,'symlink_to') as link:
+     extra_tools.install(base,'ardupilot-dds')
+    link.assert_called_once_with(checkout/extra_tools.AP_MSGS)
+  calls=[call.args[0] for call in base.run.call_args_list]
+  self.assertEqual(calls[0][:5],['git','clone','--recurse-submodules','--branch','v4.5.1'])
+  self.assertEqual(calls[1],['./gradlew','assemble'])
+  configure=base.run.call_args_list[2]
+  self.assertEqual(configure.args[0][1:],['waf','configure','--board','sitl','--enable-DDS'])
+  self.assertTrue(configure.kwargs['env']['PATH'].endswith(str(root/'Micro-XRCE-DDS-Gen'/'scripts')))
+  self.assertIn('colcon build --packages-select ardupilot_msgs',calls[-1][-1])
+ def test_ardupilot_dds_is_a_known_tool_verified_in_the_ardupilot_checkout(self):
+  self.assertIn('ardupilot-dds',tools.TOOLS)
+  with patch.object(extra_tools,'probe',return_value={}) as probe:tools.verify('ardupilot-dds')
+  self.assertEqual(probe.call_args.args[1:],('ardupilot-dds',str(tools.ROOT/'ardupilot')))
+  base=Mock()
+  with patch.object(extra_tools.os,'geteuid',return_value=0,create=True),patch.object(extra_tools.Path,'is_file',return_value=True):
+   extra_tools.dependencies(base,'ardupilot-dds')
+  self.assertIn('default-jdk-headless',base.run.call_args_list[-1].args[0])
 if __name__=='__main__':unittest.main()

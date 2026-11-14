@@ -122,7 +122,7 @@ fn message(time: u64, fields: &[(&str, Base, f64)], keep: Option<&[&str]>) -> Va
     Value::Object(out)
 }
 
-fn line(topic: &str, time: u64, message: Value) -> String {
+pub(super) fn line(topic: &str, time: u64, message: Value) -> String {
     format!(
         "{}\n",
         json!({"topic": topic, "t_ns": time * 1000, "message": message})
@@ -298,8 +298,9 @@ pub(crate) fn counted(counts: &Value) -> String {
 /// The largest flight log an import reads into memory.
 const LOG_LIMIT: u64 = 512 * 1024 * 1024;
 
-/// Writes `e` and the log to `<data root>\imports\<stamp>` for the agent to file.
-fn write(e: &Export, log: &std::path::Path) -> Result<std::path::PathBuf, String> {
+/// Writes `e` and the log (as `flight.ulg` or `flight.bin`) to `<data root>\imports\<stamp>`
+/// for the agent to file.
+fn write(e: &Export, log: &std::path::Path, kept: &str) -> Result<std::path::PathBuf, String> {
     let secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| d.as_secs());
@@ -315,12 +316,12 @@ fn write(e: &Export, log: &std::path::Path) -> Result<std::path::PathBuf, String
     ] {
         std::fs::write(folder.join(name), text).map_err(|e| format!("{name}: {e}"))?;
     }
-    std::fs::copy(log, folder.join("flight.ulg")).map_err(|e| format!("flight.ulg: {e}"))?;
+    std::fs::copy(log, folder.join(kept)).map_err(|e| format!("{kept}: {e}"))?;
     Ok(folder)
 }
 
-/// Imports a real flight from a PX4 flight log (`.ulg`) or the drone's ROS 2 recording
-/// (`.mcap`); the result arrives as `Msg::Imported`.
+/// Imports a real flight from a PX4 flight log (`.ulg`), an ArduPilot flight log (`.bin`,
+/// `import_ap`) or the drone's ROS 2 recording (`.mcap`); the result arrives as `Msg::Imported`.
 pub(crate) fn start(s: &mut crate::State, path: std::path::PathBuf) {
     if s.headless || !s.wsl_ready() {
         s.resim.message =
@@ -335,8 +336,10 @@ pub(crate) fn start(s: &mut crate::State, path: std::path::PathBuf) {
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    if ext != "ulg" && ext != "mcap" {
-        s.resim.message = "Choose a PX4 flight log (.ulg) or a ROS 2 recording (.mcap).".into();
+    if !matches!(ext.as_str(), "ulg" | "bin" | "mcap") {
+        s.resim.message =
+            "Choose a PX4 flight log (.ulg), an ArduPilot flight log (.bin) or a ROS 2 recording (.mcap)."
+                .into();
         return;
     }
     let label = path
@@ -353,7 +356,7 @@ pub(crate) fn start(s: &mut crate::State, path: std::path::PathBuf) {
             crate::studio::linux_model_path(&p.display().to_string(), &distro, mount.as_deref())
         };
         let mut counts = BTreeMap::new();
-        let params = if ext == "ulg" {
+        let params = if ext != "mcap" {
             std::fs::metadata(&path)
                 .map_err(|e| e.to_string())
                 .and_then(|m| {
@@ -362,11 +365,20 @@ pub(crate) fn start(s: &mut crate::State, path: std::path::PathBuf) {
                     })
                 })
                 .and_then(|_| std::fs::read(&path).map_err(|e| e.to_string()))
-                .and_then(|bytes| crate::ulog::parse(bytes).map_err(|e| e.to_string()))
-                .and_then(|log| export(&log, &label))
+                .and_then(|bytes| {
+                    if ext == "bin" {
+                        crate::dataflash::parse(&bytes, super::import_ap::WANTED)
+                            .map_err(|e| e.to_string())
+                            .and_then(|log| super::import_ap::export(&log, &label))
+                    } else {
+                        crate::ulog::parse(bytes)
+                            .map_err(|e| e.to_string())
+                            .and_then(|log| export(&log, &label))
+                    }
+                })
                 .and_then(|e| {
                     counts = e.counts.clone();
-                    write(&e, &path)
+                    write(&e, &path, &format!("flight.{ext}"))
                 })
                 .and_then(|folder| linux(&folder))
                 .map(|folder| json!({"label": label, "folder": folder}))

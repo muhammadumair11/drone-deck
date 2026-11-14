@@ -383,7 +383,16 @@ fn an_adopted_copter_build_refuses_another_ardupilot_vehicle() {
         "{command}"
     );
     assert!(command.contains("exit 2; }; } && cd '/home/user/ardupilot' && "));
-    assert!(command.ends_with("copter.parm"));
+    // The defaults keep the checkout's Copter file when a re-simulation moves SITL to its own
+    // folder, and ROS 2 adds the DDS client's domain.
+    assert!(
+        command.contains("P=\"$PWD/Tools/autotest/default_params/copter.parm\""),
+        "{command}"
+    );
+    assert!(command.contains(
+        "exec '/home/user/ardupilot/build/sitl/bin/arducopter' --model + --defaults \"$P\""
+    ));
+    assert!(command.contains("DDS_DOMAIN_ID") && command.contains("--home"));
 }
 
 #[test]

@@ -2,9 +2,11 @@
 
     python3 compare.py <recording folder> <run folder>
 
-Both flights are put on one clock: seconds from their own first vehicle status (the anchor the
-command player times the replay from), using the autopilot's `timestamp` fields; AI output, which
-has no autopilot time, uses log time from the same anchor.
+Both flights are put on one clock: seconds from their own first vehicle status (PX4's
+vehicle_status, ArduPilot's /ap/status: the anchor the command player times the replay from), using
+the autopilot's own time stamps (PX4's `timestamp`, ArduPilot's `header.stamp`, from the clock base
+the flight ended in); AI output, which has no autopilot time, uses log time from the same anchor.
+ArduPilot's pose (ENU) is turned to north, east, down like PX4's local position.
 
 - **Path**: the fresh vehicle's local position, interpolated at the recorded one's times. The path
   stays the same course while the distance between them is within max(tolerance × the recorded
@@ -29,7 +31,7 @@ import sys
 
 sys.path.insert(0, os.environ.get('DRONE_DECK_AGENT') or str(Path(__file__).resolve().parent))
 
-from arbiter import is_anchor, read_jsonl  # noqa: E402
+from arbiter import final_base, is_anchor, read_jsonl, stamp_us  # noqa: E402
 
 SCHEMA = 1
 PATH_FLOOR_M = 1.0
@@ -41,6 +43,15 @@ NAV_STATES = {0: 'Manual', 1: 'Altitude', 2: 'Position', 3: 'Mission', 4: 'Hold'
               17: 'Takeoff', 18: 'Land', 19: 'Follow', 20: 'Precision land', 21: 'Orbit',
               22: 'VTOL takeoff'}
 ARMING = {1: 'Disarmed', 2: 'Armed'}
+AP_STATUS = '/ap/status'
+AP_POSE = '/ap/pose/filtered'
+# ArduCopter's flight modes (ardupilot_msgs/Status.mode when vehicle_type is a copter or heli).
+AP_COPTER_MODES = {0: 'Stabilize', 1: 'Acro', 2: 'Altitude hold', 3: 'Auto', 4: 'Guided', 5: 'Loiter',
+                   6: 'RTL', 7: 'Circle', 9: 'Land', 11: 'Drift', 13: 'Sport', 14: 'Flip', 15: 'AutoTune',
+                   16: 'Position hold', 17: 'Brake', 18: 'Throw', 19: 'Avoid ADS-B', 20: 'Guided (no GPS)',
+                   21: 'Smart RTL', 22: 'Flow hold', 23: 'Follow', 24: 'ZigZag', 25: 'System ID',
+                   26: 'Autorotate', 27: 'Auto RTL', 28: 'Turtle'}
+AP_COPTERS = (2, 13)
 
 
 def leaf(topic):
@@ -49,26 +60,54 @@ def leaf(topic):
     return head if head and version.isdigit() else name
 
 
+def in_final_base(rows):
+    """`rows` from where the autopilot clock took its last base (ArduPilot: from time since boot to
+    UTC); all of them when it never changed."""
+    pairs = [(log_ns, s) for _, log_ns, m in rows if (s := stamp_us(m)) is not None]
+    base = final_base(pairs)
+    if base is None or base == min(log_ns for log_ns, _ in pairs):
+        return rows
+    return [r for r in rows if r[1] >= base]
+
+
 def anchors(rows):
     """(autopilot µs, log ns) of the first vehicle status, or (None, None)."""
     best = None
     for topic, log_ns, message in rows:
-        stamp = message.get('timestamp') if isinstance(message, dict) else None
-        if is_anchor(topic) and isinstance(stamp, int) and stamp > 0 and (best is None or stamp < best[0]):
+        stamp = stamp_us(message)
+        if is_anchor(topic) and stamp is not None and (best is None or stamp < best[0]):
             best = (stamp, log_ns)
     return best or (None, None)
 
 
+def ned(topic, m):
+    """(north, east, down) metres of a local position report, or None: PX4's
+    vehicle_local_position (NED already) or ArduPilot's pose (ENU)."""
+    if leaf(topic) == 'vehicle_local_position':
+        xyz = [m.get(k) for k in ('x', 'y', 'z')]
+    elif topic == AP_POSE:
+        p = (m.get('pose') or {}).get('position') if isinstance(m.get('pose'), dict) else None
+        if not isinstance(p, dict):
+            return None
+        east, north, up = (p.get(k) for k in ('x', 'y', 'z'))
+        xyz = [north, east, -up if isinstance(up, (int, float)) else up]
+    else:
+        return None
+    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in xyz):
+        return None
+    return tuple(map(float, xyz))
+
+
 def positions(rows, anchor_us):
-    """[(s from the anchor, x, y, z)] from vehicle_local_position, in time order."""
+    """[(s from the anchor, north, east, down)] from the local position reports, in time order."""
     out = []
     for topic, _, m in rows:
-        if leaf(topic) != 'vehicle_local_position' or not isinstance(m, dict):
+        if not isinstance(m, dict):
             continue
-        stamp, xyz = m.get('timestamp'), [m.get(k) for k in ('x', 'y', 'z')]
-        if not isinstance(stamp, int) or not all(isinstance(v, (int, float)) and math.isfinite(v) for v in xyz):
+        stamp, xyz = stamp_us(m), ned(topic, m)
+        if stamp is None or xyz is None:
             continue
-        out.append(((stamp - anchor_us) / 1e6, *map(float, xyz)))
+        out.append(((stamp - anchor_us) / 1e6, *xyz))
     out.sort()
     return out
 
@@ -126,13 +165,20 @@ def path(old, new, tolerance, floor=PATH_FLOOR_M):
 def events(rows, anchor_us):
     """[{t, kind, value}] each time arming, mode, failsafe or landed changes."""
     out, last = [], {}
-    for topic, _, m in sorted(rows, key=lambda r: (r[2] or {}).get('timestamp', 0) if isinstance(r[2], dict) else 0):
-        if not isinstance(m, dict) or not isinstance(m.get('timestamp'), int):
+    for topic, _, m in sorted(rows, key=lambda r: stamp_us(r[2]) or 0):
+        stamp = stamp_us(m)
+        if stamp is None:
             continue
-        t = round((m['timestamp'] - anchor_us) / 1e6, 3)
+        t = round((stamp - anchor_us) / 1e6, 3)
         name = leaf(topic)
         found = []
-        if name == 'vehicle_status':
+        if topic == AP_STATUS:
+            modes = AP_COPTER_MODES if m.get('vehicle_type') in AP_COPTERS else {}
+            found = [('arming', 'Armed' if m.get('armed') else 'Disarmed'),
+                     ('mode', modes.get(m.get('mode'), f'Mode {m.get("mode")}')),
+                     ('failsafe', 'On' if m.get('failsafe') else 'Off'),
+                     ('landed', 'Flying' if m.get('flying') else 'Landed')]
+        elif name == 'vehicle_status':
             found = [('arming', ARMING.get(m.get('arming_state'), str(m.get('arming_state')))),
                      ('mode', NAV_STATES.get(m.get('nav_state'), f'Mode {m.get("nav_state")}')),
                      ('failsafe', 'On' if m.get('failsafe') else 'Off')]
@@ -250,6 +296,7 @@ def report(old_rows, new_rows, recorded_commands, log_lines, run, ai_topics):
     tolerance = run.get('tolerance')
     tolerance = tolerance / 100 if isinstance(tolerance, (int, float)) and not isinstance(tolerance, bool) \
         else DEFAULT_TOLERANCE
+    old_rows, new_rows = in_final_base(old_rows), in_final_base(new_rows)
     (old_us, old_ns), (new_us, new_ns) = anchors(old_rows), anchors(new_rows)
     notes = []
     if old_us is None or new_us is None:
@@ -288,7 +335,7 @@ def main(argv=None):
     evidence = [t for t in recipe.get('evidence_topics') or [] if isinstance(t, str)]
     ai_topics = [t for t in run.get('ai_topics') or [] if isinstance(t, str)]
     command_topics = [t for t in recipe.get('command_topics') or [] if isinstance(t, str)]
-    if recipe.get('source') == 'ulog':
+    if recipe.get('source') in ('ulog', 'dataflash'):
         # A flight imported from its log: its exported reports and commands.
         old = read_jsonl(recording / 'evidence.jsonl', set(evidence)) \
             + read_jsonl(recording / 'commands.jsonl', set(command_topics))

@@ -1,7 +1,5 @@
 //! The supported (autopilot, world) pairs.
-use super::{
-    Adapter, AutopilotKind, Condition, HomeEnv, Link, Param, Readiness, Ros, Scope, Stage,
-};
+use super::{Adapter, AutopilotKind, Condition, Home, Link, Param, Readiness, Ros, Scope, Stage};
 
 fn same(value: &str) -> String {
     value.to_string()
@@ -29,20 +27,36 @@ const ARDUPILOT_VEHICLE: Param = Param {
 };
 
 /// PX4 SITL takes its home position from these (SIH, Gazebo and jMAVSim).
-const PX4_HOME: HomeEnv = HomeEnv {
+const PX4_HOME: Home = Home::Split {
     lat: "PX4_HOME_LAT",
     lon: "PX4_HOME_LON",
     alt: "PX4_HOME_ALT",
 };
+/// ArduPilot's launch passes it to SITL as `--home lat,lon,alt,heading`.
+const AP_HOME: Home = Home::Joined("DRONE_DECK_AP_HOME");
 
 const PX4_ROS: Ros = Ros {
     agent: "dds",
     topic_prefix: "/fmu/",
     commands: &["/fmu/in/"],
     extra: &[],
+    recipes: &["dds", "ros-workspace"],
+    domain_env: None,
 };
 
-pub(crate) static ALL: [Adapter; 8] = [
+/// ArduPilot's DDS client (AP_DDS): its own agent on UDP 2019, topics under /ap/, and the ROS
+/// domain from its `DDS_DOMAIN_ID` parameter, which the launch writes. Arm, mode and takeoff
+/// are services (`/ap/arm_motors`, `/ap/mode_switch`, `/ap/experimental/takeoff`), not topics.
+const AP_ROS: Ros = Ros {
+    agent: "dds-ap",
+    topic_prefix: "/ap/",
+    commands: &["/ap/cmd_", "/ap/joy"],
+    extra: &[],
+    recipes: &["dds", "ardupilot-dds"],
+    domain_env: Some("DRONE_DECK_AP_DOMAIN"),
+};
+
+pub(crate) static ALL: [Adapter; 9] = [
     Adapter {
         id: "px4-sih",
         name: "PX4 SIH",
@@ -116,18 +130,11 @@ pub(crate) static ALL: [Adapter; 8] = [
             readiness: Readiness::ProcessRunning,
         }],
         link: Link::Direct,
-        // ArduPilot's DDS client publishes under /ap/. The workspace launch does not start
-        // the agent for it (its DDS port differs from PX4's), so only the chain shows it.
-        ros: Some(Ros {
-            agent: "dds",
-            topic_prefix: "/ap/",
-            commands: &["/ap/cmd_", "/ap/joy"],
-            extra: &[],
-        }),
+        ros: Some(AP_ROS),
         params: &[ARDUPILOT_VEHICLE],
         recipes: &["ardupilot"],
         shell: false,
-        home: None,
+        home: Some(AP_HOME),
         conditions: &[],
     },
     Adapter {
@@ -252,6 +259,32 @@ pub(crate) static ALL: [Adapter; 8] = [
         recipes: &["ardupilot", "realflight"],
         shell: false,
         home: None,
+        conditions: &[],
+    },
+    Adapter {
+        id: "ardupilot-flightgear",
+        name: "ArduPilot + FlightGear",
+        autopilot: AutopilotKind::ArduPilot,
+        world: "flightgear",
+        vehicle: "ardupilot-flightgear",
+        // SITL flies its own physics and sends each step to FlightGear, which only draws it
+        // (`--enable-fgview`, UDP 5503), so ROS 2 and re-simulation work as in plain SITL.
+        stages: &[
+            Stage {
+                profile: "ardupilot-flightgear",
+                readiness: Readiness::ProcessRunning,
+            },
+            Stage {
+                profile: "fgview",
+                readiness: Readiness::ProcessRunning,
+            },
+        ],
+        link: Link::Direct,
+        ros: Some(AP_ROS),
+        params: &[ARDUPILOT_VEHICLE],
+        recipes: &["ardupilot", "flightgear"],
+        shell: false,
+        home: Some(AP_HOME),
         conditions: &[],
     },
 ];

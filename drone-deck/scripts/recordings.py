@@ -15,6 +15,14 @@ import time
 import uuid
 
 SETUP = '/opt/ros/jazzy/setup.bash'
+# Message workspaces Setup builds (px4_msgs, ardupilot_msgs): sourced when present, so rosbag2 can
+# record the autopilots' own message types.
+OVERLAYS = tuple(os.path.expanduser('~') + f'/.local/share/drone-deck/tools/{w}/install/setup.bash'
+                 for w in ('px4_ros_ws', 'ap_ros_ws'))
+#: Topics that command an autopilot (PX4's /fmu/in/*, ArduPilot's velocity, position and
+#: joystick input). Ordinary replay never plays them; re-simulation is the only path that does.
+COMMAND_PREFIXES = ('/fmu/in/', '/ap/cmd_', '/ap/joy')
+SOURCE = 'source "$1"' + ''.join(f' && {{ [ ! -f "${i}" ] || source "${i}"; }}' for i in range(2, 2 + len(OVERLAYS)))
 TOPIC = re.compile(r'^/[A-Za-z_][A-Za-z0-9_]*(/[A-Za-z_][A-Za-z0-9_]*)*$')
 SESSION = re.compile(r'^[A-Za-z0-9_-]{1,110}$')
 OUTPUT_LOCK = threading.Lock()
@@ -39,7 +47,7 @@ def topics(value):
 def load_environment():
     if not Path(SETUP).is_file():
         raise RuntimeError('ROS 2 Jazzy is missing. Install ros-jazzy-ros-base and ros-jazzy-rosbag2-storage-mcap in this WSL distribution.')
-    result = subprocess.run(['bash', '-c', 'source "$1" && env -0', 'drone-deck', SETUP],
+    result = subprocess.run(['bash', '-c', SOURCE + ' && env -0', 'drone-deck', SETUP, *OVERLAYS],
                             capture_output=True, timeout=15, check=True)
     env = dict(os.environ)
     for item in result.stdout.split(b'\0'):
@@ -245,7 +253,7 @@ class Server:
             raise ValueError('Replay speed must be between 0.1x and 4x.')
         # Only topic playback; never replay service calls. Omit known control-input topics.
         selected = [t['topic_metadata']['name'] for t in metadata.get('topics_with_message_count', [])
-                    if not t['topic_metadata']['name'].startswith('/fmu/in/')
+                    if not t['topic_metadata']['name'].startswith(COMMAND_PREFIXES)
                     and not any(p in t['topic_metadata']['name'].lower()
                                 for p in ('vehicle_command', 'trajectory_setpoint', 'offboard_control_mode', 'cmd_vel'))]
         topics(selected)

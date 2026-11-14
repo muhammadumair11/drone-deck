@@ -315,7 +315,11 @@ class RequestTests(Fixture, unittest.TestCase):
         self.assertTrue(plan['commands']['record'][6].startswith(str(self.recording / 'inference')))
         self.assertEqual(plan['node'], pipe.HERE / 'infer_node.py')
         bash = pipe.ros_command(['ros2', 'bag', 'play', "/a b/it's"])
-        self.assertTrue(bash.startswith('source /opt/ros/jazzy/setup.bash && unset ROS_DISCOVERY_SERVER'))
+        self.assertTrue(bash.startswith('source /opt/ros/jazzy/setup.bash && { [ ! -f '))
+        self.assertIn('px4_ros_ws/install/setup.bash', bash)
+        self.assertIn('ap_ros_ws/install/setup.bash', bash)
+        self.assertEqual(bash.count(' ] || source '), 2, 'each workspace only when it exists')
+        self.assertIn('; } && unset ROS_DISCOVERY_SERVER', bash)
         self.assertIn("exec ros2 bag play '/a b/it'\"'\"'s'", bash)
 
     def test_infer_plan_refuses_unsafe_or_unusable_inputs(self):

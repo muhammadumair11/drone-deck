@@ -55,6 +55,43 @@ fn hardware_and_launch_parameters_are_never_copied() {
 }
 
 #[test]
+fn ardupilot_hardware_identity_and_dds_parameters_are_never_copied() {
+    for name in [
+        "INS_ACCOFFS_X",
+        "SERVO1_FUNCTION",
+        "GPS1_TYPE",
+        "GPS_AUTO_CONFIG",
+        "CAN_P1_DRIVER",
+        "RNGFND1_TYPE",
+        "NTF_LED_TYPES",
+        "STAT_BOOTCNT",
+        "RCMAP_ROLL",
+        "BRD_SAFETY_DEFLT",
+    ] {
+        assert_eq!(skip(name, true), Some(Skip::Hardware), "{name}");
+    }
+    for name in [
+        "DDS_DOMAIN_ID",
+        "DDS_ENABLE",
+        "SYSID_THISMAV",
+        "FRAME_CLASS",
+    ] {
+        assert_eq!(skip(name, true), Some(Skip::Launch), "{name}");
+    }
+    for name in [
+        "WPNAV_SPEED",
+        "GUID_TIMEOUT",
+        "ARMING_CHECK",
+        "RTL_ALT",
+        "MOT_THST_HOVER",
+    ] {
+        assert_eq!(skip(name, true), None, "{name}");
+    }
+    assert_eq!(skip("SIM_WIND_SPD", true), None, "same world");
+    assert_eq!(skip("SIM_WIND_SPD", false), Some(Skip::OtherSimulator));
+}
+
+#[test]
 fn simulator_parameters_follow_only_the_same_world() {
     assert_eq!(skip("SIM_GZ_EN", true), None);
     assert_eq!(skip("SIM_GZ_EN", false), Some(Skip::OtherSimulator));

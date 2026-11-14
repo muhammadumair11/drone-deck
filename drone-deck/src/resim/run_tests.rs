@@ -76,6 +76,64 @@ fn the_temporary_system_flies_the_recorded_world_on_the_isolated_domain() {
 }
 
 #[test]
+fn a_fresh_ardupilot_gets_its_own_domain_state_folder_and_the_recorded_home() {
+    let mut r = recipe_for("ardupilot-sitl", "internal");
+    r.autopilot = AutopilotKind::ArduPilot;
+    r.vehicle = Some("copter".into());
+    r.world.params.clear();
+    r.home = Some(recipe::Home {
+        lat: -35.363262,
+        lon: 149.165237,
+        alt: 584.0,
+    });
+    let sys = system_for(&r, &Target::default());
+    assert_eq!(sys.adapter().map(|a| a.id), Some("ardupilot-sitl"));
+    assert_eq!(
+        systems::session_stages(&sys),
+        ["ardupilot", "link", "dds-ap"],
+        "ArduPilot's own agent on UDP 2019"
+    );
+    let env = crate::backend::launch_env("ardupilot", &sys);
+    let value = |k: &str| {
+        let found: Vec<&str> = env
+            .iter()
+            .filter(|(a, _)| a == k)
+            .map(|(_, b)| b.as_str())
+            .collect();
+        assert!(found.len() <= 1, "{k} set once: {env:?}");
+        found.first().copied()
+    };
+    assert_eq!(
+        value("DRONE_DECK_AP_DOMAIN"),
+        Some("80"),
+        "its own domain, not the run's 79"
+    );
+    assert_eq!(value("DRONE_DECK_AP_DIR"), Some(crate::resim::AP_STATE));
+    assert_eq!(value("DRONE_DECK_AP_WIPE"), Some("1"));
+    assert_eq!(
+        value("DRONE_DECK_AP_HOME"),
+        Some("-35.363262,149.165237,584,0")
+    );
+    assert_eq!(value("PX4_UXRCE_DDS_NS"), None);
+
+    let mut normal = template(crate::systems::ROS, "lab", "Lab");
+    normal.vehicle = Vehicle::ardupilot("copter");
+    let env = crate::backend::launch_env("ardupilot", &normal);
+    assert!(
+        env.contains(&("DRONE_DECK_AP_DOMAIN".into(), "0".into())),
+        "a saved system's DDS client joins its ROS domain: {env:?}"
+    );
+    assert!(!env.iter().any(|(k, _)| k == "DRONE_DECK_AP_WIPE"));
+    normal.consumers.ros.agent = false;
+    assert!(
+        !crate::backend::launch_env("ardupilot", &normal)
+            .iter()
+            .any(|(k, _)| k == "DRONE_DECK_AP_DOMAIN"),
+        "no ROS 2, no DDS client"
+    );
+}
+
+#[test]
 fn the_temporary_system_is_never_saved_or_listed() {
     let mut s = State::new();
     let before = s.systems.active_id().to_string();
@@ -107,7 +165,12 @@ fn a_run_is_refused_with_a_reason() {
     assert!(refusal(&s).unwrap().contains("Choose a flight"));
     s.resim.flights = vec![flight("ardupilot-sitl", 2)];
     s.resim.selected = Some(s.resim.flights[0].id.clone());
-    assert!(refusal(&s).unwrap().contains("ArduPilot"));
+    assert!(
+        refusal(&s).unwrap().contains("Headless"),
+        "ArduPilot flights re-simulate too"
+    );
+    s.resim.flights = vec![flight("ardupilot-webots", 2)];
+    assert!(refusal(&s).unwrap().contains("no ROS 2 bridge"));
     s.resim.flights = vec![flight("px4-gazebo", 0)];
     assert!(refusal(&s).unwrap().contains("no ROS 2 commands"));
     s.resim.flights = vec![flight("px4-gazebo", 2)];
@@ -136,6 +199,7 @@ fn active(s: &State) -> Active {
         target: Target::default(),
         same_world: true,
         home: false,
+        autopilot: AutopilotKind::Px4,
     }
 }
 
