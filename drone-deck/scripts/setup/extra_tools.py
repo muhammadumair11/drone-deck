@@ -149,7 +149,7 @@ def dependencies(base,tool):
         source=Path('/etc/apt/sources.list.d/drone-deck-gazebo.list')
         architecture=base.output(['dpkg','--print-architecture'])
         source.write_text(f'deb [arch={architecture} signed-by={key}] https://packages.osrfoundation.org/gazebo/ubuntu-stable noble main\n')
-        base.run(['apt-get','update']);base.run(['apt-get','install','-y','--no-install-recommends','gz-harmonic'])
+        base.run(['apt-get','update']);base.run(['apt-get','install','-y','--no-install-recommends','gz-harmonic','cppzmq-dev'])  # gz-transport13's CMake config needs cppzmq; it is only a Recommends of libzmq3-dev
         return
     if tool in ROS_PACKAGES:
         if not Path('/opt/ros/jazzy/setup.bash').is_file():raise RuntimeError('Install ROS 2 Jazzy in Setup first; it configures the ROS apt repository.')
