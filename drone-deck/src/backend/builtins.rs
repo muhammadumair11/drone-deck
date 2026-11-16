@@ -114,9 +114,9 @@ pub fn defaults() -> Config {
         "Lightweight internal flight physics · Quad X",
         "wsl",
         vec![format!(
-            "{PX4_DIR} && test -z \"$(pgrep -x px4)\" && make px4_sitl_sih sihsim_quadx"
+            "{PX4_DIR} && test -z \"$(pgrep -x px4)\" && make px4_sitl sihsim_quadx"
         )],
-        "test -x \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot/build/px4_sitl_sih/bin/px4\"",
+        "test -x \"$HOME/.local/share/drone-deck/tools/PX4-Autopilot/build/px4_sitl_default/bin/px4\"",
         "https://docs.px4.io/main/en/sim_sih/",
     );
     add(

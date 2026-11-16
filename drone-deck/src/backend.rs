@@ -471,6 +471,18 @@ pub struct Backend {
     worker: Option<thread::JoinHandle<()>>,
 }
 impl Backend {
+    /// A backend with no worker that hands every request to the returned receiver.
+    #[cfg(test)]
+    pub(crate) fn capture() -> (Self, Receiver<Request>) {
+        let (tx, requests) = mpsc::channel();
+        let (_, rx) = mpsc::sync_channel(1);
+        let backend = Self {
+            tx,
+            rx,
+            worker: None,
+        };
+        (backend, requests)
+    }
     pub fn shutdown(mut self) {
         drop(self.rx);
         let _ = self.tx.send(Request::Shutdown);

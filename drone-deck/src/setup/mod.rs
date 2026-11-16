@@ -6,6 +6,7 @@ pub(crate) mod presets;
 pub(crate) mod profiles;
 #[cfg(test)]
 mod tests;
+pub(crate) mod user;
 mod view;
 pub(crate) mod workflow;
 use crate::*;
@@ -30,6 +31,9 @@ pub(crate) struct Distro {
     pub label: String,
     #[serde(default)]
     pub support: String,
+    /// Whether the distribution has a regular (non-root) user; unknown when it was not probed.
+    #[serde(default)]
+    pub regular_user: Option<bool>,
 }
 #[derive(Default, Deserialize)]
 pub(crate) struct Host {
@@ -117,6 +121,10 @@ pub(crate) struct Setup {
     pub checkpoint_cache: String,
     /// Existing tool locations given in guided setup, by recipe id; workflow checks use them.
     pub overrides: HashMap<String, String>,
+    /// The host snapshot is out of date (a WSL or distribution job changed state): scan again.
+    pub rescan_wanted: bool,
+    /// After `Initialize Linux user`: when watching began and when it last rescanned.
+    pub user_watch: Option<(Instant, Instant)>,
 }
 impl Setup {
     /// A workflow queue or a live installation job owns the environment.
@@ -176,6 +184,8 @@ impl Default for Setup {
             checkpoint_loaded: false,
             checkpoint_cache: String::new(),
             overrides: HashMap::new(),
+            rescan_wanted: false,
+            user_watch: None,
         }
     }
 }
@@ -207,6 +217,13 @@ pub(crate) fn request(s: &mut State, action: &str) {
         s.setup.message =
             "Stop the session (owned tools, vehicle link, recordings, pipeline jobs) before installing shared dependencies.".into();
         return;
+    }
+    if action == "start" && user::blocks_install(s) {
+        s.setup.message = user::BLOCKED.into();
+        return;
+    }
+    if action == "initialize" {
+        user::begin_watch(&mut s.setup);
     }
     if action == "detect" {
         s.setup.discard_detect = false;
@@ -265,6 +282,15 @@ pub(crate) fn poll(s: &mut State) -> bool {
             for job in &jobs {
                 let before = s.setup.jobs.iter().find(|j| j.id == job.id);
                 if before.is_some_and(|b| b.status != job.status) {
+                    let id = s
+                        .setup
+                        .recipes
+                        .iter()
+                        .find(|r| r.name == job.tool)
+                        .map(|r| r.id.clone());
+                    if let Some(id) = id {
+                        user::job_changed(&mut s.setup, &id, &job.status);
+                    }
                     let name = s
                         .setup
                         .recipes
@@ -305,7 +331,7 @@ pub(crate) fn poll(s: &mut State) -> bool {
             changed = true;
         }
     }
-    let changed = changed | workflow::poll(s) | batch::poll(s);
+    let changed = changed | user::tick(s) | workflow::poll(s) | batch::poll(s);
     changed | batch::persist(s)
 }
 fn apply_event(s: &mut State, value: Value) {
@@ -333,8 +359,13 @@ fn apply_event(s: &mut State, value: Value) {
                     host.distros.len()
                 );
                 s.setup.host = Some(host);
+                user::saw_host(&mut s.setup);
                 if configured {
-                    s.send(Request::Detect(s.config.clone()));
+                    if user::missing(s) {
+                        s.setup.message = "This Linux environment has no user yet. Use Initialize Linux user to create one.".into();
+                    } else {
+                        s.send(Request::Detect(s.config.clone()));
+                    }
                 } else if s.page == crate::ui::Page::System && !s.systems.any_prepared() {
                     crate::guided::open(s);
                 } else if s.page != crate::ui::Page::Setup {

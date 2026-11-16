@@ -1,0 +1,1 @@
+- Drone Deck: Installing PX4 builds `make px4_sitl` instead of `make px4_sitl_sih sihsim_quadx`: PX4 v1.17.0 (the version Drone Deck installs) has no `px4_sitl_sih` board, and a simulator target starts PX4 inside the install step, which then never finishes. The built-in PX4 / SIH command and its check use `px4_sitl`, and older checkouts with a `px4_sitl_sih` build keep working.

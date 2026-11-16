@@ -103,7 +103,7 @@ function Get-PackageVersion {
 
 # Mirrors $source into $destination with robocopy. Exit codes below 8 mean success.
 function Copy-Tree([string]$source, [string]$destination, [string[]]$excludeFiles = @()) {
-    $arguments = @($source, $destination, '/MIR', '/XD', '__pycache__', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:2', '/W:1')
+    $arguments = @($source, $destination, '/MIR', '/XD', '__pycache__', 'windows-fixture-*', '/NFL', '/NDL', '/NJH', '/NJS', '/NP', '/R:2', '/W:1')
     if ($excludeFiles.Count -gt 0) {
         $arguments += '/XF'
         $arguments += $excludeFiles

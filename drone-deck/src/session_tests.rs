@@ -35,9 +35,36 @@ fn the_launch_wait_ticks_only_on_the_system_page() {
     assert!(!session::poll(&mut s), "same second");
 }
 
+/// PX4 can fail readiness ("did not publish vehicle status") while its process still runs; the
+/// launch stops it, or the next Start would be refused because a px4 is already running.
+#[test]
+fn a_stage_that_fails_readiness_while_running_is_stopped() {
+    let mut s = State::new();
+    let (backend, requests) = backend::Backend::capture();
+    s.backend = Some(backend);
+    s.session = Some(session::Launch::new(["sih", "qgc"]));
+    session::poll(&mut s);
+    s.status.insert("sih".into(), "Running".into());
+    s.readiness.insert("sih".into(), "Failed".into());
+    session::poll(&mut s);
+    assert!(s.session.is_none());
+    let stops: Vec<_> = requests
+        .try_iter()
+        .filter_map(|r| match r {
+            backend::Request::Stop(id) => Some(id),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(stops, ["sih"]);
+    assert!(s.notice.contains("stopped sih"), "{}", s.notice);
+    assert!(!s.status.contains_key("qgc"));
+}
+
 #[test]
 fn a_failed_profile_stage_stops_the_launch() {
     let mut s = State::new();
+    let (backend, requests) = backend::Backend::capture();
+    s.backend = Some(backend);
     s.session = Some(session::Launch::new(["dds", "qgc"]));
     session::poll(&mut s);
     s.status.insert("dds".into(), "Exited 2".into());
@@ -49,4 +76,10 @@ fn a_failed_profile_stage_stops_the_launch() {
         s.notice
     );
     assert!(!s.status.contains_key("qgc"));
+    // A process that already exited has nothing to stop.
+    assert!(
+        requests
+            .try_iter()
+            .all(|r| !matches!(r, backend::Request::Stop(_)))
+    );
 }

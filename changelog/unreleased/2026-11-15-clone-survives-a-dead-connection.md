@@ -1,0 +1,1 @@
+- Drone Deck: Guided setup's downloads (PX4, Micro XRCE-DDS Agent, ArduPilot, px4_msgs and ArduPilot's DDS generator) no longer hang forever when the connection dies (a laptop that sleeps mid-clone left one waiting for ten hours): git gives up below 1 KB/s for two minutes, the step fails so it can be retried, and a cut-off clone is cleared before the retry starts.

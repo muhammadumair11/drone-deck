@@ -1,0 +1,1 @@
+- Drone Deck: Guided setup can install WSL on a PC that has never had it. Windows' built-in `wsl.exe` stub rejects `wsl --install --no-distribution` and `wsl --update`, so the WSL step now installs Microsoft's WSL package with winget first, and its errors say which command failed and what to do.

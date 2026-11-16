@@ -1,0 +1,1 @@
+- Drone Deck: A workspace launch that gives up on a stage now stops that stage's process. PX4 could fail its readiness check ("did not publish vehicle status") and keep running, so the next Start was refused because a PX4 was already running until you pressed Stop session.

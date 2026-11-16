@@ -16,6 +16,22 @@ EXTRA = ('gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge',
 def run(args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
+# A connection that dies (the laptop sleeps, Wi-Fi changes) leaves a plain git clone waiting forever.
+# Below 1 KB/s for two minutes, git gives up, and the step fails so it can be retried.
+GIT = ['git', '-c', 'http.lowSpeedLimit=1000', '-c', 'http.lowSpeedTime=120']
+
+def clone(args, path):
+    """Clones into an app-owned `path`; never hangs on a dead connection or leaves half a clone behind."""
+    if path.exists() and not output(['git', '-C', str(path), 'rev-parse', '--verify', '-q', 'HEAD']):
+        shutil.rmtree(path)  # an interrupted clone: no commit was ever checked out
+    if (path / '.git').exists():
+        return
+    try:
+        run([*GIT, 'clone', *args, str(path)])
+    except subprocess.CalledProcessError:
+        shutil.rmtree(path, ignore_errors=True)
+        raise
+
 def output(args):
     result = subprocess.run(args, capture_output=True, text=True, timeout=15)
     return result.stdout.strip() if result.returncode == 0 else ''
@@ -138,23 +154,22 @@ def install(tool):
         (path / 'drone-deck-packages.txt').write_text(output([str(path / 'bin/python'), '-m', 'pip', 'freeze']))
     elif tool == 'px4':
         path = owned_target('PX4-Autopilot')
-        if not (path / '.git').exists():
-            run(['git', 'clone', '--recursive', '--branch', 'v1.17.0', 'https://github.com/PX4/PX4-Autopilot.git', str(path)])
+        clone(['--recursive', '--branch', 'v1.17.0', 'https://github.com/PX4/PX4-Autopilot.git'], path)
         if output(['git', '-C', str(path), 'describe', '--exact-match', '--tags', 'HEAD']) != 'v1.17.0':
             raise RuntimeError('Managed PX4 checkout no longer matches v1.17.0; review local changes manually.')
         # Retry incomplete recursive clones without resetting local source changes.
-        run(['git', '-C', str(path), 'submodule', 'update', '--init', '--recursive'])
+        run([*GIT, '-C', str(path), 'submodule', 'update', '--init', '--recursive'])
         env_path = owned_target('px4-python')
         if not (env_path / 'bin/python').exists():
             run(['python3', '-m', 'venv', str(env_path)])
         run([str(env_path / 'bin/python'), '-m', 'pip', 'install', '-r', str(path / 'Tools/setup/requirements.txt')])
         env = {**os.environ, 'PATH': str(env_path / 'bin') + ':' + os.environ['PATH'], 'DONT_RUN': '1'}
-        run(['make', '-j2', 'px4_sitl_sih', 'sihsim_quadx'], cwd=path, env=env)
+        # Build only: a simulator target (sihsim_quadx) starts PX4 and never returns, whatever DONT_RUN says.
+        run(['make', '-j2', 'px4_sitl'], cwd=path, env=env)
         (env_path / 'drone-deck-packages.txt').write_text(output([str(env_path / 'bin/python'), '-m', 'pip', 'freeze']))
     elif tool == 'dds':
         path = owned_target('Micro-XRCE-DDS-Agent')
-        if not (path / '.git').exists():
-            run(['git', 'clone', '--branch', 'v2.4.3', 'https://github.com/eProsima/Micro-XRCE-DDS-Agent.git', str(path)])
+        clone(['--branch', 'v2.4.3', 'https://github.com/eProsima/Micro-XRCE-DDS-Agent.git'], path)
         if output(['git', '-C', str(path), 'describe', '--exact-match', '--tags', 'HEAD']) != 'v2.4.3':
             raise RuntimeError('Managed Agent checkout no longer matches v2.4.3; review it manually.')
         run(['cmake', '-S', str(path), '-B', str(path / 'build'), '-DCMAKE_BUILD_TYPE=Release'])

@@ -107,6 +107,9 @@ pub(super) fn read_jobs(folder: &std::path::Path, selected: Option<&str>) -> Vec
         if job.alive {
             if let Ok(message)=fs::read_to_string(path.join("output.log.waiting")) {
                 job.status="Needs attention".into();job.message=message;
+            } else if let Ok(message)=fs::read_to_string(path.join("output.log.silent")) {
+                // Alive but quiet (a large download): keep its status, say that waiting is fine.
+                job.message=message;
             }
         }
         let old=state_path.metadata().ok()?.modified().ok()?.elapsed().ok()?.as_secs()>20;

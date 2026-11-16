@@ -313,3 +313,32 @@ fn legacy_installation_ownership_requires_a_unique_match() {
     assert_eq!(s.guided.existing.as_deref(), Some("ros-sensor-capture"));
     assert_eq!(s.guided.chapter, REVIEW);
 }
+
+#[test]
+fn a_distribution_with_only_root_holds_the_wizard_at_the_linux_environment() {
+    let mut s = State::new();
+    preview(&mut s, "review");
+    assert_eq!(prep::phase(&s), prep::Phase::Review);
+    let name = s.config.distro.clone();
+    let set = |s: &mut State, user: Option<bool>| {
+        for d in s.setup.host.as_mut().unwrap().distros.iter_mut() {
+            if d.name == name {
+                d.regular_user = user;
+            }
+        }
+    };
+    set(&mut s, Some(false));
+    assert_eq!(
+        prep::phase(&s),
+        prep::Phase::Environment,
+        "tools are never offered before the Linux user exists"
+    );
+    set(&mut s, None);
+    assert_eq!(
+        prep::phase(&s),
+        prep::Phase::Review,
+        "unknown does not block"
+    );
+    set(&mut s, Some(true));
+    assert_eq!(prep::phase(&s), prep::Phase::Review);
+}

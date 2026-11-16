@@ -189,7 +189,7 @@ pub(crate) fn poll(s: &mut State) -> bool {
                 s.guided.prep_error = s.setup.message.clone();
             } else {
                 use_preset(s);
-                if setup::workflow::needs_wsl(s) && !s.wsl_ready() {
+                if setup::workflow::needs_wsl(s) && (!s.wsl_ready() || setup::user::missing(s)) {
                     s.guided.check = Check::Idle;
                 } else {
                     setup::workflow::scan(s);
