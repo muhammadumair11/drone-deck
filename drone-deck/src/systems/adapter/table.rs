@@ -5,6 +5,15 @@ fn same(value: &str) -> String {
     value.to_string()
 }
 
+/// `PX4_GZ_SIM_RENDER_ENGINE` for a system's Gazebo renderer: `ogre` or `ogre2`, or empty for
+/// anything else (`auto`), so Gazebo keeps its own default and a typo never stops the launch.
+pub(crate) fn gz_renderer(value: &str) -> String {
+    match value.trim().to_ascii_lowercase().as_str() {
+        r @ ("ogre" | "ogre2") => r.into(),
+        _ => String::new(),
+    }
+}
+
 /// `sim_vehicle.py -v` names for the ArduPilot vehicles a system can name.
 pub(crate) fn ardupilot_vehicle(vehicle: &str) -> String {
     match vehicle.trim().to_ascii_lowercase().as_str() {
@@ -108,6 +117,16 @@ pub(crate) static ALL: [Adapter; 9] = [
                 default: "x500_mono_cam",
                 env: "DRONE_DECK_GZ_MODEL",
                 map: same,
+            },
+            Param {
+                key: "renderer",
+                label: "Gazebo renderer",
+                scope: Scope::World,
+                default: "auto",
+                // PX4's Gazebo start script reads this and passes `--render-engine` to both the
+                // server and the GUI, so the launch command stays as saved.
+                env: "PX4_GZ_SIM_RENDER_ENGINE",
+                map: gz_renderer,
             },
         ],
         recipes: &["px4", "gazebo"],

@@ -104,7 +104,10 @@ impl Vehicle {
     pub fn gazebo(world: &str, model: &str) -> Self {
         Vehicle::Simulated {
             autopilot: Autopilot::Px4,
-            world: World::new("gazebo", &[("world", world), ("model", model)]),
+            world: World::new(
+                "gazebo",
+                &[("world", world), ("model", model), ("renderer", "auto")],
+            ),
         }
     }
     pub fn ardupilot(vehicle: &str) -> Self {
@@ -274,7 +277,8 @@ impl System {
             _ => None,
         }
     }
-    /// The vehicle in one line for lists: the adapter's name and its details.
+    /// The vehicle in one line for lists: the adapter's name and its details. A detail left on
+    /// `auto` (such as the Gazebo renderer) chooses nothing, so the line leaves it out.
     pub fn summary(&self) -> String {
         match &self.vehicle {
             Vehicle::Simulated { autopilot, world } => match self.adapter() {
@@ -282,7 +286,8 @@ impl System {
                     .chain(
                         a.params
                             .iter()
-                            .map(|p| self.param(p.key).unwrap_or(p.default).to_string()),
+                            .map(|p| self.param(p.key).unwrap_or(p.default).to_string())
+                            .filter(|v| v != "auto"),
                     )
                     .collect::<Vec<_>>()
                     .join(" / "),

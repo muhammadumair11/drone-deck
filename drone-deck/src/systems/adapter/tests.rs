@@ -141,6 +141,34 @@ fn launch_env_gives_defaults_for_missing_details() {
 }
 
 #[test]
+fn gazebo_renderer_reaches_px4_only_as_a_known_engine() {
+    let renderer = |value: Option<&str>| {
+        let mut sys = starter(systems::ROS, "r", "R");
+        if let (Some(v), crate::systems::Vehicle::Simulated { world, .. }) =
+            (value, &mut sys.vehicle)
+        {
+            world.params.insert("renderer".into(), v.into());
+        }
+        launch_env(&sys, "gazebo")
+            .into_iter()
+            .find(|(k, _)| k == "PX4_GZ_SIM_RENDER_ENGINE")
+            .map(|(_, v)| v)
+    };
+    assert_eq!(
+        renderer(None).as_deref(),
+        Some(""),
+        "auto keeps Gazebo's default"
+    );
+    assert_eq!(renderer(Some("ogre2")).as_deref(), Some("ogre2"));
+    assert_eq!(renderer(Some(" Ogre ")).as_deref(), Some("ogre"));
+    assert_eq!(
+        renderer(Some("vulkan")).as_deref(),
+        Some(""),
+        "unknown is auto"
+    );
+}
+
+#[test]
 fn each_world_offers_only_the_autopilots_that_fly_in_it() {
     use AutopilotKind::{ArduPilot, Px4};
     assert_eq!(

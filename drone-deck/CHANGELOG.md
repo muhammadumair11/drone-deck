@@ -2,6 +2,10 @@
 
 Drone Deck's user-visible changes. Older entries were reconstructed from the per-version guides and verification reports that this file replaces. Open problems are tracked in [docs/known-issues.md](docs/known-issues.md).
 
+## Unreleased
+
+- Add a **Gazebo renderer** detail to PX4 + Gazebo systems (`auto`, `ogre` or `ogre2`). It reaches PX4 as `PX4_GZ_SIM_RENDER_ENGINE`, so saved launch commands stay unchanged, and systems saved before it keep Gazebo's default.
+
 ## 0.9.2 — release candidate
 
 - Install `cppzmq-dev` with Gazebo Harmonic, so PX4's Gazebo build finds the C++ ZeroMQ headers that gz-transport13 requires on Ubuntu 24.04.
