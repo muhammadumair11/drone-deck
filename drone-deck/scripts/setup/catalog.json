@@ -463,6 +463,7 @@
     "packages": [
       "OSRF repository key",
       "gz-harmonic",
+      "cppzmq-dev",
       "curl",
       "gnupg",
       "lsb-release"

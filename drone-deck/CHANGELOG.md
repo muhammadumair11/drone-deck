@@ -4,6 +4,7 @@ Drone Deck's user-visible changes. Older entries were reconstructed from the per
 
 ## 0.9.2 — release candidate
 
+- Install `cppzmq-dev` with Gazebo Harmonic, so PX4's Gazebo build finds the C++ ZeroMQ headers that gz-transport13 requires on Ubuntu 24.04.
 - Add light and dark themes, file browsing, installation notifications, and page shortcuts.
 - Keep workspace launch failures visible and link runtime components to their output.
 - Improve narrow-window layout, section separation, and selectable process output.
