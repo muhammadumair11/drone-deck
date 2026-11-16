@@ -60,6 +60,8 @@ class ExtraTests(unittest.TestCase):
    jar=px4/extra_tools.JMAVSIM_JAR;jar.parent.mkdir(parents=True);jar.write_bytes(b'PK')
    with patch.object(extra_tools.shutil,'which',return_value='/usr/bin/java'):
     result=extra_tools.probe(base,'jmavsim',str(px4))
+    self.assertFalse(result['compatible']);self.assertIn('JOGL 2.4',result['reason'])
+    with patch.object(extra_tools,'jogl_ready',return_value=True):result=extra_tools.probe(base,'jmavsim',str(px4))
    self.assertTrue(result['compatible']);self.assertEqual(result['executable'],str(jar))
    self.assertTrue(result['managed'],'inside the managed root')
  def test_jmavsim_builds_only_in_the_managed_px4_checkout(self):
@@ -69,16 +71,73 @@ class ExtraTests(unittest.TestCase):
     with self.assertRaisesRegex(RuntimeError,"own PX4 checkout"):extra_tools.install(base,'jmavsim')
     base.run.assert_not_called()
     (root/'PX4-Autopilot'/'.git').mkdir(parents=True);(root/'.owned-PX4-Autopilot').write_text('x')
-    extra_tools.install(base,'jmavsim')
+    with patch.object(extra_tools,'update_jogl') as jogl:extra_tools.install(base,'jmavsim')
+    jogl.assert_called_once_with(root/'PX4-Autopilot'/extra_tools.JMAVSIM)
   calls=[call.args[0] for call in base.run.call_args_list]
   self.assertEqual(calls[1],['ant','create_run_jar','copy_res'])
   self.assertEqual(base.run.call_args_list[1].kwargs['cwd'],root/'PX4-Autopilot'/extra_tools.JMAVSIM)
+  self.assertEqual(len(calls),2,'PX4 was never built, so it has nothing to look for again')
+ def test_a_simulator_installed_after_px4_was_built_makes_px4_look_for_it_again(self):
+  # PX4 cached "Java not found" when it was built before jMAVSim; without this, `make px4_sitl jmavsim` has no target.
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   root=Path(directory);build=root/'PX4-Autopilot/build/px4_sitl_default'
+   (root/'PX4-Autopilot'/'.git').mkdir(parents=True);build.mkdir(parents=True);(build/'CMakeCache.txt').write_text('x')
+   with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):
+    for tool in ('gazebo','flightgear','jmavsim'):
+     base=Mock(ROOT=root)
+     if tool=='jmavsim':(root/'.owned-PX4-Autopilot').write_text('x')
+     with patch.object(extra_tools,'update_jogl'):extra_tools.install(base,tool)
+     refresh=[c for c in base.run.call_args_list if c.args[0][0]=='cmake']
+     if tool=='jmavsim':
+      self.assertEqual(len(refresh),1,tool)
+      self.assertEqual(refresh[0].args[0],['cmake','-U','JAVA_ANT_PATH','-U','Java_*','-U','FGFS_PATH','-U','gz-*','-U','gz*_DIR','.'])
+      self.assertEqual(refresh[0].kwargs['cwd'],build)
+      self.assertTrue(refresh[0].kwargs['env']['PATH'].startswith(str(root/'px4-python/bin')))
+     else:
+      self.assertEqual(refresh,[],f'{tool}: an adopted PX4 build is never reconfigured')
+   with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):
+    base=Mock(ROOT=root);extra_tools.install(base,'gazebo')
+   self.assertEqual(base.run.call_args_list[0].args[0][0],'cmake','Gazebo installed after PX4 refreshes the owned build')
+ def test_a_failed_addon_download_leaves_no_half_clone(self):
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   path=Path(directory)/'ardupilot';base=Mock()
+   def die(args,**kwargs):
+    path.mkdir();raise extra_tools.subprocess.CalledProcessError(128,args)
+   base.run.side_effect=die
+   with self.assertRaises(extra_tools.subprocess.CalledProcessError):extra_tools.clone(base,path,'https://example.invalid/repo','tag')
+   self.assertFalse(path.exists())
+   self.assertEqual(base.run.call_args.args[0][:6],[*extra_tools.GIT,'clone'])
+ def test_jogl_is_replaced_only_when_every_pinned_jar_matches(self):
+  # JOGL 2.4's window crashes under WSLg; 2.5.0 is fetched and checked against pinned SHA-256s.
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   project=Path(directory);lib=project/'lib';lib.mkdir()
+   for name in extra_tools.JOGL:(lib/name).write_bytes(b'jogl 2.4')
+   good={name:name.encode() for name in extra_tools.JOGL}
+   pins={name:extra_tools.hashlib.sha256(data).hexdigest() for name,data in good.items()}
+   def serve(data):
+    def urlopen(url,timeout):
+     response=Mock();response.read.return_value=data[url.rsplit('/',1)[1]]
+     response.__enter__=Mock(return_value=response);response.__exit__=Mock(return_value=False)
+     return response
+    return urlopen
+   with patch.dict(extra_tools.JOGL,pins):
+    self.assertFalse(extra_tools.jogl_ready(project))
+    bad=dict(good,**{'gluegen-rt.jar':b'tampered'})
+    with patch.object(extra_tools.urllib.request,'urlopen',side_effect=serve(bad)):
+     with self.assertRaisesRegex(RuntimeError,'SHA-256'):extra_tools.update_jogl(project)
+    self.assertEqual((lib/'jogl-all.jar').read_bytes(),b'jogl 2.4','nothing replaced after a mismatch')
+    self.assertEqual(sorted(p.name for p in lib.iterdir()),sorted(extra_tools.JOGL),'no .part files left')
+    with patch.object(extra_tools.urllib.request,'urlopen',side_effect=serve(good)) as fetch:extra_tools.update_jogl(project)
+    self.assertTrue(extra_tools.jogl_ready(project))
+    self.assertTrue(all(c.args[0].startswith('https://jogamp.org/deployment/v2.5.0/jar/') for c in fetch.call_args_list))
+    with patch.object(extra_tools.urllib.request,'urlopen') as again:extra_tools.update_jogl(project)
+    again.assert_not_called()
  def test_jmavsim_is_a_known_tool_verified_in_the_px4_checkout(self):
   self.assertIn('jmavsim',tools.TOOLS)
   with patch.object(extra_tools,'probe',return_value={}) as probe:tools.verify('jmavsim')
   self.assertEqual(probe.call_args.args[1:],('jmavsim',str(tools.ROOT/'PX4-Autopilot')))
  def test_flightgear_is_an_apt_package_with_no_user_stage(self):
-  base=Mock()
+  base=Mock(ROOT=Path('/nonexistent'))
   with patch.object(extra_tools.os,'geteuid',return_value=0,create=True):extra_tools.dependencies(base,'flightgear')
   calls=[call.args[0] for call in base.run.call_args_list]
   self.assertEqual(calls[-1],['apt-get','install','-y','--no-install-recommends','flightgear'])
@@ -117,7 +176,7 @@ class ExtraTests(unittest.TestCase):
      extra_tools.install(base,'ardupilot-dds')
     link.assert_called_once_with(checkout/extra_tools.AP_MSGS)
   calls=[call.args[0] for call in base.run.call_args_list]
-  self.assertEqual(calls[0][:5],['git','clone','--recurse-submodules','--branch','v4.5.1'])
+  self.assertEqual(calls[0][:9],[*extra_tools.GIT,'clone','--recurse-submodules','--branch','v4.5.1'])
   self.assertEqual(calls[1],['./gradlew','assemble'])
   configure=base.run.call_args_list[2]
   self.assertEqual(configure.args[0][1:],['waf','configure','--board','sitl','--enable-DDS'])

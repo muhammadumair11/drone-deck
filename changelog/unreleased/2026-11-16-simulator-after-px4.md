@@ -1,0 +1,1 @@
+- Drone Deck: Installing jMAVSim, Gazebo or FlightGear after PX4 now makes Drone Deck's own PX4 build look for them again. PX4 checks for Java, ant, Gazebo and FlightGear only when its build is first configured and remembers "not found", so a PX4 + jMAVSim system installed in that order stopped at launch with `ninja: error: unknown target 'jmavsim'`.

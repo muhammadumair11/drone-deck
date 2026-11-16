@@ -47,3 +47,33 @@ class DiscoveryTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class CloneTests(unittest.TestCase):
+    def test_a_half_clone_is_removed_and_a_good_checkout_is_kept(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            half = Path(directory) / 'half'
+            (half / '.git').mkdir(parents=True)  # no commit: a clone that was cut off
+            good = Path(directory) / 'good'
+            (good / '.git').mkdir(parents=True)
+            with patch.object(tools, 'output', side_effect=lambda a: 'abc123' if a[2].endswith('good') else '') as query, \
+                 patch.object(tools, 'run') as command:
+                tools.clone(['url'], good)
+                command.assert_not_called()
+                self.assertTrue(good.exists())
+                tools.clone(['url'], half)
+                self.assertFalse((half / '.git').exists(), 'the half clone is cleared before cloning again')
+                self.assertEqual(command.call_args.args[0][:5], tools.GIT[:5] + [])
+
+    def test_a_failed_clone_leaves_nothing_behind_and_gives_up_on_dead_connections(self):
+        with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+            path = Path(directory) / 'checkout'
+
+            def fail(args, **kwargs):
+                path.mkdir()
+                raise tools.subprocess.CalledProcessError(128, args)
+            with patch.object(tools, 'run', side_effect=fail) as command:
+                with self.assertRaises(tools.subprocess.CalledProcessError):
+                    tools.clone(['url'], path)
+            self.assertFalse(path.exists())
+            self.assertIn('http.lowSpeedTime=120', command.call_args.args[0])

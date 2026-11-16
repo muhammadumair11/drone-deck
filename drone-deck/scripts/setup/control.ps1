@@ -12,6 +12,15 @@ try {
             $build = [int]$os.BuildNumber
             $virtualization = if ($system.HypervisorPresent -or $cpu.VirtualizationFirmwareEnabled) {'Available'} else {'Not confirmed; check firmware virtualization settings'}
             $distros = @(Get-InstalledDistros)
+            # Whether the chosen distribution has a regular user: one installed with --no-launch has only
+            # root until someone creates a user. Only that distribution is probed (a probe starts it), and
+            # a probe that fails leaves the answer unknown rather than blocking.
+            foreach ($d in $distros) {
+                if ($d.version -eq 2 -and $request.distro -and $d.name -eq $request.distro) {
+                    $uid = Invoke-Native (Get-Wsl) @('-d',[string]$d.name,'--exec','id','-u') 20
+                    if ($uid.code -eq 0 -and $uid.out.Trim() -match '^\d+$') { $d.regular_user = ($uid.out.Trim() -ne '0') }
+                }
+            }
             $engine = Invoke-Native (Get-Wsl) @('--version') 15
             $data = @{build=$build;windows=$os.Caption;architecture=$os.OSArchitecture;
                 eligible=($build -ge 19041 -and [Environment]::Is64BitOperatingSystem);
@@ -44,8 +53,12 @@ try {
         }
         'initialize' {
             if (-not (@(Get-InstalledDistros | Where-Object {$_.name -eq $request.distro}))) { throw 'Select an installed distribution.' }
-            Start-Process -FilePath (Get-Wsl) -ArgumentList @('-d',(Quote-Native $request.distro)) | Out-Null
-            $data = @{message='Complete Linux account initialization in the opened terminal, then rescan.'}
+            # init-user.ps1 asks for a username, creates the account (Linux asks for its password in that
+            # window, so Drone Deck never sees it) and makes it the default user.
+            $console = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+            $consoleArguments = @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Quote-Native (Join-Path $PSScriptRoot 'init-user.ps1')),'-Distro',(Quote-Native $request.distro))
+            Start-Process -FilePath $console -ArgumentList $consoleArguments | Out-Null
+            $data = @{message='Create the Linux user in the window that opened. Drone Deck notices when it is done.'}
         }
         'start' {
             $recipe = Get-Recipes | Where-Object {$_.id -eq $request.tool -and $_.automatic} | Select-Object -First 1

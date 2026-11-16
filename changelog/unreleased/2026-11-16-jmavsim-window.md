@@ -1,0 +1,1 @@
+- Drone Deck: jMAVSim's 3D window opens under WSLg. Installing jMAVSim now replaces its bundled JOGL 2.4, whose window crashed in Mesa on Ubuntu 24.04 and took the simulation with it (PX4 then timed out waiting for vehicle status), with JOGL 2.5.0 downloaded from jogamp.org and checked against pinned SHA-256s; an existing jMAVSim still on JOGL 2.4 shows as needing a reinstall.

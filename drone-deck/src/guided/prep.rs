@@ -31,7 +31,10 @@ pub(super) fn phase(s: &State) -> Phase {
         Phase::Attention
     } else if g.check != Check::Idle {
         Phase::Checking
-    } else if workflow::needs_wsl(s) && s.setup.host.is_some() && !s.wsl_ready() {
+    } else if workflow::needs_wsl(s)
+        && s.setup.host.is_some()
+        && (!s.wsl_ready() || crate::setup::user::missing(s))
+    {
         Phase::Environment
     } else if preset && workflow::checked_all(s) {
         Phase::Review

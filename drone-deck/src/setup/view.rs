@@ -235,6 +235,15 @@ fn distributions(s: &State, vp: &ui::theme::Viewport) -> El {
         .mt(16.)
         .max_w(440.),
     );
+    let no_user = super::user::typed_missing(r);
+    if no_user {
+        block = block.child(
+            notice("This Linux environment has no user yet: Windows installed it without its first-run account prompt. Click Initialize Linux user: a window opens where you choose a username and a password. Drone Deck notices when it is done.")
+                .key("no-linux-user")
+                .max_w(860.)
+                .mt(12.),
+        );
+    }
     block = block.child(
         row()
             .mt(12.)
@@ -247,12 +256,21 @@ fn distributions(s: &State, vp: &ui::theme::Viewport) -> El {
                 !r.pending && !active && r.can_use_distro(),
                 use_distro,
             ))
-            .child(ghost(
-                "initialize-distro",
-                "Initialize Linux user ↗",
-                !r.pending && r.can_initialize(),
-                |s| request(s, "initialize"),
-            ))
+            .child(if no_user {
+                pill(
+                    "initialize-distro",
+                    "Initialize Linux user ↗",
+                    !r.pending && r.can_initialize(),
+                    |s| request(s, "initialize"),
+                )
+            } else {
+                ghost(
+                    "initialize-distro",
+                    "Initialize Linux user ↗",
+                    !r.pending && r.can_initialize(),
+                    |s| request(s, "initialize"),
+                )
+            })
             .child(ghost(
                 "load-distro-catalog",
                 "Available distributions",

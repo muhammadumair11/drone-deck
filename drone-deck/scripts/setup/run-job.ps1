@@ -40,9 +40,23 @@ try {
     switch ($plan.tool) {
         'wsl' {
             if ([int](Get-CimInstance Win32_OperatingSystem).BuildNumber -lt 19041) { throw 'This Windows build does not support the guided WSL installation command.' }
+            # Without the WSL package, Windows' built-in wsl.exe is a stub that rejects every option
+            # (--install --no-distribution, --update, --version) with "not installed"; only a bare
+            # --install, which also installs a default distribution, gets through. So the package
+            # (Microsoft.WSL, Microsoft's signed release) comes from winget, and the real wsl.exe it
+            # installs then accepts --install --no-distribution.
+            $version = Invoke-Native (Get-Wsl) @('--version') 60 $log
+            if ($version.code -ne 0) {
+                $winget = Get-Command winget -ErrorAction SilentlyContinue
+                if (-not $winget) { throw 'The WSL package is not installed and winget (App Installer) is not available to install it. Install "Windows Subsystem for Linux" from the Microsoft Store, then retry.' }
+                Phase 'Installing' 'Installing the WSL package from Microsoft with winget; this can take a few minutes' 2
+                $package = Invoke-Native $winget.Source @('install','--id','Microsoft.WSL','--exact','--source','winget','--silent','--accept-package-agreements','--accept-source-agreements','--disable-interactivity') 86400 $log -PreserveOnTimeout
+                $version = Invoke-Native (Get-Wsl) @('--version') 60 $log
+                if ($version.code -ne 0) { throw ('Drone Deck could not install the WSL package (winget exited ' + $package.code + '). Check the internet connection, or install "Windows Subsystem for Linux" from the Microsoft Store, then retry. Details: ' + $package.err + $package.out) }
+            }
             Phase 'Installing' 'Installing WSL; Windows may require a restart afterward' 2
             $result = Invoke-Native (Get-Wsl) @('--install','--no-distribution') 86400 $log -PreserveOnTimeout
-            if ($result.code -notin @(0,3010)) { throw ($result.err + $result.out) }
+            if ($result.code -notin @(0,3010)) { throw ('Drone Deck could not enable WSL (wsl --install --no-distribution exited ' + $result.code + '). Details: ' + $result.err + $result.out) }
             $restart = $result.code -eq 3010 -or (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending')
             if ($restart) { Phase 'Needs restart' 'Restart Windows, reopen Drone Deck, and rescan to continue with a Linux distribution.' 3 }
             else { Phase 'Ready' 'WSL installation command completed. Rescan and install or select a WSL 2 distribution.' 3 }

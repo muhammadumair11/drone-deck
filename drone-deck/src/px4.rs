@@ -121,7 +121,7 @@ pub(crate) fn resolve(c: &Config, p: &Profile) -> Profile {
     let dir = installation
         .map(|i| quote(&i.path))
         .unwrap_or_else(|| "\"$HOME/.local/share/drone-deck/tools/PX4-Autopilot\"".into());
-    let target = installation.map_or("px4_sitl_sih", |i| i.build_target.as_str());
+    let target = installation.map_or("px4_sitl", |i| i.build_target.as_str());
     let guard = "test -z \"$(pgrep -x px4)\"";
     p.program = "wsl".into();
     p.cwd.clear();
@@ -142,6 +142,7 @@ pub(crate) fn resolve(c: &Config, p: &Profile) -> Profile {
             p.probe = format!("command -v gz && test -f {dir}/Makefile");
         }
         Mode::JMavSim => {
+            // The 3D window needs the JOGL 2.5 the jMAVSim recipe installs (2.4 crashes under WSLg).
             p.args = vec![format!("cd {dir} && {guard} && make px4_sitl jmavsim")];
             p.probe = format!(
                 "test -f {dir}/Tools/simulation/jmavsim/jMAVSim/out/production/jmavsim_run.jar"

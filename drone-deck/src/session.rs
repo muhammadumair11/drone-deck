@@ -40,10 +40,27 @@ impl Launch {
     }
 }
 
-/// Ends the launch at `id` with a specific message.
+/// Stops stage `id`'s process if it is still running, so a launch that gave up on it leaves
+/// nothing behind: a PX4 left running would make the next Start refuse to launch another.
+/// Returns whether a stop was requested.
+fn stop_stage(s: &mut State, id: &str) -> bool {
+    let profile = s.config.profiles.iter().any(|p| p.id == id);
+    if !profile || !systems::running(s, id) {
+        return false;
+    }
+    s.send(Request::Stop(id.to_string()));
+    true
+}
+
+/// Ends the launch at `id` with a specific message, stopping `id` if it still runs.
 fn stopped(s: &mut State, id: &str, why: &str) -> bool {
+    let cleanup = if stop_stage(s, id) {
+        format!(" Drone Deck stopped {id} so the next Start begins clean.")
+    } else {
+        String::new()
+    };
     s.notice = format!(
-        "Workspace stopped at {id}: {why} Check its process output; later tools were not started."
+        "Workspace stopped at {id}: {why} Check its process output; later tools were not started.{cleanup}"
     );
     activity::record(s, format!("Workspace stopped at {id}: {why}"));
     s.launch_failure = Some((id.to_string(), why.to_string()));
@@ -158,8 +175,13 @@ pub(crate) fn poll(s: &mut State) -> bool {
                 .map_or_else(String::new, |e| format!(" Last error: {e}.")),
             _ => String::new(),
         };
+        let cleanup = if stop_stage(s, id) {
+            format!(" Drone Deck stopped {id}; the stages before it keep running.")
+        } else {
+            " Existing processes were preserved.".to_string()
+        };
         s.notice = format!(
-            "No readiness confirmation from {id} within 60 seconds. Check ports and logs; existing processes were preserved.{detail}"
+            "No readiness confirmation from {id} within 60 seconds. Check ports and logs.{cleanup}{detail}"
         );
         return true;
     }

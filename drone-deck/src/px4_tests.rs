@@ -26,6 +26,17 @@ fn shared_location_drives_both_simulators_and_probes_per_distribution() {
     assert!(profile(&c, "gazebo").args[0].contains("$HOME"));
 }
 #[test]
+fn simulators_keep_their_windows() {
+    // jMAVSim's window works with the JOGL 2.5 its recipe installs; Gazebo also reads HEADLESS.
+    let c = crate::backend::defaults();
+    assert!(profile(&c, "jmavsim").args[0].ends_with("&& make px4_sitl jmavsim"));
+    for id in ["jmavsim", "sih", "gazebo"] {
+        assert!(!profile(&c, id).args[0].contains("HEADLESS"), "{id}");
+    }
+    // With no recorded installation, Drone Deck's own PX4 v1.17.0 build target is used.
+    assert!(profile(&c, "sih").args[0].contains("make px4_sitl sihsim_quadx"));
+}
+#[test]
 fn schema_two_adopted_sih_migrates_the_location_without_touching_custom_commands() {
     let mut c = crate::backend::defaults();
     for p in &mut c.profiles {

@@ -15,7 +15,9 @@ public static class DroneSetupNative {
         var output=new StringBuilder(); var error=new StringBuilder(); var gate=new object();
         var lastOutput=DateTime.UtcNow; var started=DateTime.UtcNow;
         var waiting=String.IsNullOrEmpty(log)?null:log+".waiting";
+        var silent=String.IsNullOrEmpty(log)?null:log+".silent";
         if(waiting!=null && File.Exists(waiting))File.Delete(waiting);
+        if(silent!=null && File.Exists(silent))File.Delete(silent);
         using(var process=new Process { StartInfo=info }) {
             DataReceivedEventHandler read=(sender,args)=> { if(args.Data==null)return;
                 var text=args.Data.Replace("\0",""); lock(gate) {
@@ -35,14 +37,25 @@ public static class DroneSetupNative {
                 }
                 if(preserve && waiting!=null) {
                     lock(gate) {
-                        if(expired || (DateTime.UtcNow-lastOutput).TotalSeconds>300)
-                            File.WriteAllText(waiting,"The current installation step is taking longer than expected or has produced no output for five minutes. Its process is preserved to protect package state. Check its log or visible installer; cancellation takes effect after this step.");
-                        else if(File.Exists(waiting))File.Delete(waiting);
+                        if(expired) {
+                            // Past its time limit: this is the one case that needs a person's attention.
+                            File.WriteAllText(waiting,"The current installation step has run past its time limit. Its process is preserved to protect package state. Check its log or visible installer; cancellation takes effect after this step.");
+                            if(File.Exists(silent))File.Delete(silent);
+                        } else if((DateTime.UtcNow-lastOutput).TotalSeconds>300) {
+                            // Alive but quiet: large downloads (a Linux distribution) print nothing for minutes.
+                            var minutes=(int)((DateTime.UtcNow-lastOutput).TotalMinutes);
+                            File.WriteAllText(silent,"Still working. This step has printed nothing for "+minutes+" minutes, which is normal for large downloads such as a Linux distribution. There is nothing to do; this updates when it finishes.");
+                            if(File.Exists(waiting))File.Delete(waiting);
+                        } else {
+                            if(File.Exists(waiting))File.Delete(waiting);
+                            if(File.Exists(silent))File.Delete(silent);
+                        }
                     }
                 }
             }
             process.WaitForExit();
             if(waiting!=null && File.Exists(waiting))File.Delete(waiting);
+            if(silent!=null && File.Exists(silent))File.Delete(silent);
             return new DroneSetupResult { code=process.ExitCode,output=output.ToString(),error=error.ToString() };
         }
     }
