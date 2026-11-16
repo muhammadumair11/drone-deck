@@ -24,7 +24,11 @@ fn schema_2_sources_become_vehicles_with_the_same_launch() {
         vehicles,
         [
             Vehicle::sih(),
-            Vehicle::gazebo("baylands", "x500_depth"),
+            // Schema 2 had no renderer; the launch falls back to its default (`auto`).
+            Vehicle::Simulated {
+                autopilot: model::Autopilot::Px4,
+                world: World::new("gazebo", &[("world", "baylands"), ("model", "x500_depth")]),
+            },
             Vehicle::ardupilot("plane"),
             Vehicle::physical("serial:COM3:57600"),
             Vehicle::replay(Some("flight-1")),
