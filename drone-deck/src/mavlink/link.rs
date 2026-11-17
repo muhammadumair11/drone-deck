@@ -151,6 +151,18 @@ fn lan_address() -> Option<std::net::Ipv4Addr> {
     }
 }
 
+/// A loopback socket on the broadcast socket's port. QGroundControl on this computer answers
+/// the broadcast at 127.0.0.1 on that port (it treats a sender on this computer as loopback).
+/// With nothing bound there, Windows answers each datagram with "port unreachable", which
+/// resets QGroundControl's UDP socket and shows its vehicle as disconnected. This socket takes
+/// those answers so they are discarded: QGroundControl's own peer already carries them.
+pub(crate) fn loopback_sink(broadcast: &UdpSocket) -> io::Result<UdpSocket> {
+    let port = broadcast.local_addr()?.port();
+    let sink = UdpSocket::bind(SocketAddr::from(([127, 0, 0, 1], port)))?;
+    sink.set_read_timeout(Some(READ_TIMEOUT))?;
+    Ok(sink)
+}
+
 /// Whether `ip` is one of this computer's own addresses: only those can be bound.
 fn is_own(ip: IpAddr) -> bool {
     ip.is_loopback() || UdpSocket::bind((ip, 0)).is_ok()
@@ -401,6 +413,17 @@ pub fn spawn_peer(
     stop: Arc<AtomicBool>,
     exit: Sender<()>,
 ) -> io::Result<()> {
+    if is_broadcast(addr)
+        && let Ok(sink) = loopback_sink(&socket)
+    {
+        let (tx, stop, exit) = (tx.clone(), stop.clone(), exit.clone());
+        thread::Builder::new()
+            .name(format!("mavlink-peer-{index}-loopback"))
+            .spawn(move || {
+                let _exit = exit;
+                let _ = read_datagrams(&sink, &tx, &stop, |_, _| None);
+            })?;
+    }
     thread::Builder::new()
         .name(format!("mavlink-peer-{index}"))
         .spawn(move || {

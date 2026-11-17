@@ -135,3 +135,22 @@ fn a_broadcast_peer_socket_may_send_broadcasts() {
         "a documentation address is never ours"
     );
 }
+
+#[test]
+fn a_broadcast_peer_has_a_loopback_sink_on_its_port() {
+    // QGroundControl here answers the broadcast at 127.0.0.1 on this port; unbound, Windows
+    // answers "port unreachable" and QGroundControl drops its vehicle.
+    let broadcast = udp_for("255.255.255.255:14550".parse().unwrap()).unwrap();
+    let sink = loopback_sink(&broadcast).unwrap();
+    let (b, s) = (broadcast.local_addr().unwrap(), sink.local_addr().unwrap());
+    assert_eq!(s.port(), b.port());
+    assert!(s.ip().is_loopback());
+    let qgc = UdpSocket::bind("127.0.0.1:0").unwrap();
+    qgc.send_to(b"hb", s).unwrap();
+    let mut buf = [0u8; 8];
+    assert_eq!(
+        sink.recv_from(&mut buf).unwrap().0,
+        2,
+        "the answer lands instead of bouncing"
+    );
+}
