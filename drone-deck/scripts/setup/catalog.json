@@ -453,7 +453,7 @@
     "steps": [
       "Check Ubuntu and existing runtime",
       "Configure official OSRF signed apt source",
-      "Install gz-harmonic",
+      "Install gz-harmonic and GStreamer",
       "Verify gz-sim 8.x"
     ],
     "automatic": true,
@@ -464,6 +464,7 @@
       "OSRF repository key",
       "gz-harmonic",
       "cppzmq-dev",
+      "GStreamer 1.0 development files and plugins (PX4 camera video for QGroundControl)",
       "curl",
       "gnupg",
       "lsb-release"

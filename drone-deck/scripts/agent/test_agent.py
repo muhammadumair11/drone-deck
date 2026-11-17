@@ -93,7 +93,7 @@ class DispatchTests(unittest.TestCase):
         self.router = FakeRouter()
         self.processes = FakeProcesses()
         self.agent = agent.Agent(channel.Out(self.sink), processes=self.processes, mavlink=self.router,
-                                 recorder=self.recorder, data=FakeData())
+                                 recorder=self.recorder, data=FakeData(), video='')
 
     def run_lines(self, *requests):
         stream = io.StringIO(''.join(json.dumps(r) + '\n' for r in requests))
@@ -119,6 +119,14 @@ class DispatchTests(unittest.TestCase):
         self.assertIn('result', replies[2])
         self.assertIn('env', replies[3]['error']['message'])
         self.assertEqual(len(self.processes.runs), 2)
+
+    def test_run_tells_px4_where_windows_is_for_camera_video(self):
+        self.agent.video = '172.21.48.1'
+        self.run_lines({'id': 1, 'method': 'run', 'params': {'key': 'a', 'bash': 'true'}},
+                       {'id': 2, 'method': 'run',
+                        'params': {'key': 'b', 'bash': 'true', 'env': {'PX4_VIDEO_HOST_IP': '10.0.0.9'}}})
+        self.assertEqual(self.processes.runs[0][2]['PX4_VIDEO_HOST_IP'], '172.21.48.1')
+        self.assertEqual(self.processes.runs[1][2]['PX4_VIDEO_HOST_IP'], '10.0.0.9', 'the request wins')
 
     def test_errors_are_replies_and_bad_lines_do_not_stop_the_agent(self):
         stream = io.StringIO('not json\n[1]\n'
@@ -184,6 +192,17 @@ class DispatchTests(unittest.TestCase):
         self.agent.close()
         self.assertEqual(seen, [True])
         self.assertEqual(self.sink.replies()[10]['result'], {'cancelled': True})
+
+    def test_video_host_is_the_nat_gateway_unless_mirrored_or_already_set(self):
+        with tempfile.TemporaryDirectory() as folder:
+            route = Path(folder) / 'route'
+            route.write_text('Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\n'
+                             'eth0\t0030A8C0\t00000000\t0001\t0\t0\t0\t00F0FFFF\n'
+                             'eth0\t00000000\t013015AC\t0003\t0\t0\t0\t00000000\n')
+            self.assertEqual(agent.video_host(str(route), 'nat', {}), '172.21.48.1')
+            self.assertIsNone(agent.video_host(str(route), 'mirrored', {}), '127.0.0.1 reaches Windows')
+            self.assertIsNone(agent.video_host(str(route), 'nat', {'PX4_VIDEO_HOST_IP': '10.0.0.9'}))
+            self.assertIsNone(agent.video_host(str(route) + '.missing', 'nat', {}))
 
     def test_automount_root_prefers_wsl_conf_then_mounts(self):
         with tempfile.TemporaryDirectory() as folder:
