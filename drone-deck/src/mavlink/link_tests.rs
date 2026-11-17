@@ -85,3 +85,53 @@ fn udp_writer_answers_the_last_sender() {
     w.learn(Some(from), true);
     assert!(matches!(&w, Writer::Udp { peer: Some(p), .. } if *p == from));
 }
+
+#[test]
+fn a_broadcast_peer_takes_answers_from_the_network_but_not_from_this_computer() {
+    let broadcast: SocketAddr = "255.255.255.255:14550".parse().unwrap();
+    let scripts: SocketAddr = "127.0.0.1:14540".parse().unwrap();
+    let phone: SocketAddr = "192.168.100.4:14550".parse().unwrap();
+    let here: SocketAddr = "192.168.100.10:14550".parse().unwrap();
+    let own = |ip: IpAddr| ip == here.ip() || ip.is_loopback();
+    assert!(is_broadcast(broadcast) && !is_broadcast(scripts));
+    assert!(
+        peer_accepts(broadcast, phone, own),
+        "a phone that picked up the broadcast"
+    );
+    assert!(
+        !peer_accepts(broadcast, here, own),
+        "QGroundControl's echo from this computer"
+    );
+    assert!(!peer_accepts(
+        broadcast,
+        "[::1]:14550".parse().unwrap(),
+        own
+    ));
+    assert!(
+        peer_accepts(scripts, scripts, own),
+        "a unicast peer answers from its own address"
+    );
+    assert!(!peer_accepts(scripts, phone, own));
+}
+
+#[test]
+fn a_broadcast_peer_socket_may_send_broadcasts() {
+    let socket = udp_for("255.255.255.255:14550".parse().unwrap()).unwrap();
+    assert!(socket.broadcast().unwrap());
+    let local = socket.local_addr().unwrap().ip();
+    assert!(!local.is_loopback(), "reaches the network");
+    if let Some(lan) = lan_address() {
+        assert_eq!(
+            local,
+            IpAddr::V4(lan),
+            "bound to the default route's network, not a virtual adapter"
+        );
+    }
+    let scripts = udp_for("127.0.0.1:14540".parse().unwrap()).unwrap();
+    assert!(!scripts.broadcast().unwrap());
+    assert!(is_own("127.0.0.1".parse().unwrap()));
+    assert!(
+        !is_own("203.0.113.7".parse().unwrap()),
+        "a documentation address is never ours"
+    );
+}

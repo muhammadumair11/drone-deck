@@ -37,6 +37,7 @@ pub(crate) struct Draft {
     pub foxglove: bool,
     pub scripts: bool,
     pub scripts_udp: TextEdit,
+    pub wifi: bool,
     pub error: String,
 }
 impl Default for Draft {
@@ -173,6 +174,7 @@ impl Draft {
             foxglove: c.foxglove,
             scripts: c.scripts_udp.is_some(),
             scripts_udp: text(c.scripts_udp.as_deref().unwrap_or(DEFAULT_SCRIPTS_UDP)),
+            wifi: c.share_wifi,
             error: String::new(),
         }
     }
@@ -312,6 +314,7 @@ impl Draft {
         });
         c.foxglove = self.foxglove;
         c.scripts_udp = self.scripts.then(|| scripts_udp.to_string());
+        c.share_wifi = self.wifi;
         compat::prune(&mut sys);
         if sys.vehicle != base.vehicle || sys.consumers != base.consumers {
             sys.prepared = false;

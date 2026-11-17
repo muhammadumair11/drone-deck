@@ -831,3 +831,30 @@ fn record_on_start_is_kept_only_for_a_simulated_system_with_the_recorder() {
         "editing keeps the topics"
     );
 }
+
+#[test]
+fn share_on_wifi_is_offered_and_kept_only_for_a_simulated_vehicle() {
+    let base = starter(model::SIMULATION, "s", "S");
+    let mut d = Draft::of(&base);
+    assert!(d.feeds(compat::Consumer::Wifi));
+    d.wifi = true;
+    let shared = d.apply(&base).unwrap();
+    assert!(shared.consumers.share_wifi);
+    let text = serde_json::to_string(&shared).unwrap();
+    assert!(text.contains(r#""share_wifi":true"#), "{text}");
+    assert!(
+        !serde_json::to_string(&base).unwrap().contains("share_wifi"),
+        "off: the saved file is unchanged"
+    );
+    let mut physical = shared.clone();
+    physical.vehicle = Vehicle::physical("udp:0.0.0.0:14550");
+    compat::prune(&mut physical);
+    assert!(
+        !physical.consumers.share_wifi,
+        "a real vehicle is never broadcast"
+    );
+    let mut replay = shared;
+    replay.vehicle = Vehicle::replay(None);
+    compat::prune(&mut replay);
+    assert!(!replay.consumers.share_wifi);
+}

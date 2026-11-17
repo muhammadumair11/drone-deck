@@ -213,6 +213,9 @@ fn peers(s: &State, owner: &str, endpoint: &Endpoint) -> Vec<SocketAddr> {
     if let Some(addr) = &sys.consumers.scripts_udp {
         out.extend(addr.trim().parse::<SocketAddr>());
     }
+    if sys.consumers.share_wifi {
+        out.extend(crate::systems::model::WIFI_PEER.parse::<SocketAddr>());
+    }
     let listen = match endpoint {
         Endpoint::UdpListen { port, .. } => Some(*port),
         _ => None,
