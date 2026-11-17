@@ -745,7 +745,7 @@ fn launch_env_carries_world_model_vehicle_and_domain() {
     assert!(args("gazebo").contains("PX4_GZ_WORLD=\"${DRONE_DECK_GZ_WORLD:-default}\""));
     assert!(args("gazebo").contains("gz_${DRONE_DECK_GZ_MODEL:-x500_mono_cam}"));
     assert!(args("ardupilot").contains("-v \"${DRONE_DECK_AP_VEHICLE:-ArduCopter}\""));
-    assert!(args("rosgz").contains("/link/camera_link/sensor/camera"));
+    assert!(args("rosgz").contains("/link/camera_link/sensor/${DRONE_DECK_GZ_CAMERA:-imager}"));
     assert!(args("foxglove").contains("port:=8765"));
     // jMAVSim was retired with the display relay and came back through the router.
     for retired in backend::RETIRED.iter().filter(|r| **r != "jmavsim") {

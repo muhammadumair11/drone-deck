@@ -5,6 +5,7 @@ Drone Deck's user-visible changes. Older entries were reconstructed from the per
 ## Unreleased
 
 - Add a **Gazebo renderer** detail to PX4 + Gazebo systems (`auto`, `ogre` or `ogre2`). It reaches PX4 as `PX4_GZ_SIM_RENDER_ENGINE`, so saved launch commands stay unchanged, and systems saved before it keep Gazebo's default.
+- Fix the ROS–Gazebo camera bridge for PX4 v1.17: it now bridges the `imager` sensor of `x500_mono_cam` to `/camera/image_raw` instead of a `camera` sensor that model does not have, so the topic is no longer empty. Launch profiles move to schema 6 and an unedited bridge command is updated; an edited one is kept. `DRONE_DECK_GZ_CAMERA` names another camera sensor.
 
 ## 0.9.2 — release candidate
 

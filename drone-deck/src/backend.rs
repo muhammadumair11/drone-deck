@@ -6,7 +6,7 @@ pub use builtins::defaults;
 pub(crate) use builtins::{ADDED_IN_4, ADDED_IN_5, RETIRED, ardupilot_binary, launch_env};
 use builtins::{
     ARDUPILOT_ARGS, ARDUPILOT_ARGS_4, GAZEBO_ARGS, OLD_ARDUPILOT, OLD_GAZEBO, OLD_MAVSDK_PYTHON,
-    adopted_before_5,
+    ROSGZ_ARGS, ROSGZ_ARGS_5, adopted_before_5,
 };
 use detection::detect;
 use serde::{Deserialize, Serialize};
@@ -56,7 +56,7 @@ pub struct Config {
     pub profiles: Vec<Profile>,
 }
 /// The current `profiles.json` schema. A file without `"schema"` is schema 0.
-pub const SCHEMA: u64 = 5;
+pub const SCHEMA: u64 = 6;
 #[derive(Serialize)]
 struct Stored<'a> {
     schema: u64,
@@ -315,6 +315,15 @@ fn migrate_v4(config: &mut Config) {
         p.args = vec![new];
     }
 }
+/// Schema 5 → 6: an unedited ROS–Gazebo camera bridge takes the camera sensor PX4 v1.17
+/// names (`imager`); an edited one is kept.
+fn migrate_v5(config: &mut Config) {
+    for p in config.profiles.iter_mut().filter(|p| p.id == "rosgz") {
+        if p.args.len() == 1 && p.args[0] == ROSGZ_ARGS_5 {
+            p.args = vec![ROSGZ_ARGS.to_string()];
+        }
+    }
+}
 /// Parses `profiles.json`. The outer error marks a damaged file; the inner one a readable
 /// file this version must not use (a newer schema, or no profiles). `Some` is the notice of
 /// a migration (the file is then written back).
@@ -363,6 +372,9 @@ pub(crate) fn parse_config(
     }
     if schema < 5 {
         migrate_v4(&mut config);
+    }
+    if schema < 6 {
+        migrate_v5(&mut config);
     }
     for installation in config.px4_installations.values() {
         crate::px4::validate(installation)?;

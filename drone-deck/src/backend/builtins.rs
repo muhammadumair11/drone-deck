@@ -42,7 +42,12 @@ const FGVIEW_ARGS: &str = "A=\"$HOME/.local/share/drone-deck/tools/ardupilot\"; 
 const DDS_AP_ARGS: &str = "A=\"$HOME/.local/share/drone-deck/tools/Micro-XRCE-DDS-Agent/build/MicroXRCEAgent\"; [ -x \"$A\" ] || A=MicroXRCEAgent; exec \"$A\" udp4 -p 2019";
 /// Camera image and camera_info of PX4's `x500_mono_cam` (sensor `camera` on `camera_link`,
 /// instance `_0`) into ROS as `/camera/image_raw` and `/camera/camera_info`.
-const ROSGZ_ARGS: &str = "source /opt/ros/jazzy/setup.bash && G=\"/world/${DRONE_DECK_GZ_WORLD:-default}/model/${DRONE_DECK_GZ_MODEL:-x500_mono_cam}_0/link/camera_link/sensor/camera\" && exec ros2 run ros_gz_bridge parameter_bridge \"$G/image@sensor_msgs/msg/Image[gz.msgs.Image\" \"$G/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo\" --ros-args -r \"$G/image:=/camera/image_raw\" -r \"$G/camera_info:=/camera/camera_info\"";
+/// The ROS 2 camera bridge. PX4 v1.17's `mono_cam` (in `x500_mono_cam`) names its camera sensor
+/// `imager`; `DRONE_DECK_GZ_CAMERA` names another sensor, such as `camera` for `x500_gimbal`.
+pub(super) const ROSGZ_ARGS: &str = "source /opt/ros/jazzy/setup.bash && G=\"/world/${DRONE_DECK_GZ_WORLD:-default}/model/${DRONE_DECK_GZ_MODEL:-x500_mono_cam}_0/link/camera_link/sensor/${DRONE_DECK_GZ_CAMERA:-imager}\" && exec ros2 run ros_gz_bridge parameter_bridge \"$G/image@sensor_msgs/msg/Image[gz.msgs.Image\" \"$G/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo\" --ros-args -r \"$G/image:=/camera/image_raw\" -r \"$G/camera_info:=/camera/camera_info\"";
+/// The schema 2–5 bridge command, which named a `camera` sensor no PX4 v1.17 camera drone has;
+/// replaced in schema 6 when it was never edited.
+pub(super) const ROSGZ_ARGS_5: &str = "source /opt/ros/jazzy/setup.bash && G=\"/world/${DRONE_DECK_GZ_WORLD:-default}/model/${DRONE_DECK_GZ_MODEL:-x500_mono_cam}_0/link/camera_link/sensor/camera\" && exec ros2 run ros_gz_bridge parameter_bridge \"$G/image@sensor_msgs/msg/Image[gz.msgs.Image\" \"$G/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo\" --ros-args -r \"$G/image:=/camera/image_raw\" -r \"$G/camera_info:=/camera/camera_info\"";
 const FOXGLOVE_ARGS: &str = "source /opt/ros/jazzy/setup.bash && exec ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765";
 /// Built-in profiles of earlier versions that the native vehicle link replaced. Stored
 /// profiles with these ids are dropped when `profiles.json` is upgraded to schema 2.

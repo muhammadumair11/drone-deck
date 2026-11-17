@@ -285,6 +285,38 @@ fn schema_four_gives_unedited_ardupilot_commands_the_launch_variables() {
 }
 
 #[test]
+fn schema_five_points_an_unedited_camera_bridge_at_the_imager_sensor() {
+    let old = "source /opt/ros/jazzy/setup.bash && G=\"/world/${DRONE_DECK_GZ_WORLD:-default}/model/${DRONE_DECK_GZ_MODEL:-x500_mono_cam}_0/link/camera_link/sensor/camera\" && exec ros2 run ros_gz_bridge parameter_bridge \"$G/image@sensor_msgs/msg/Image[gz.msgs.Image\" \"$G/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo\" --ros-args -r \"$G/image:=/camera/image_raw\" -r \"$G/camera_info:=/camera/camera_info\"";
+    let parse = |command: &str| {
+        let v5 = serde_json::json!({"schema":5,"distro":"Ubuntu-24.04","profiles":[
+            {"id":"rosgz","name":"rosgz","category":"Infrastructure","description":"",
+             "program":"wsl","args":[command],"cwd":"","probe":"","docs":""}]});
+        let (config, notice) = backend::parse_config(&serde_json::to_vec(&v5).unwrap())
+            .unwrap()
+            .unwrap();
+        assert!(notice.is_some(), "written back as the current schema");
+        config.profiles[0].args[0].clone()
+    };
+    let upgraded = parse(old);
+    assert!(
+        upgraded.contains("/sensor/${DRONE_DECK_GZ_CAMERA:-imager}\"")
+            && upgraded.contains(":=/camera/image_raw"),
+        "{upgraded}"
+    );
+    let built_in = backend::defaults()
+        .profiles
+        .into_iter()
+        .find(|p| p.id == "rosgz")
+        .unwrap();
+    assert_eq!(
+        upgraded, built_in.args[0],
+        "the same command a fresh file gets"
+    );
+    let edited = old.replace("sensor/camera", "sensor/front");
+    assert_eq!(parse(&edited), edited, "edited command kept");
+}
+
+#[test]
 fn newer_schema_is_refused_and_left_unchanged() {
     let dir = scratch("newer");
     let file = dir.join("profiles.json");
