@@ -322,6 +322,9 @@ pub(crate) fn worlds(d: &Draft, base: Option<&System>, at: At, compact: bool) ->
     out
 }
 
+/// Under the consumers when Share on Wi-Fi is on.
+const WIFI_NOTE: &str = "The simulator's MAVLink is broadcast to this computer's local network on UDP 14550. A ground station app on a phone or tablet on the same Wi-Fi connects by listening on UDP 14550; no address to enter. Anyone on that network can see and command the simulated drone, so use it on a network you trust.";
+
 /// Under the consumers of a physical system with QGroundControl or scripts enabled.
 const BRIDGE_WARNING: &str = "QGroundControl and scripts are bridged to the vehicle both ways: Drone Deck forwards what they send, so they can command this vehicle and write parameters. Drone Deck itself only reads.";
 
@@ -385,6 +388,14 @@ pub(crate) fn consumers(d: &Draft, at: At, compact: bool) -> El {
             |d| d.scripts = !d.scripts,
         ));
     }
+    if d.feeds(Consumer::Wifi) {
+        boxes = boxes.child(toggle(
+            "consumer-wifi",
+            "Share on Wi-Fi / phones and tablets (two-way)",
+            d.wifi,
+            |d| d.wifi = !d.wifi,
+        ));
+    }
     let mut fields = col().w_full().min_w(0.).gap(16.);
     if (d.ros_agent && d.feeds(Consumer::RosAgent)) || d.recorder {
         fields = fields.child(text_field(
@@ -429,6 +440,15 @@ pub(crate) fn consumers(d: &Draft, at: At, compact: bool) -> El {
                     .max_w(620.),
             );
         }
+    }
+    if d.wifi && d.feeds(Consumer::Wifi) {
+        fields = fields.child(
+            body(WIFI_NOTE, 11., warn())
+                .key("system-wifi-note")
+                .role("status")
+                .wrap()
+                .max_w(620.),
+        );
     }
     let consumers = pair(boxes, fields, compact);
     if d.vehicle == 1 && (d.qgc || d.scripts) {

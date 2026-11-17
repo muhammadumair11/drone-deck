@@ -194,7 +194,15 @@ pub(crate) struct Consumers {
     /// the vehicle link forwards what they send to the vehicle.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scripts_udp: Option<String>,
+    /// Share on Wi-Fi: the vehicle link broadcasts MAVLink to the local network on UDP 14550
+    /// (`WIFI_PEER`), where ground station apps on phones and tablets listen, and forwards what
+    /// they send to the vehicle. Simulated vehicles only.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub share_wifi: bool,
 }
+
+/// Where Share on Wi-Fi sends: the limited broadcast address on the ground-station port.
+pub(crate) const WIFI_PEER: &str = "255.255.255.255:14550";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct System {

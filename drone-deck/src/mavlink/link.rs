@@ -3,7 +3,7 @@
 use super::service::Input;
 use std::fmt;
 use std::io::{self, Read, Write};
-use std::net::{SocketAddr, TcpStream, ToSocketAddrs, UdpSocket};
+use std::net::{IpAddr, SocketAddr, TcpStream, ToSocketAddrs, UdpSocket};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -118,13 +118,58 @@ pub fn resolve(host: &str, port: u16) -> io::Result<SocketAddr> {
 pub fn udp_for(target: SocketAddr) -> io::Result<UdpSocket> {
     let local: SocketAddr = match (target.ip().is_loopback(), target.is_ipv4()) {
         (true, true) => ([127, 0, 0, 1], 0).into(),
+        // Windows sends a limited broadcast out of one adapter only, often a virtual one (WSL,
+        // Hyper-V); bound to the network the default route uses, it reaches the real LAN.
+        (false, true) if is_broadcast(target) => {
+            (lan_address().unwrap_or([0, 0, 0, 0].into()), 0).into()
+        }
         (false, true) => ([0, 0, 0, 0], 0).into(),
         (true, false) => (std::net::Ipv6Addr::LOCALHOST, 0).into(),
         (false, false) => (std::net::Ipv6Addr::UNSPECIFIED, 0).into(),
     };
     let socket = UdpSocket::bind(local)?;
     socket.set_read_timeout(Some(READ_TIMEOUT))?;
+    if is_broadcast(target) {
+        socket.set_broadcast(true)?;
+    }
     Ok(socket)
+}
+
+/// Whether `addr` is the IPv4 limited broadcast address (Share on Wi-Fi).
+pub fn is_broadcast(addr: SocketAddr) -> bool {
+    matches!(addr.ip(), IpAddr::V4(ip) if ip.is_broadcast())
+}
+
+/// This computer's address on the network its default route uses, found by routing a UDP socket
+/// towards a public address (connecting a UDP socket sends nothing). None without a network.
+fn lan_address() -> Option<std::net::Ipv4Addr> {
+    let probe = UdpSocket::bind(SocketAddr::from(([0, 0, 0, 0], 0))).ok()?;
+    probe.connect(SocketAddr::from(([8, 8, 8, 8], 53))).ok()?;
+    match probe.local_addr().ok()?.ip() {
+        IpAddr::V4(ip) if !ip.is_unspecified() && !ip.is_loopback() => Some(ip),
+        _ => None,
+    }
+}
+
+/// Whether `ip` is one of this computer's own addresses: only those can be bound.
+fn is_own(ip: IpAddr) -> bool {
+    ip.is_loopback() || UdpSocket::bind((ip, 0)).is_ok()
+}
+
+/// Whether a datagram from `from` belongs to the peer at `addr`. A unicast peer answers from
+/// its own address. A broadcast peer is answered by whichever device on the network picked it
+/// up, apart from this computer: QGroundControl here answers every sender it hears, the
+/// broadcast included, and already has a peer of its own, so its echo is not forwarded twice.
+pub(crate) fn peer_accepts(
+    addr: SocketAddr,
+    from: SocketAddr,
+    own: impl Fn(IpAddr) -> bool,
+) -> bool {
+    if is_broadcast(addr) {
+        from.is_ipv4() && !own(from.ip())
+    } else {
+        from == addr
+    }
 }
 
 /// The service's write half of the vehicle link.
@@ -361,7 +406,7 @@ pub fn spawn_peer(
         .spawn(move || {
             let _exit = exit;
             let result = read_datagrams(&socket, &tx, &stop, |data, from| {
-                (from == addr).then_some(Input::Peer { index, data })
+                peer_accepts(addr, from, is_own).then_some(Input::Peer { index, data })
             });
             drop(socket);
             if let Err(e) = result {

@@ -93,6 +93,10 @@ A camera model such as `x500_mono_cam` sends its picture three ways once Setup h
 - **ROS 2**: with the ROS 2 bridge on, `/camera/image_raw` and `/camera/camera_info` (see [known issues](known-issues.md), VAL-08).
 - **Gazebo**: the **Image Display** panel on the camera's `.../sensor/imager/image` topic.
 
+### Phone or tablet ground station (Share on Wi-Fi)
+
+PX4 and the MAVLink router run inside WSL, and Windows exposes their ports only to programs on this computer, so a phone can't connect to the computer's address. Instead, tick **Share on Wi-Fi / phones and tablets (two-way)** in a simulated system's listeners: the vehicle link then broadcasts the simulator's MAVLink to the local network on UDP 14550 and forwards what a phone sends back to the vehicle. On a phone or tablet on the same network, choose a UDP connection that listens on port 14550 in the ground station app (QGroundControl for Android, MAVLink apps); there is no address to type, and QGroundControl on this computer keeps working. Anyone on that network can see and command the simulated drone, so use it on a network you trust. It is offered only for simulated vehicles, and guest networks or routers with client isolation block it.
+
 ### Physical vehicle
 
 With **Physical vehicle** active, the System page holds the vehicle connection:

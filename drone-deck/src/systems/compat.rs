@@ -11,6 +11,9 @@ pub(crate) enum Consumer {
     RosAgent,
     /// MAVLink over UDP for user scripts: any live vehicle, not a recording.
     Scripts,
+    /// Share on Wi-Fi (MAVLink broadcast to the local network): a simulated vehicle only, since
+    /// anyone on the network can command what is shared.
+    Wifi,
 }
 
 /// Whether a vehicle of `VEHICLES` index `vehicle`, simulated with a ROS bridge when
@@ -19,6 +22,7 @@ pub(crate) fn consumer_ok(vehicle: usize, ros_bridge: bool, c: Consumer) -> bool
     match c {
         Consumer::LiveView | Consumer::Scripts => vehicle != 2,
         Consumer::RosAgent => vehicle == 0 && ros_bridge,
+        Consumer::Wifi => vehicle == 0,
     }
 }
 
@@ -30,6 +34,7 @@ pub(crate) fn prune(sys: &mut System) {
     let c = &mut sys.consumers;
     c.live_view &= ok(Consumer::LiveView);
     c.ros.agent &= ok(Consumer::RosAgent);
+    c.share_wifi &= ok(Consumer::Wifi);
     if !ok(Consumer::Scripts) {
         c.scripts_udp = None;
     }
