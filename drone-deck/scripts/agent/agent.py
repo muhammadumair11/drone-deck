@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -82,13 +83,49 @@ def hello():
             'python': platform.python_version(), 'pid': os.getpid()}
 
 
-def run_env(env):
-    """A `run` request's environment, with DRONE_DECK_SCRIPTS unless the request sets it."""
+def networking_mode():
+    """WSL's networking mode (`nat`, `mirrored`, ...), or '' when wslinfo is missing or fails."""
+    try:
+        done = subprocess.run(['wslinfo', '--networking-mode'], capture_output=True, text=True, timeout=5)
+        return done.stdout.strip().lower()
+    except (OSError, subprocess.SubprocessError):
+        return ''
+
+
+def video_host(route='/proc/net/route', mode=None, environ=None):
+    """Where PX4's Gazebo camera video (H.264 over UDP 5600) must go for QGroundControl on Windows.
+
+    Under WSL's NAT networking 127.0.0.1 is the distribution itself, and the Windows host is the
+    default gateway. None when PX4_VIDEO_HOST_IP is already set, under mirrored networking (there
+    127.0.0.1 reaches Windows), or when there is no default route."""
+    environ = os.environ if environ is None else environ
+    if environ.get('PX4_VIDEO_HOST_IP'):
+        return None
+    if (networking_mode() if mode is None else mode) == 'mirrored':
+        return None
+    try:
+        lines = Path(route).read_text().splitlines()[1:]
+    except OSError:
+        return None
+    for line in lines:
+        fields = line.split()
+        if len(fields) > 2 and fields[1] == '00000000' and fields[2] != '00000000':
+            gateway = int(fields[2], 16)  # little-endian hex in /proc/net/route
+            return '.'.join(str((gateway >> shift) & 255) for shift in (0, 8, 16, 24))
+    return None
+
+
+def run_env(env, video=None):
+    """A `run` request's environment: DRONE_DECK_SCRIPTS and, when known, PX4_VIDEO_HOST_IP, unless
+    the request sets them."""
     if env is None:
         env = {}
     if not isinstance(env, dict):
         raise ValueError('env must be an object.')
-    return {'DRONE_DECK_SCRIPTS': SCRIPTS, **env}
+    base = {'DRONE_DECK_SCRIPTS': SCRIPTS}
+    if video:
+        base['PX4_VIDEO_HOST_IP'] = video
+    return {**base, **env}
 
 
 def params_of(request):
@@ -102,8 +139,10 @@ def params_of(request):
 
 class Agent:
     def __init__(self, out, processes=None, mavlink=None, recorder=None, data=None, shell=('bash', '-lc'),
-                 pipes=None, resims=None):
+                 pipes=None, resims=None, video=None):
         self.out = out
+        # Found once: the Windows host address stays the same while the distribution runs.
+        self.video = video_host() if video is None else video
         self.shell = shell
         self.procs = processes or procs.Processes(out, shell=shell)
         self.router = mavlink or router.Router(out)
@@ -116,7 +155,7 @@ class Agent:
         self.workers = []
         self.table = {
             'hello': lambda p, c, i: hello(),
-            'run': lambda p, c, i: self.procs.run(p.get('key'), p.get('bash'), run_env(p.get('env')),
+            'run': lambda p, c, i: self.procs.run(p.get('key'), p.get('bash'), run_env(p.get('env'), self.video),
                                                   p.get('cwd'), p.get('readiness')),
             'stop': lambda p, c, i: self.procs.stop(p.get('key'), p.get('grace_s', 3)),
             'input': lambda p, c, i: self.procs.input(p.get('key'), p.get('line')),

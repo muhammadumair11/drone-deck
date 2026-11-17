@@ -6,6 +6,7 @@ Drone Deck's user-visible changes. Older entries were reconstructed from the per
 
 - Add a **Gazebo renderer** detail to PX4 + Gazebo systems (`auto`, `ogre` or `ogre2`). It reaches PX4 as `PX4_GZ_SIM_RENDER_ENGINE`, so saved launch commands stay unchanged, and systems saved before it keep Gazebo's default.
 - Fix the ROS–Gazebo camera bridge for PX4 v1.17: it now bridges the `imager` sensor of `x500_mono_cam` to `/camera/image_raw` instead of a `camera` sensor that model does not have, so the topic is no longer empty. Launch profiles move to schema 6 and an unedited bridge command is updated; an edited one is kept. `DRONE_DECK_GZ_CAMERA` names another camera sensor.
+- Show the Gazebo drone camera in QGroundControl's video panel. Setup's Gazebo step installs GStreamer, so PX4 builds its camera streaming plugin, and makes an existing Drone Deck PX4 build look for it again. Setup patches Drone Deck's own PX4 v1.17 checkout so the stream is 4:2:0 H.264 (High profile) instead of High 4:4:4, which QGroundControl cannot decode. The Linux agent gives launched processes `PX4_VIDEO_HOST_IP`, the Windows host under WSL NAT networking, so the video reaches QGroundControl on UDP 5600; set QGroundControl's video source to UDP h.264.
 
 ## 0.9.2 — release candidate
 

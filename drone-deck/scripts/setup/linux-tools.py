@@ -159,6 +159,8 @@ def install(tool):
             raise RuntimeError('Managed PX4 checkout no longer matches v1.17.0; review local changes manually.')
         # Retry incomplete recursive clones without resetting local source changes.
         run([*GIT, '-C', str(path), 'submodule', 'update', '--init', '--recursive'])
+        import extra_tools
+        extra_tools.patch_gst_camera(path)  # 4:2:0 camera video that QGroundControl can decode
         env_path = owned_target('px4-python')
         if not (env_path / 'bin/python').exists():
             run(['python3', '-m', 'venv', str(env_path)])

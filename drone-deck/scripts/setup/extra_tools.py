@@ -7,6 +7,10 @@ import shutil
 import subprocess
 import urllib.request
 
+# PX4's Gazebo camera plugin (GstCameraSystem) streams H.264 over UDP 5600 for QGroundControl. It is
+# built only when GStreamer's development files are present, and encodes with x264enc (plugins-ugly).
+GSTREAMER=['libgstreamer1.0-dev','libgstreamer-plugins-base1.0-dev','gstreamer1.0-plugins-base','gstreamer1.0-plugins-good',
+           'gstreamer1.0-plugins-bad','gstreamer1.0-plugins-ugly','gstreamer1.0-libav','gstreamer1.0-gl']
 TOOLS={'gazebo','ardupilot','ros-workspace','onnx','ros-gz','foxglove-bridge','jmavsim','flightgear','ardupilot-dds'}
 # jMAVSim inside a PX4 checkout: its Ant project and the jar `ant create_run_jar` builds.
 JMAVSIM=Path('Tools/simulation/jmavsim/jMAVSim')
@@ -149,7 +153,7 @@ def dependencies(base,tool):
         source=Path('/etc/apt/sources.list.d/drone-deck-gazebo.list')
         architecture=base.output(['dpkg','--print-architecture'])
         source.write_text(f'deb [arch={architecture} signed-by={key}] https://packages.osrfoundation.org/gazebo/ubuntu-stable noble main\n')
-        base.run(['apt-get','update']);base.run(['apt-get','install','-y','--no-install-recommends','gz-harmonic','cppzmq-dev'])  # gz-transport13's CMake config needs cppzmq; it is only a Recommends of libzmq3-dev
+        base.run(['apt-get','update']);base.run(['apt-get','install','-y','--no-install-recommends','gz-harmonic','cppzmq-dev',*GSTREAMER])  # gz-transport13's CMake config needs cppzmq; it is only a Recommends of libzmq3-dev
         return
     if tool in ROS_PACKAGES:
         if not Path('/opt/ros/jazzy/setup.bash').is_file():raise RuntimeError('Install ROS 2 Jazzy in Setup first; it configures the ROS apt repository.')
@@ -187,11 +191,36 @@ def clone(base,path,url,revision):
 # PX4 looks for each simulator once, when its build is first configured, and remembers "not found":
 # a simulator installed after PX4 was built (jMAVSim needs Java and ant) gets no make target until
 # those answers are forgotten and the build is configured again.
-PX4_FORGET=('JAVA_ANT_PATH','Java_*','FGFS_PATH','gz-*','gz*_DIR')
+PX4_FORGET=('JAVA_ANT_PATH','Java_*','FGFS_PATH','gz-*','gz*_DIR','GSTREAMER*','__pkg_config_checked_GSTREAMER*')
+# PX4 v1.17's GstCameraSystem hands RGB frames to x264enc without naming a format, so x264enc encodes
+# 4:4:4 (High 4:4:4 profile), which QGroundControl and hardware decoders cannot play: its video stays
+# on "Waiting for video". An I420 caps filter after videoconvert makes the stream 4:2:0 (High profile).
+GST_CAMERA=Path('src/modules/simulation/gz_plugins/gstreamer/GstCameraSystem.cpp')
+GST_CHAIN='_source, queue1, videoRate, capsFilter, converter, queue2, encoder, payloader'
+GST_ANCHOR='\tgst_caps_unref(rateCaps);\n'
+GST_I420=('\n\t// Encode 4:2:0 (I420): fed RGB, x264enc otherwise picks 4:4:4 (High 4:4:4 profile),\n'
+          '\t// which QGroundControl and most hardware decoders cannot decode.\n'
+          '\tGstElement *formatFilter = gst_element_factory_make("capsfilter", nullptr);\n'
+          '\tGstCaps *formatCaps = gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "I420", NULL);\n'
+          '\tg_object_set(G_OBJECT(formatFilter), "caps", formatCaps, NULL);\n'
+          '\tgst_caps_unref(formatCaps);\n')
+def patch_gst_camera(px4):
+    """Makes the PX4 checkout `px4` stream 4:2:0 camera video. True when the source changed; a source
+    that already has the filter, or does not read like v1.17's, is left as it is."""
+    source=px4/GST_CAMERA
+    if not source.is_file():return False
+    text=source.read_text()
+    if 'formatFilter' in text or text.count(GST_CHAIN)!=2 or text.count(GST_ANCHOR)!=1:return False
+    text=text.replace(GST_ANCHOR,GST_ANCHOR+GST_I420).replace(GST_CHAIN,GST_CHAIN.replace('converter,','converter, formatFilter,'))
+    source.write_text(text)
+    return True
+
 def refresh_px4(base):
     """Makes Drone Deck's own PX4 build look again for simulators installed after it was configured."""
     build=base.ROOT/'PX4-Autopilot/build/px4_sitl_default'
-    if not (build/'CMakeCache.txt').is_file() or not (base.ROOT/'.owned-PX4-Autopilot').is_file():return
+    if not (base.ROOT/'.owned-PX4-Autopilot').is_file():return
+    patch_gst_camera(base.ROOT/'PX4-Autopilot')
+    if not (build/'CMakeCache.txt').is_file():return
     forget=[arg for name in PX4_FORGET for arg in ('-U',name)]
     env={**os.environ,'PATH':str(base.ROOT/'px4-python/bin')+':'+os.environ['PATH']}
     base.run(['cmake',*forget,'.'],cwd=build,env=env)

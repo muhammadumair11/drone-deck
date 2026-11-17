@@ -85,6 +85,14 @@ When any of these is missing, the controls stay disabled and say why, for exampl
 
 Flight actions and the console have been tested only against a loopback fake vehicle, not a real PX4 or ArduPilot (see [known issues](known-issues.md), VAL-02).
 
+### Drone camera (PX4 + Gazebo)
+
+A camera model such as `x500_mono_cam` sends its picture three ways once Setup has installed Gazebo Harmonic and built PX4:
+
+- **QGroundControl's video panel**: PX4's Gazebo camera plugin streams H.264 over UDP port 5600. Drone Deck's Linux agent points it at Windows, which is the WSL default gateway under NAT networking (under mirrored networking `127.0.0.1` already reaches Windows). In QGroundControl, set **Application Settings → Video → Source** to **UDP h.264 Video Stream** on port 5600 once; the picture then appears in the Fly view. A `PX4_VIDEO_HOST_IP` you set yourself wins.
+- **ROS 2**: with the ROS 2 bridge on, `/camera/image_raw` and `/camera/camera_info` (see [known issues](known-issues.md), VAL-08).
+- **Gazebo**: the **Image Display** panel on the camera's `.../sensor/imager/image` topic.
+
 ### Physical vehicle
 
 With **Physical vehicle** active, the System page holds the vehicle connection:

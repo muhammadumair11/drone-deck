@@ -90,7 +90,7 @@ class ExtraTests(unittest.TestCase):
      refresh=[c for c in base.run.call_args_list if c.args[0][0]=='cmake']
      if tool=='jmavsim':
       self.assertEqual(len(refresh),1,tool)
-      self.assertEqual(refresh[0].args[0],['cmake','-U','JAVA_ANT_PATH','-U','Java_*','-U','FGFS_PATH','-U','gz-*','-U','gz*_DIR','.'])
+      self.assertEqual(refresh[0].args[0],['cmake','-U','JAVA_ANT_PATH','-U','Java_*','-U','FGFS_PATH','-U','gz-*','-U','gz*_DIR','-U','GSTREAMER*','-U','__pkg_config_checked_GSTREAMER*','.'])
       self.assertEqual(refresh[0].kwargs['cwd'],build)
       self.assertTrue(refresh[0].kwargs['env']['PATH'].startswith(str(root/'px4-python/bin')))
      else:
@@ -98,6 +98,25 @@ class ExtraTests(unittest.TestCase):
    with patch.object(extra_tools.os,'geteuid',return_value=1000,create=True):
     base=Mock(ROOT=root);extra_tools.install(base,'gazebo')
    self.assertEqual(base.run.call_args_list[0].args[0][0],'cmake','Gazebo installed after PX4 refreshes the owned build')
+ def test_px4_camera_video_is_patched_to_420_once_and_only_in_a_v117_shaped_source(self):
+  # QGroundControl shows "Waiting for video" for the High 4:4:4 stream PX4 v1.17 sends without this.
+  chain='_source, queue1, videoRate, capsFilter, converter, queue2, encoder, payloader'
+  original=('\tgst_caps_unref(rateCaps);\n\n'
+            f'\tgst_bin_add_many(GST_BIN(_pipeline), {chain},\n\t\t\t sink, NULL);\n'
+            f'\tif (!gst_element_link_many({chain}, sink,\n')
+  with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
+   px4=Path(directory);source=px4/extra_tools.GST_CAMERA;source.parent.mkdir(parents=True)
+   self.assertFalse(extra_tools.patch_gst_camera(px4),'no plugin source: nothing to do')
+   source.write_text(original)
+   self.assertTrue(extra_tools.patch_gst_camera(px4))
+   patched=source.read_text()
+   self.assertIn('"format", G_TYPE_STRING, "I420"',patched)
+   self.assertEqual(patched.count('converter, formatFilter, queue2'),2,'added to the bin and linked')
+   self.assertFalse(extra_tools.patch_gst_camera(px4),'already patched');self.assertEqual(source.read_text(),patched)
+   source.write_text('different upstream source\n')
+   self.assertFalse(extra_tools.patch_gst_camera(px4));self.assertEqual(source.read_text(),'different upstream source\n')
+ def test_gazebo_dependencies_include_gstreamer_for_px4_camera_video(self):
+  self.assertIn('libgstreamer1.0-dev',extra_tools.GSTREAMER);self.assertIn('gstreamer1.0-plugins-ugly',extra_tools.GSTREAMER)
  def test_a_failed_addon_download_leaves_no_half_clone(self):
   with tempfile.TemporaryDirectory(dir=Path(__file__).parent) as directory:
    path=Path(directory)/'ardupilot';base=Mock()
